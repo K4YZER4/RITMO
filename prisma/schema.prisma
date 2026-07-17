@@ -1,0 +1,634 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["ubi", "core", "app_user", "entrenador", "alumno"]
+}
+
+// ==================== SCHEMA: ubi ====================
+
+model Pais {
+  id                Int                  @id @map("id")
+  nombre            String               @map("nombre") @db.VarChar(50)
+  entidadFederativa EntidadFederativa[]
+
+  @@schema("ubi")
+  @@map("pais")
+}
+
+model EntidadFederativa {
+  id                BigInt         @id @map("id") @db.BigInt
+  nombre            String         @map("nombre") @db.VarChar(50)
+  idPais            Int            @map("id_pais")
+  pais              Pais           @relation(fields: [idPais], references: [id])
+  municipio         Municipio[]
+
+  @@schema("ubi")
+  @@map("entidad_federativa")
+}
+
+model Municipio {
+  id                  BigInt             @id @map("id") @db.BigInt
+  nombre              String             @map("nombre") @db.VarChar(50)
+  idEntidadFederativa BigInt             @map("id_entidad_federativa")
+  entidadFederativa   EntidadFederativa  @relation(fields: [idEntidadFederativa], references: [id])
+  localidad           Localidad[]
+
+  @@schema("ubi")
+  @@map("municipio")
+}
+
+model Localidad {
+  id         BigInt     @id @map("id") @db.BigInt
+  nombre     String     @map("nombre") @db.VarChar(50)
+  idMunicipio BigInt    @map("id_municipio")
+  municipio  Municipio  @relation(fields: [idMunicipio], references: [id])
+  entrenador Entrenador[]
+  gimnasio   Gimnasio[]
+
+  @@schema("ubi")
+  @@map("localidad")
+}
+
+// ==================== SCHEMA: core ====================
+
+model RedesSociales {
+  id                       Int                       @id @map("id")
+  nombre                   String                    @map("nombre") @db.VarChar(50)
+  entrenadorRedesSociales  EntrenadorRedesSociales[]
+
+  @@schema("core")
+  @@map("redes_sociales")
+}
+
+model TipoSeccion {
+  id               BigInt              @id @map("id") @db.BigInt
+  nombre           String              @map("nombre") @unique @db.VarChar(100)
+  entrenadorSeccion EntrenadorSeccion[]
+
+  @@schema("core")
+  @@map("tipo_seccion")
+}
+
+model Categorias {
+  id                  Int                  @id @map("id")
+  nombre              String               @map("nombre") @db.VarChar(50)
+  entrenadorCategorias EntrenadorCategorias[]
+
+  @@schema("core")
+  @@map("categorias")
+}
+
+model Estado {
+  id                  Int                   @id @map("id")
+  nombre              String                @map("nombre") @db.VarChar(30)
+  entrenador          Entrenador[]          @relation("estado_entrenador")
+  alumno              Alumno[]              @relation("estado_alumno")
+  gimnasio            Gimnasio[]            @relation("estado_gimnasio")
+  sesionEntrenamiento SesionEntrenamiento[] @relation("estado_sesion")
+
+  @@schema("core")
+  @@map("estado")
+}
+
+model Musculo {
+  id                          BigInt                        @id @map("id") @db.BigInt
+  nombre                      String                        @map("nombre") @unique @db.VarChar(100)
+  createdAt                   DateTime                      @map("created_at") @default(now()) @db.Timestamp(0)
+  updatedAt                   DateTime                      @map("updated_at") @default(now()) @updatedAt @db.Timestamp(0)
+  ejercicioEstandarMusculo    EjercicioEstandarMusculo[]
+  ejercicioPersonalizadoMusculo EjercicioPersonalizadoMusculo[]
+
+  @@schema("core")
+  @@map("musculo")
+}
+
+model Equipo {
+  id                          BigInt                        @id @map("id") @db.BigInt
+  nombre                      String                        @map("nombre") @unique @db.VarChar(100)
+  createdAt                   DateTime                      @map("created_at") @default(now()) @db.Timestamp(0)
+  updatedAt                   DateTime                      @map("updated_at") @default(now()) @updatedAt @db.Timestamp(0)
+  ejercicioEstandarEquipo     EjercicioEstandarEquipo[]
+  ejercicioPersonalizadoEquipo EjercicioPersonalizadoEquipo[]
+
+  @@schema("core")
+  @@map("equipo")
+}
+
+model EjercicioEstandar {
+  id                       BigInt                     @id @map("id") @db.BigInt
+  nombre                   String                     @map("nombre") @db.VarChar(150)
+  descripcion              String?                    @map("descripcion") @db.Text
+  urlImagen                String?                    @map("url_imagen") @db.Text
+  createdAt                DateTime                   @map("created_at") @default(now()) @db.Timestamp(0)
+  updatedAt                DateTime                   @map("updated_at") @default(now()) @updatedAt @db.Timestamp(0)
+  ejercicioEstandarMusculo EjercicioEstandarMusculo[]
+  ejercicioEstandarEquipo  EjercicioEstandarEquipo[]
+  rutinaEjercicio          RutinaEjercicio[]
+  sesionEjercicio          SesionEjercicio[]
+  alumnoEjercicioPr        AlumnoEjercicioPr[]
+
+  @@schema("core")
+  @@map("ejercicio_estandar")
+}
+
+model EjercicioEstandarMusculo {
+  idEjercicioEstandar BigInt           @map("id_ejercicio_estandar")
+  idMusculo           BigInt           @map("id_musculo")
+  ejercicioEstandar   EjercicioEstandar @relation(fields: [idEjercicioEstandar], references: [id])
+  musculo             Musculo          @relation(fields: [idMusculo], references: [id])
+
+  @@id([idEjercicioEstandar, idMusculo])
+  @@schema("core")
+  @@map("ejercicio_estandar_musculo")
+}
+
+model DiaSemana {
+  id             Int              @id @map("id") @db.SmallInt
+  nombre         String           @map("nombre") @unique @db.VarChar(20)
+  usuarioRutina  UsuarioRutina[]
+  rutinaSemanaDia RutinaSemanaDia[]
+
+  @@schema("core")
+  @@map("dia_semana")
+}
+
+model EjercicioEstandarEquipo {
+  idEjercicioEstandar BigInt           @map("id_ejercicio_estandar")
+  idEquipo            BigInt           @map("id_equipo")
+  ejercicioEstandar   EjercicioEstandar @relation(fields: [idEjercicioEstandar], references: [id])
+  equipo              Equipo           @relation(fields: [idEquipo], references: [id])
+
+  @@id([idEjercicioEstandar, idEquipo])
+  @@schema("core")
+  @@map("ejercicio_estandar_equipo")
+}
+
+model CategoriaRutina {
+  id          Int      @id @map("id")
+  nombre      String   @map("nombre") @unique @db.VarChar(100)
+  descripcion String?  @map("descripcion") @db.Text
+  rutina      Rutina[]
+
+  @@schema("core")
+  @@map("categoria_rutina")
+}
+
+// ==================== SCHEMA: app_user ====================
+
+model Usuario {
+  id               String   @id @default(uuid()) @map("id") @db.Uuid
+  nombre           String   @map("nombre") @db.VarChar(20)
+  apellidoPaterno  String   @map("apellido_paterno") @db.VarChar(20)
+  apellidoMaterno  String?  @map("apellido_materno") @db.VarChar(20)
+  correo           String   @map("correo") @db.VarChar(60)
+  hashedPassword   String   @map("hashed_password") @db.VarChar(60)
+  fechaNacimiento  DateTime @map("fecha_nacimiento") @db.Date
+  fechaRegistro    DateTime @map("fecha_registro") @db.Date
+  ejercicioPersonalizado EjercicioPersonalizado[] @relation("usuario_ejercicio_personalizado")
+  rutina           Rutina[]                      @relation("usuario_rutina")
+  sesionEntrenamiento   SesionEntrenamiento[]    @relation("usuario_sesion")
+  sesionCreada     SesionEntrenamiento[]          @relation("usuario_sesion_creada")
+  sesionActualizada SesionEntrenamiento[]         @relation("usuario_sesion_actualizada")
+  usuarioMedicion  UsuarioMedicion[]
+  alumnoEjercicioPr AlumnoEjercicioPr[]          @relation("usuario_pr")
+  alumnoEntrenadorHistorial AlumnoEntrenadorHistorial[] @relation("usuario_historial")
+  usuarioRutina    UsuarioRutina[]                @relation("usuario_rutina_usuario")
+  usuarioRutinaAsignada UsuarioRutina[]           @relation("usuario_rutina_asignada")
+  usuarioRutinaCreada  UsuarioRutina[]            @relation("usuario_rutina_creada")
+  usuarioRutinaActualizada UsuarioRutina[]        @relation("usuario_rutina_actualizada")
+  gimnasio         Gimnasio[]                     @relation("usuario_gimnasio")
+  entrenador       Entrenador?
+  alumno           Alumno?                        @relation("usuario_alumno")
+  alumnoCreado     Alumno[]                       @relation("usuario_alumno_creado")
+  alumnoActualizado Alumno[]                      @relation("usuario_alumno_actualizado")
+  historialCreado  AlumnoEntrenadorHistorial[]    @relation("usuario_historial_creado")
+
+  @@schema("app_user")
+  @@map("usuario")
+}
+
+model EjercicioPersonalizado {
+  id                          BigInt                        @id @map("id") @db.BigInt
+  createdByUsuario            String                        @map("created_by_usuario") @db.Uuid
+  usuario                     Usuario                       @relation("usuario_ejercicio_personalizado", fields: [createdByUsuario], references: [id])
+  nombre                      String                        @map("nombre") @db.VarChar(150)
+  activa                      Boolean                       @map("activa") @default(true)
+  descripcion                 String?                       @map("descripcion") @db.Text
+  urlImagen                   String?                       @map("url_imagen") @db.Text
+  linkInformacion             String?                       @map("link_informacion") @db.Text
+  createdAt                   DateTime                      @map("created_at") @default(now()) @db.Timestamp(0)
+  updatedAt                   DateTime                      @map("updated_at") @default(now()) @updatedAt @db.Timestamp(0)
+  ejercicioPersonalizadoMusculo EjercicioPersonalizadoMusculo[]
+  ejercicioPersonalizadoEquipo  EjercicioPersonalizadoEquipo[]
+  rutinaEjercicio             RutinaEjercicio[]
+  sesionEjercicio             SesionEjercicio[]
+  alumnoEjercicioPr           AlumnoEjercicioPr[]
+
+  @@unique([createdByUsuario, nombre])
+  @@schema("app_user")
+  @@map("ejercicio_personalizado")
+}
+
+model EjercicioPersonalizadoMusculo {
+  idEjercicioPersonalizado BigInt                 @map("id_ejercicio_personalizado")
+  idMusculo                BigInt                 @map("id_musculo")
+  ejercicioPersonalizado   EjercicioPersonalizado @relation(fields: [idEjercicioPersonalizado], references: [id])
+  musculo                  Musculo                @relation(fields: [idMusculo], references: [id])
+
+  @@id([idEjercicioPersonalizado, idMusculo])
+  @@schema("app_user")
+  @@map("ejercicio_personalizado_musculo")
+}
+
+model EjercicioPersonalizadoEquipo {
+  idEjercicioPersonalizado BigInt                 @map("id_ejercicio_personalizado")
+  idEquipo                 BigInt                 @map("id_equipo")
+  ejercicioPersonalizado   EjercicioPersonalizado @relation(fields: [idEjercicioPersonalizado], references: [id])
+  equipo                   Equipo                 @relation(fields: [idEquipo], references: [id])
+
+  @@id([idEjercicioPersonalizado, idEquipo])
+  @@schema("app_user")
+  @@map("ejercicio_personalizado_equipo")
+}
+
+model Rutina {
+  id               BigInt          @id @map("id") @db.BigInt
+  createdByUsuario String          @map("created_by_usuario") @db.Uuid
+  usuario          Usuario         @relation("usuario_rutina", fields: [createdByUsuario], references: [id])
+  nombre           String          @map("nombre") @db.VarChar(100)
+  descripcion      String?         @map("descripcion") @db.Text
+  activa           Boolean         @map("activa") @default(true)
+  idCategoriaRutina Int?           @map("id_categoria_rutina")
+  categoriaRutina   CategoriaRutina? @relation(fields: [idCategoriaRutina], references: [id])
+  createdAt        DateTime        @map("created_at") @default(now()) @db.Timestamp(0)
+  updatedAt        DateTime        @map("updated_at") @default(now()) @updatedAt @db.Timestamp(0)
+  rutinaEjercicio  RutinaEjercicio[]
+  rutinaSemanaDia  RutinaSemanaDia[]
+  usuarioRutina    UsuarioRutina[]
+  sesionEntrenamiento SesionEntrenamiento[]
+
+  @@unique([createdByUsuario, nombre])
+  @@schema("app_user")
+  @@map("rutina")
+}
+
+model RutinaEjercicio {
+  id                       BigInt              @id @map("id") @db.BigInt
+  idRutina                 BigInt              @map("id_rutina")
+  rutina                   Rutina              @relation(fields: [idRutina], references: [id])
+  idEjercicioEstandar      BigInt?             @map("id_ejercicio_estandar")
+  ejercicioEstandar        EjercicioEstandar?  @relation(fields: [idEjercicioEstandar], references: [id])
+  idEjercicioPersonalizado BigInt?             @map("id_ejercicio_personalizado")
+  ejercicioPersonalizado   EjercicioPersonalizado? @relation(fields: [idEjercicioPersonalizado], references: [id])
+  orden                    Int                 @map("orden")
+  series                   Int                 @map("series")
+  repeticiones             Int                 @map("repeticiones")
+  pesoObjetivo             Decimal?            @map("peso_objetivo") @db.Decimal(10, 2)
+  notaEntrenador           String?             @map("nota_entrenador") @db.Text
+  linkApoyo                String?             @map("link_apoyo") @db.Text
+  usuarioRutinaEjercicioOverride UsuarioRutinaEjercicioOverride[]
+  sesionEjercicio          SesionEjercicio[]
+
+  @@schema("app_user")
+  @@map("rutina_ejercicio")
+}
+
+model RutinaSemanaDia {
+  id          BigInt    @id @map("id") @db.BigInt
+  idRutina    BigInt    @map("id_rutina")
+  rutina      Rutina    @relation(fields: [idRutina], references: [id])
+  idDiaSemana Int       @map("id_dia_semana") @db.SmallInt
+  diaSemana   DiaSemana @relation(fields: [idDiaSemana], references: [id])
+  activa      Boolean   @map("activa") @default(true)
+  createdAt   DateTime  @map("created_at") @default(now()) @db.Timestamp(0)
+  updatedAt   DateTime  @map("updated_at") @default(now()) @updatedAt @db.Timestamp(0)
+
+  @@unique([idRutina, idDiaSemana])
+  @@schema("app_user")
+  @@map("rutina_semana_dia")
+}
+
+model UsuarioRutinaEjercicioOverride {
+  id                BigInt        @id @map("id") @db.BigInt
+  idUsuarioRutina   BigInt        @map("id_usuario_rutina")
+  usuarioRutina     UsuarioRutina @relation(fields: [idUsuarioRutina], references: [id])
+  idRutinaEjercicio BigInt        @map("id_rutina_ejercicio")
+  rutinaEjercicio   RutinaEjercicio @relation(fields: [idRutinaEjercicio], references: [id])
+  series            Int?
+  repeticiones      Int?
+  pesoObjetivo      Decimal?      @map("peso_objetivo") @db.Decimal(10, 2)
+  notaEntrenador    String?       @map("nota_entrenador") @db.Text
+  createdAt         DateTime      @map("created_at") @default(now()) @db.Timestamp(0)
+  updatedAt         DateTime      @map("updated_at") @default(now()) @updatedAt @db.Timestamp(0)
+
+  @@unique([idUsuarioRutina, idRutinaEjercicio])
+  @@schema("app_user")
+  @@map("usuario_rutina_ejercicio_override")
+}
+
+model UsuarioRutina {
+  id                 BigInt    @id @map("id") @db.BigInt
+  idUsuario          String    @map("id_usuario") @db.Uuid
+  usuario            Usuario   @relation("usuario_rutina_usuario", fields: [idUsuario], references: [id])
+  idRutina           BigInt    @map("id_rutina")
+  rutina             Rutina    @relation(fields: [idRutina], references: [id])
+  idDiaSemana        Int       @map("id_dia_semana") @db.SmallInt
+  diaSemana          DiaSemana @relation(fields: [idDiaSemana], references: [id])
+  fechaInicio        DateTime  @map("fecha_inicio") @db.Date
+  fechaFin           DateTime? @map("fecha_fin") @db.Date
+  activa             Boolean   @map("activa") @default(true)
+  asignadaPorUsuario String    @map("asignada_por_usuario") @db.Uuid
+  asignadaPor        Usuario   @relation("usuario_rutina_asignada", fields: [asignadaPorUsuario], references: [id])
+  motivoCambio       String?   @map("motivo_cambio") @db.Text
+  createdAt          DateTime  @map("created_at") @default(now()) @db.Timestamp(0)
+  updatedAt          DateTime  @map("updated_at") @default(now()) @updatedAt @db.Timestamp(0)
+  createdBy          String?   @map("created_by") @db.Uuid
+  createdByUsuario    Usuario?  @relation("usuario_rutina_creada", fields: [createdBy], references: [id])
+  updatedBy          String?   @map("updated_by") @db.Uuid
+  updatedByUsuario    Usuario?  @relation("usuario_rutina_actualizada", fields: [updatedBy], references: [id])
+  override           UsuarioRutinaEjercicioOverride[]
+  sesionEntrenamiento SesionEntrenamiento[]
+
+  @@unique([idUsuario, idRutina, idDiaSemana, fechaInicio])
+  @@index([idUsuario, idDiaSemana])
+  @@schema("app_user")
+  @@map("usuario_rutina")
+}
+
+model SesionEntrenamiento {
+  id                 BigInt              @id @map("id") @db.BigInt
+  idUsuario          String              @map("id_usuario") @db.Uuid
+  usuario            Usuario             @relation("usuario_sesion", fields: [idUsuario], references: [id])
+  idUsuarioRutina    BigInt?             @map("id_usuario_rutina")
+  usuarioRutina      UsuarioRutina?      @relation(fields: [idUsuarioRutina], references: [id])
+  idRutina           BigInt              @map("id_rutina")
+  rutina             Rutina              @relation(fields: [idRutina], references: [id])
+  fechaSesion        DateTime            @map("fecha_sesion") @db.Timestamp(0)
+  idEstado           Int                 @map("id_estado") @default(2)
+  estado             Estado              @relation("estado_sesion", fields: [idEstado], references: [id])
+  notasAlumno        String?             @map("notas_alumno") @db.Text
+  notasEntrenador    String?             @map("notas_entrenador") @db.Text
+  duracionMinutos    Int?                @map("duracion_minutos")
+  createdAt          DateTime            @map("created_at") @default(now()) @db.Timestamp(0)
+  updatedAt          DateTime            @map("updated_at") @default(now()) @updatedAt @db.Timestamp(0)
+  createdBy          String?             @map("created_by") @db.Uuid
+  createdByUsuario   Usuario?            @relation("usuario_sesion_creada", fields: [createdBy], references: [id])
+  updatedBy          String?             @map("updated_by") @db.Uuid
+  updatedByUsuario   Usuario?            @relation("usuario_sesion_actualizada", fields: [updatedBy], references: [id])
+  sesionEjercicio    SesionEjercicio[]
+
+  @@schema("app_user")
+  @@map("sesion_entrenamiento")
+}
+
+model UsuarioMedicion {
+  id                BigInt   @id @map("id") @db.BigInt
+  idUsuario         String   @map("id_usuario") @db.Uuid
+  usuario           Usuario  @relation(fields: [idUsuario], references: [id])
+  fechaMedicion     DateTime @map("fecha_medicion") @db.Date
+  pesoKg            Decimal? @map("peso_kg") @db.Decimal(6, 2)
+  estaturaCm        Decimal? @map("estatura_cm") @db.Decimal(5, 2)
+  grasaCorporalPct  Decimal? @map("grasa_corporal_pct") @db.Decimal(5, 2)
+  cinturaCm         Decimal? @map("cintura_cm") @db.Decimal(5, 2)
+  caderaCm          Decimal? @map("cadera_cm") @db.Decimal(5, 2)
+  pechoCm           Decimal? @map("pecho_cm") @db.Decimal(5, 2)
+  brazoCm           Decimal? @map("brazo_cm") @db.Decimal(5, 2)
+  piernaCm          Decimal? @map("pierna_cm") @db.Decimal(5, 2)
+  nota              String?  @map("nota") @db.Text
+  createdAt         DateTime @map("created_at") @default(now()) @db.Timestamp(0)
+  updatedAt         DateTime @map("updated_at") @default(now()) @updatedAt @db.Timestamp(0)
+
+  @@unique([idUsuario, fechaMedicion])
+  @@schema("app_user")
+  @@map("usuario_medicion")
+}
+
+model SesionEjercicio {
+  id                       BigInt              @id @map("id") @db.BigInt
+  idSesionEntrenamiento    BigInt              @map("id_sesion_entrenamiento")
+  sesionEntrenamiento      SesionEntrenamiento  @relation(fields: [idSesionEntrenamiento], references: [id])
+  idRutinaEjercicio        BigInt?             @map("id_rutina_ejercicio")
+  rutinaEjercicio          RutinaEjercicio?    @relation(fields: [idRutinaEjercicio], references: [id])
+  idEjercicioEstandar      BigInt?             @map("id_ejercicio_estandar")
+  ejercicioEstandar        EjercicioEstandar?  @relation(fields: [idEjercicioEstandar], references: [id])
+  idEjercicioPersonalizado BigInt?             @map("id_ejercicio_personalizado")
+  ejercicioPersonalizado   EjercicioPersonalizado? @relation(fields: [idEjercicioPersonalizado], references: [id])
+  orden                    Int                 @map("orden")
+  nota                     String?             @map("nota") @db.Text
+  createdAt                DateTime            @map("created_at") @default(now()) @db.Timestamp(0)
+  updatedAt                DateTime            @map("updated_at") @default(now()) @updatedAt @db.Timestamp(0)
+  sesionEjercicioSet       SesionEjercicioSet[]
+
+  @@schema("app_user")
+  @@map("sesion_ejercicio")
+}
+
+model SesionEjercicioSet {
+  id                    BigInt   @id @map("id") @db.BigInt
+  idSesionEjercicio     BigInt   @map("id_sesion_ejercicio")
+  sesionEjercicio       SesionEjercicio @relation(fields: [idSesionEjercicio], references: [id])
+  numeroSet             Int      @map("numero_set")
+  repeticionesObjetivo  Int?     @map("repeticiones_objetivo")
+  pesoObjetivo          Decimal? @map("peso_objetivo") @db.Decimal(10, 2)
+  repeticionesRealizadas Int?    @map("repeticiones_realizadas")
+  pesoReal              Decimal? @map("peso_real") @db.Decimal(10, 2)
+  rir                   Decimal? @map("rir") @db.Decimal(4, 2)
+  rpe                   Decimal? @map("rpe") @db.Decimal(4, 2)
+  descansoSegundos      Int?     @map("descanso_segundos")
+  completado            Boolean  @map("completado") @default(false)
+  createdAt             DateTime @map("created_at") @default(now()) @db.Timestamp(0)
+  updatedAt             DateTime @map("updated_at") @default(now()) @updatedAt @db.Timestamp(0)
+  alumnoEjercicioPr     AlumnoEjercicioPr[]
+
+  @@unique([idSesionEjercicio, numeroSet])
+  @@schema("app_user")
+  @@map("sesion_ejercicio_set")
+}
+
+model AlumnoEjercicioPr {
+  id                       BigInt               @id @map("id") @db.BigInt
+  idUsuario                String               @map("id_usuario") @db.Uuid
+  usuario                  Usuario              @relation("usuario_pr", fields: [idUsuario], references: [id])
+  idEjercicioEstandar      BigInt?              @map("id_ejercicio_estandar")
+  ejercicioEstandar        EjercicioEstandar?   @relation(fields: [idEjercicioEstandar], references: [id])
+  idEjercicioPersonalizado BigInt?              @map("id_ejercicio_personalizado")
+  ejercicioPersonalizado   EjercicioPersonalizado? @relation(fields: [idEjercicioPersonalizado], references: [id])
+  peso                     Decimal             @map("peso") @db.Decimal(10, 2)
+  repeticiones             Int                 @map("repeticiones")
+  idSesionEjercicioSet     BigInt              @map("id_sesion_ejercicio_set")
+  sesionEjercicioSet       SesionEjercicioSet   @relation(fields: [idSesionEjercicioSet], references: [id])
+  fechaPr                  DateTime            @map("fecha_pr") @db.Timestamp(0)
+  createdAt                DateTime            @map("created_at") @default(now()) @db.Timestamp(0)
+  updatedAt                DateTime            @map("updated_at") @default(now()) @updatedAt @db.Timestamp(0)
+
+  @@index([idUsuario, idEjercicioEstandar, peso])
+  @@index([idUsuario, idEjercicioPersonalizado, peso])
+  @@schema("app_user")
+  @@map("alumno_ejercicio_pr")
+}
+
+model AlumnoEntrenadorHistorial {
+  id            BigInt    @id @map("id") @db.BigInt
+  idUsuario     String    @map("id_usuario") @db.Uuid
+  usuario       Usuario   @relation("usuario_historial", fields: [idUsuario], references: [id])
+  idEntrenador  String    @map("id_entrenador") @db.Uuid
+  entrenador    Entrenador @relation(fields: [idEntrenador], references: [idUsuario])
+  fechaInicio   DateTime  @map("fecha_inicio") @default(now()) @db.Timestamp(0)
+  fechaFin      DateTime? @map("fecha_fin") @db.Timestamp(0)
+  activo        Boolean   @map("activo") @default(true)
+  motivoCambio  String?   @map("motivo_cambio") @db.Text
+  createdAt     DateTime  @map("created_at") @default(now()) @db.Timestamp(0)
+  createdBy     String?   @map("created_by") @db.Uuid
+  creadoPor     Usuario?  @relation("usuario_historial_creado", fields: [createdBy], references: [id])
+
+  @@index([idUsuario, fechaInicio])
+  @@schema("app_user")
+  @@map("alumno_entrenador_historial")
+}
+
+// ==================== SCHEMA: entrenador ====================
+
+model EntrenadorTema {
+  id              BigInt            @id @map("id") @db.BigInt
+  primaryColor    String            @map("primary_color") @db.VarChar(50)
+  secundaryColor  String            @map("secundary_color") @db.VarChar(50)
+  backgroundColor String            @map("background_color") @db.VarChar(50)
+  entrenador      Entrenador[]
+
+  @@schema("entrenador")
+  @@map("entrenador_tema")
+}
+
+model Entrenador {
+  idUsuario               String                     @id @map("id_usuario") @db.Uuid
+  usuario                 Usuario                    @relation(fields: [idUsuario], references: [id])
+  slug                    String                     @map("slug") @db.Text
+  idEstado                Int                        @map("id_estado")
+  estado                  Estado                     @relation("estado_entrenador", fields: [idEstado], references: [id])
+  fechaEntrenador         DateTime                   @map("fecha_entrenador") @db.Date
+  idLocalidad             BigInt?                    @map("id_localidad")
+  localidad               Localidad?                 @relation(fields: [idLocalidad], references: [id])
+  verificacionStatus      Boolean                    @map("verificacion_status") @default(false)
+  idTema                  BigInt                     @map("id_tema") @default(1)
+  tema                    EntrenadorTema             @relation(fields: [idTema], references: [id])
+  nombrePublico           String?                    @map("nombre_publico") @db.VarChar(50)
+  createdAt               DateTime                   @map("created_at") @default(now()) @db.Timestamp(0)
+  updatedAt               DateTime                   @map("updated_at") @default(now()) @updatedAt @db.Timestamp(0)
+  entrenadorRedesSociales EntrenadorRedesSociales[]
+  entrenadorCategorias    EntrenadorCategorias[]
+  entrenadorGimnasio      EntrenadorGimnasio[]
+  entrenadorSeccion       EntrenadorSeccion[]
+  alumnoActual            Alumno[]                   @relation("alumno_entrenador_actual")
+  alumnoEntrenadorHistorial AlumnoEntrenadorHistorial[]
+
+  @@schema("entrenador")
+  @@map("entrenador")
+}
+
+model EntrenadorRedesSociales {
+  id           BigInt          @id @map("id") @db.BigInt
+  idEntrenador String          @map("id_entrenador") @db.Uuid
+  entrenador   Entrenador      @relation(fields: [idEntrenador], references: [idUsuario])
+  idRedSocial  Int             @map("id_red_social")
+  redSocial    RedesSociales   @relation(fields: [idRedSocial], references: [id])
+  urlRed       String          @map("url_red") @db.Text
+
+  @@unique([idEntrenador, idRedSocial])
+  @@schema("entrenador")
+  @@map("entrenador_redes_sociales")
+}
+
+model EntrenadorCategorias {
+  id           BigInt        @id @map("id") @db.BigInt
+  idEntrenador String        @map("id_entrenador") @db.Uuid
+  entrenador   Entrenador    @relation(fields: [idEntrenador], references: [idUsuario])
+  idCategoria  Int           @map("id_categoria")
+  categoria    Categorias    @relation(fields: [idCategoria], references: [id])
+
+  @@schema("entrenador")
+  @@map("entrenador_categorias")
+}
+
+model Gimnasio {
+  id               BigInt   @id @map("id") @db.BigInt
+  nombre           String   @map("nombre") @unique @db.VarChar(100)
+  ubicacion        String   @map("ubicacion") @db.Text
+  createdByUsuario String   @map("created_by_usuario") @db.Uuid
+  usuario          Usuario  @relation("usuario_gimnasio", fields: [createdByUsuario], references: [id])
+  createdAt        DateTime @map("created_at") @default(now()) @db.Timestamp(0)
+  updatedAt        DateTime @map("updated_at") @default(now()) @updatedAt @db.Timestamp(0)
+  idLocalidad      BigInt   @map("id_localidad")
+  localidad        Localidad @relation(fields: [idLocalidad], references: [id])
+  idEstado         Int      @map("id_estado")
+  estado           Estado   @relation("estado_gimnasio", fields: [idEstado], references: [id])
+  entrenadorGimnasio EntrenadorGimnasio[]
+
+  @@schema("entrenador")
+  @@map("gimnasio")
+}
+
+model EntrenadorGimnasio {
+  id           BigInt    @id @map("id") @db.BigInt
+  idGimnasio   BigInt    @map("id_gimnasio")
+  gimnasio     Gimnasio  @relation(fields: [idGimnasio], references: [id])
+  idEntrenador String    @map("id_entrenador") @db.Uuid
+  entrenador   Entrenador @relation(fields: [idEntrenador], references: [idUsuario])
+  activo       Boolean?  @map("activo") @default(true)
+  createdAt    DateTime  @map("created_at") @default(now()) @db.Timestamp(0)
+  updatedAt    DateTime  @map("updated_at") @default(now()) @updatedAt @db.Timestamp(0)
+  fechaIngreso DateTime? @map("fecha_ingreso") @db.Timestamp(0)
+
+  @@schema("entrenador")
+  @@map("entrenador_gimnasio")
+}
+
+model EntrenadorSeccion {
+  id               BigInt        @id @map("id") @db.BigInt
+  idEntrenador     String        @map("id_entrenador") @db.Uuid
+  entrenador       Entrenador    @relation(fields: [idEntrenador], references: [idUsuario])
+  idTipoSeccion    BigInt        @map("id_tipo_seccion")
+  tipoSeccion      TipoSeccion   @relation(fields: [idTipoSeccion], references: [id])
+  configuracionJson Json         @map("configuracion_json") @db.JsonB
+  visible          Boolean       @map("visible") @default(true)
+  orden            Int           @map("orden")
+  createdAt        DateTime      @map("created_at") @default(now()) @db.Timestamp(0)
+  updatedAt        DateTime      @map("updated_at") @default(now()) @updatedAt @db.Timestamp(0)
+
+  @@unique([idEntrenador, orden])
+  @@unique([idEntrenador, idTipoSeccion])
+  @@schema("entrenador")
+  @@map("entrenador_seccion")
+}
+
+// ==================== SCHEMA: alumno ====================
+
+model Alumno {
+  idUsuario                 String        @id @map("id_usuario") @db.Uuid
+  usuario                   Usuario       @relation("usuario_alumno", fields: [idUsuario], references: [id])
+  idEstado                  Int           @map("id_estado")
+  estado                    Estado        @relation("estado_alumno", fields: [idEstado], references: [id])
+  sexo                      String?       @map("sexo") @db.VarChar(20)
+  numeroCelular             String?       @map("numero_celular") @db.VarChar(20)
+  fechaInicioEntrenamiento  DateTime?     @map("fecha_inicio_entrenamiento") @db.Date
+  objetivo                  String?       @map("objetivo") @db.Text
+  nivelActividad            String?       @map("nivel_actividad") @db.Text
+  observacionesMedicas      String?       @map("observaciones_medicas") @db.Text
+  lesionesActuales          String?       @map("lesiones_actuales") @db.Text
+  lesionesPasadas           String?       @map("lesiones_pasadas") @db.Text
+  contactoEmergenciaNombre  String?       @map("contacto_emergencia_nombre") @db.VarChar(100)
+  contactoEmergenciaTelefono String?      @map("contacto_emergencia_telefono") @db.VarChar(30)
+  createdAt                 DateTime      @map("created_at") @default(now()) @db.Timestamp(0)
+  updatedAt                 DateTime      @map("updated_at") @default(now()) @updatedAt @db.Timestamp(0)
+  idEntrenadorActual        String?       @map("id_entrenador_actual") @db.Uuid
+  entrenadorActual          Entrenador?   @relation("alumno_entrenador_actual", fields: [idEntrenadorActual], references: [idUsuario])
+  createdBy                 String?       @map("created_by") @db.Uuid
+  creadoPor                 Usuario?      @relation("usuario_alumno_creado", fields: [createdBy], references: [id])
+  updatedBy                 String?       @map("updated_by") @db.Uuid
+  actualizadoPor            Usuario?      @relation("usuario_alumno_actualizado", fields: [updatedBy], references: [id])
+
+  @@schema("alumno")
+  @@map("alumno")
+}
