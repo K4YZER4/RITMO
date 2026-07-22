@@ -5,7 +5,6 @@ import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { JwtPayload } from '../types/jwt-payload';
 export const IS_PUBLIC_KEY = 'isPublic';
-
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(
