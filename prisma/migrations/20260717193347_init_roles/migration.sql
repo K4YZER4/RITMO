@@ -1,3 +1,4 @@
+/*
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -18,8 +19,8 @@ BEGIN
 END
 $$;
 
-GRANT CONNECT ON DATABASE postgres TO rtmo_migrator;
-GRANT CONNECT ON DATABASE postgres TO rtmo_app;
+GRANT CONNECT ON DATABASE neondb TO rtmo_migrator;
+GRANT CONNECT ON DATABASE neondb TO rtmo_app;
 
 GRANT USAGE, CREATE ON SCHEMA ubi TO rtmo_migrator;
 GRANT USAGE, CREATE ON SCHEMA core TO rtmo_migrator;
@@ -44,3 +45,4 @@ GRANT DELETE ON TABLE app_user.rutina_ejercicio TO rtmo_app;
 GRANT DELETE ON TABLE app_user.ejercicio_personalizado_musculo TO rtmo_app;
 GRANT DELETE ON TABLE app_user.ejercicio_personalizado_equipo TO rtmo_app;
 GRANT DELETE ON TABLE app_user.usuario_rutina_ejercicio_override TO rtmo_app;
+*/

@@ -4,9 +4,14 @@ import { registerEntrenadorDto } from './dto/registerEntrenador';
 import { loginDto } from './dto/login';
 import * as bcrypt from 'bcrypt';
 import { registerAlumnoDto } from './dto/registerAlumno';
+import type { JwtPayload } from '../../common/types/jwt-payload';
+import { JwtService } from '@nestjs/jwt';
 @Injectable()
 export class AuthService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+  ) {}
   private readonly seedHash: number = 10;
   //
   // Register method
@@ -56,7 +61,13 @@ export class AuthService {
     if (!(await bcrypt.compare(loginData.password, user.hashedPassword))) {
       throw new Error('Contraseña incorrecta');
     }
-    return { message: 'Inicio de sesión exitoso' };
+    const entrenador = await this.prisma.entrenador.findUnique({
+      where: { idUsuario: user.id },
+    });
+    const role = entrenador ? 'entrenador' : 'alumno';
+    const payload: JwtPayload = { sub: user.id, correo: user.correo, role: role };
+    const token = this.jwtService.sign(payload);
+    return { message: 'Inicio de sesión exitoso', token };
   }
   //
   // Register Alumno method
