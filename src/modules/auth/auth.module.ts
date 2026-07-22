@@ -5,7 +5,6 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { JwtModule } from '@nestjs/jwt';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guards';
-import { JwtService } from '@nestjs/jwt';
 const jwtExpiration = parseInt(process.env.JWT_EXPIRATION_TIME ?? '86400', 10);
 @Module({
   imports: [
@@ -18,7 +17,6 @@ const jwtExpiration = parseInt(process.env.JWT_EXPIRATION_TIME ?? '86400', 10);
   providers: [
     AuthService,
     PrismaService,
-    JwtService,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
