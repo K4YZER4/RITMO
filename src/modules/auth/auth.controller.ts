@@ -1,7 +1,7 @@
 import { Controller, Post, Body } from '@nestjs/common';
-import { loginDto } from './dto/login';
-import { registerEntrenadorDto } from './dto/registerEntrenador';
-import { registerAlumnoDto } from './dto/registerAlumno';
+import { LoginDto } from './dto/login';
+import { RegisterEntrenadorDto } from './dto/registerEntrenador';
+import { RegisterAlumnoDto } from './dto/registerAlumno';
 import { AuthService } from './auth.service';
 import { Public } from '../../common/decorators/public.decorator';
 import { RateLimitEspecifico } from '../../common/decorators/rate-limit.decorator';
@@ -12,17 +12,17 @@ export class AuthController {
   @Public()
   @RateLimitEspecifico(5) // Limita a 5 solicitudes por minuto
   @Post('login')
-  login(@Body() loginData: loginDto) {
+  login(@Body() loginData: LoginDto) {
     return this.authService.login(loginData);
   }
   @Public()
   @Post('register/entrenador')
-  register(@Body() registerData: registerEntrenadorDto) {
+  register(@Body() registerData: RegisterEntrenadorDto) {
     return this.authService.registerEntrenador(registerData);
   }
   @Public()
   @Post('register/alumno')
-  registerAlumno(@Body() registerData: registerAlumnoDto) {
+  registerAlumno(@Body() registerData: RegisterAlumnoDto) {
     return this.authService.registerAlumno(registerData);
   }
 }

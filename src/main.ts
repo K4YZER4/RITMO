@@ -1,11 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
-import { PrismaExceptionFilter } from './common/filter/prisma-exception.filter';
+import { AppValidationPipe } from './common/pipes/app-validation.pipe';
+import { GlobalExceptionFilter } from './common/filter/app-global.filter';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.useGlobalPipes(new ValidationPipe());
-  app.useGlobalFilters(new PrismaExceptionFilter());
+  app.useGlobalPipes(new AppValidationPipe());
+  app.useGlobalFilters(new GlobalExceptionFilter());
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

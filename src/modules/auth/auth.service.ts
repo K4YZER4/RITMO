@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { registerEntrenadorDto } from './dto/registerEntrenador';
-import { loginDto } from './dto/login';
+import { RegisterEntrenadorDto } from './dto/registerEntrenador';
+import { LoginDto } from './dto/login';
 import * as bcrypt from 'bcrypt';
-import { registerAlumnoDto } from './dto/registerAlumno';
+import { RegisterAlumnoDto } from './dto/registerAlumno';
 import type { JwtPayload } from '../../common/types/jwt-payload';
 import { JwtService } from '@nestjs/jwt';
 @Injectable()
@@ -15,8 +15,8 @@ export class AuthService {
   private readonly seedHash: number = 10;
   //
   // Register method
-  //
-  async registerEntrenador(registerData: registerEntrenadorDto) {
+
+  async registerEntrenador(registerData: RegisterEntrenadorDto) {
     console.log('Registering user:', registerData);
     const hashedPassword = await bcrypt.hash(registerData.password, this.seedHash);
     const idSexo = registerData.sexo.toUpperCase() === 'MASCULINO' ? 1 : 2; // Assuming 1 for MASCULINO and 2 for FEMENINO
@@ -50,7 +50,7 @@ export class AuthService {
   //
   // Login method
   //
-  async login(loginData: loginDto) {
+  async login(loginData: LoginDto) {
     console.log('Logging in user:', loginData);
     const user = await this.prisma.usuario.findUnique({
       where: { correo: loginData.correo },
@@ -72,7 +72,7 @@ export class AuthService {
   //
   // Register Alumno method
   //
-  async registerAlumno(registerData: registerAlumnoDto) {
+  async registerAlumno(registerData: RegisterAlumnoDto) {
     console.log('Registering user:', registerData);
     const hashedPassword = await bcrypt.hash(registerData.password, this.seedHash);
     const idSexo = registerData.sexo.toUpperCase() === 'MASCULINO' ? 1 : 2; // Assuming 1 for MASCULINO and 2 for FEMENINO
