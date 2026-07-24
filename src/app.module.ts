@@ -5,6 +5,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { RutinasModule } from './modules/rutinas/rutinas.module';
+import { EjerciciosModule } from './modules/ejercicios/ejercicios.module';
 @Module({
   imports: [
     PrismaModule,
@@ -16,6 +18,8 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
         limit: 30,
       },
     ]),
+    RutinasModule,
+    EjerciciosModule,
   ],
   controllers: [AppController],
   providers: [
