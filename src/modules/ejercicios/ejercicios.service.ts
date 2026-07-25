@@ -44,10 +44,25 @@ export class EjerciciosService {
   // Delete method
   //
   async deleteEjercicioPersonalizado(deleteEjercicioDto: DeleteEjercicioDto) {
-    await this.prisma.ejercicioPersonalizado.delete({
+    const ejercicioPersonalizado = await this.prisma.ejercicioPersonalizado.findUnique({
       where: {
         id: deleteEjercicioDto.id,
         createdByUsuario: deleteEjercicioDto.created_by_usuario,
+      },
+    });
+    if (!ejercicioPersonalizado) {
+      return {
+        success: false,
+        message: 'Ejercicio personalizado no encontrado',
+      };
+    }
+    await this.prisma.ejercicioPersonalizado.update({
+      where: {
+        id: deleteEjercicioDto.id,
+        createdByUsuario: deleteEjercicioDto.created_by_usuario,
+      },
+      data: {
+        activa: false,
       },
     });
     return {
