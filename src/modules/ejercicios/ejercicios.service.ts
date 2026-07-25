@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateEjercicioPersonalizadoDto } from './dto/create-ejercicio.dto';
 import { DeleteEjercicioDto } from './dto/delete-ejercicio.dto';
+import { UpdateEjercicioPersonalizadoDto } from './dto/update-ejercicio.dto';
 @Injectable()
 export class EjerciciosService {
   constructor(private prisma: PrismaService) {}
@@ -43,22 +44,10 @@ export class EjerciciosService {
   //
   // Delete method
   //
-  async deleteEjercicioPersonalizado(deleteEjercicioDto: DeleteEjercicioDto) {
-    const ejercicioPersonalizado = await this.prisma.ejercicioPersonalizado.findUnique({
-      where: {
-        id: deleteEjercicioDto.id,
-        createdByUsuario: deleteEjercicioDto.created_by_usuario,
-      },
-    });
-    if (!ejercicioPersonalizado) {
-      return {
-        success: false,
-        message: 'Ejercicio personalizado no encontrado',
-      };
-    }
+  async deleteEjercicioPersonalizado(deleteEjercicioDto: DeleteEjercicioDto, id: number) {
     await this.prisma.ejercicioPersonalizado.update({
       where: {
-        id: deleteEjercicioDto.id,
+        id: id,
         createdByUsuario: deleteEjercicioDto.created_by_usuario,
       },
       data: {
@@ -68,6 +57,67 @@ export class EjerciciosService {
     return {
       success: true,
       message: 'Ejercicio personalizado desactivado exitosamente',
+    };
+  }
+  //
+  // Update method
+  //
+  async updateEjercicioPersonalizado(
+    updateEjercicioPersonalizadoDto: UpdateEjercicioPersonalizadoDto,
+    id: number,
+  ) {
+    await this.prisma.ejercicioPersonalizado.update({
+      where: {
+        id: id,
+        createdByUsuario: updateEjercicioPersonalizadoDto.created_by_usuario,
+      },
+      data: {
+        nombre: updateEjercicioPersonalizadoDto.nombre,
+        descripcion: updateEjercicioPersonalizadoDto.descripcion,
+        urlImagen: updateEjercicioPersonalizadoDto.url_imagen,
+        linkInformacion: updateEjercicioPersonalizadoDto.link_informacion,
+        activa: updateEjercicioPersonalizadoDto.activa,
+      },
+    });
+    if (updateEjercicioPersonalizadoDto.musculos.length > 0) {
+      await this.prisma.ejercicioPersonalizadoMusculo.deleteMany({
+        where: {
+          idEjercicioPersonalizado: id,
+        },
+      });
+    }
+    if (
+      updateEjercicioPersonalizadoDto.equipos !== undefined &&
+      updateEjercicioPersonalizadoDto.equipos.length > 0
+    ) {
+      await this.prisma.ejercicioPersonalizadoEquipo.deleteMany({
+        where: {
+          idEjercicioPersonalizado: id,
+        },
+      });
+    }
+    if (updateEjercicioPersonalizadoDto.musculos.length > 0) {
+      await this.prisma.ejercicioPersonalizadoMusculo.createMany({
+        data: updateEjercicioPersonalizadoDto.musculos.map((idMusculo) => ({
+          idEjercicioPersonalizado: id,
+          idMusculo: idMusculo,
+        })),
+      });
+    }
+    if (
+      updateEjercicioPersonalizadoDto.equipos !== undefined &&
+      updateEjercicioPersonalizadoDto.equipos.length > 0
+    ) {
+      await this.prisma.ejercicioPersonalizadoEquipo.createMany({
+        data: updateEjercicioPersonalizadoDto.equipos.map((idEquipo) => ({
+          idEjercicioPersonalizado: id,
+          idEquipo: idEquipo,
+        })),
+      });
+    }
+    return {
+      success: true,
+      message: 'Ejercicio personalizado actualizado exitosamente',
     };
   }
 }
