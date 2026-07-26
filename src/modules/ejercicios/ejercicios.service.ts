@@ -39,7 +39,13 @@ export class EjerciciosService {
         })),
       });
     }
-    return ejercicioPersonalizado;
+    return {
+      success: true,
+      message: 'Ejercicio personalizado creado exitosamente',
+      data: {
+        id: ejercicioPersonalizado.id.toString(),
+      },
+    };
   }
   //
   // Delete method

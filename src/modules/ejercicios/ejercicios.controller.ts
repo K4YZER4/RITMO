@@ -4,7 +4,7 @@ import { CreateEjercicioPersonalizadoDto } from './dto/create-ejercicio.dto';
 import { UpdateEjercicioPersonalizadoDto } from './dto/update-ejercicio.dto';
 import { DeleteEjercicioDto } from './dto/delete-ejercicio.dto';
 import { IdNumberDto } from './dto/id-number.dto';
-@Controller('ejercicios')
+@Controller('ejerciciosPersonalizados')
 export class EjerciciosController {
   constructor(private readonly ejerciciosService: EjerciciosService) {}
   @Post()
