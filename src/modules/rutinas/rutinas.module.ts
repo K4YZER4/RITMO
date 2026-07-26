@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { RutinasService } from './rutinas.service';
 import { RutinasController } from './rutinas.controller';
-
+import { PrismaService } from '../../prisma/prisma.service';
 @Module({
   controllers: [RutinasController],
-  providers: [RutinasService],
+  providers: [RutinasService, PrismaService],
 })
 export class RutinasModule {}

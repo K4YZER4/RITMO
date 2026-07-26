@@ -10,35 +10,38 @@ export class EjerciciosService {
   async createEjercicioPersonalizado(
     createEjercicioPersonalizadoDto: CreateEjercicioPersonalizadoDto,
   ) {
-    const ejercicioPersonalizado = await this.prisma.ejercicioPersonalizado.create({
-      data: {
-        createdByUsuario: createEjercicioPersonalizadoDto.created_by_usuario,
-        nombre: createEjercicioPersonalizadoDto.nombre,
-        descripcion: createEjercicioPersonalizadoDto.descripcion,
-        urlImagen: createEjercicioPersonalizadoDto.url_imagen,
-        linkInformacion: createEjercicioPersonalizadoDto.link_informacion,
-        activa: createEjercicioPersonalizadoDto.activa ?? true,
-      },
+    const ejercicioPersonalizado = await this.prisma.$transaction(async (tx) => {
+      const ejercicioPersonalizado = await tx.ejercicioPersonalizado.create({
+        data: {
+          createdByUsuario: createEjercicioPersonalizadoDto.created_by_usuario,
+          nombre: createEjercicioPersonalizadoDto.nombre,
+          descripcion: createEjercicioPersonalizadoDto.descripcion,
+          urlImagen: createEjercicioPersonalizadoDto.url_imagen,
+          linkInformacion: createEjercicioPersonalizadoDto.link_informacion,
+          activa: createEjercicioPersonalizadoDto.activa ?? true,
+        },
+      });
+      if (createEjercicioPersonalizadoDto.musculos.length > 0) {
+        await tx.ejercicioPersonalizadoMusculo.createMany({
+          data: createEjercicioPersonalizadoDto.musculos.map((idMusculo) => ({
+            idEjercicioPersonalizado: ejercicioPersonalizado.id,
+            idMusculo: idMusculo,
+          })),
+        });
+      }
+      if (
+        createEjercicioPersonalizadoDto.equipos !== undefined &&
+        createEjercicioPersonalizadoDto.equipos.length > 0
+      ) {
+        await tx.ejercicioPersonalizadoEquipo.createMany({
+          data: createEjercicioPersonalizadoDto.equipos.map((idEquipo) => ({
+            idEjercicioPersonalizado: ejercicioPersonalizado.id,
+            idEquipo: idEquipo,
+          })),
+        });
+      }
+      return ejercicioPersonalizado;
     });
-    if (createEjercicioPersonalizadoDto.musculos.length > 0) {
-      await this.prisma.ejercicioPersonalizadoMusculo.createMany({
-        data: createEjercicioPersonalizadoDto.musculos.map((idMusculo) => ({
-          idEjercicioPersonalizado: ejercicioPersonalizado.id,
-          idMusculo: idMusculo,
-        })),
-      });
-    }
-    if (
-      createEjercicioPersonalizadoDto.equipos !== undefined &&
-      createEjercicioPersonalizadoDto.equipos.length > 0
-    ) {
-      await this.prisma.ejercicioPersonalizadoEquipo.createMany({
-        data: createEjercicioPersonalizadoDto.equipos.map((idEquipo) => ({
-          idEjercicioPersonalizado: ejercicioPersonalizado.id,
-          idEquipo: idEquipo,
-        })),
-      });
-    }
     return {
       success: true,
       message: 'Ejercicio personalizado creado exitosamente',
