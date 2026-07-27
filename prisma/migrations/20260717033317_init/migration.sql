@@ -11,6 +11,7 @@ CREATE SCHEMA core;
 CREATE SCHEMA entrenador;
 CREATE SCHEMA alumno;
 CREATE SCHEMA app_user;
+CREATE TYPE app_user.user_role AS ENUM ('ALUMNO', 'ENTRENADOR');
 
 -- TABLAS CORE
 CREATE TABLE core.redes_sociales (
@@ -110,6 +111,7 @@ CREATE TABLE ubi.localidad (
 CREATE TABLE app_user.usuario (
   id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
   id_sexo SMALLINT NOT NULL,
+  role app_user.user_role NOT NULL,
   nombre VARCHAR(20) NOT NULL,
   apellido_paterno VARCHAR(20) NOT NULL,
   apellido_materno VARCHAR(20),

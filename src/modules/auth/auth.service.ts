@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegisterEntrenadorDto } from './dto/registerEntrenador';
 import { LoginDto } from './dto/login';
@@ -6,6 +7,7 @@ import * as bcrypt from 'bcrypt';
 import { RegisterAlumnoDto } from './dto/registerAlumno';
 import type { JwtPayload } from '../../common/types/jwt-payload';
 import { JwtService } from '@nestjs/jwt';
+import { DB_SEXO_IDS } from '../../common/constants/db-sexo';
 @Injectable()
 export class AuthService {
   constructor(
@@ -19,7 +21,7 @@ export class AuthService {
   async registerEntrenador(registerData: RegisterEntrenadorDto) {
     console.log('Registering user:', registerData);
     const hashedPassword = await bcrypt.hash(registerData.password, this.seedHash);
-    const idSexo = registerData.sexo.toUpperCase() === 'MASCULINO' ? 1 : 2; // Assuming 1 for MASCULINO and 2 for FEMENINO
+    const idSexo = registerData.sexo === 'MASCULINO' ? DB_SEXO_IDS.MASCULINO : DB_SEXO_IDS.FEMENINO;
     await this.prisma.$transaction(async (tx) => {
       const user = await tx.usuario.create({
         data: {
@@ -29,12 +31,10 @@ export class AuthService {
           correo: registerData.correo,
           hashedPassword: hashedPassword,
           fechaNacimiento: new Date(registerData.fecha_nacimiento),
+          role: 'ENTRENADOR',
           idSexo: idSexo,
         },
       });
-      if (!user) {
-        throw new Error('Error al registrar el usuario');
-      }
       await tx.entrenador.create({
         data: {
           idUsuario: user.id,
@@ -56,16 +56,12 @@ export class AuthService {
       where: { correo: loginData.correo },
     });
     if (!user) {
-      throw new Error('Usuario no encontrado');
+      throw new UnauthorizedException('Usuario no encontrado');
     }
     if (!(await bcrypt.compare(loginData.password, user.hashedPassword))) {
-      throw new Error('Contraseña incorrecta');
+      throw new UnauthorizedException('Contraseña incorrecta');
     }
-    const entrenador = await this.prisma.entrenador.findUnique({
-      where: { idUsuario: user.id },
-    });
-    const role = entrenador ? 'entrenador' : 'alumno';
-    const payload: JwtPayload = { sub: user.id, correo: user.correo, role: role };
+    const payload: JwtPayload = { sub: user.id, correo: user.correo, role: user.role };
     const token = this.jwtService.sign(payload);
     return { message: 'Inicio de sesión exitoso', token };
   }
@@ -75,11 +71,12 @@ export class AuthService {
   async registerAlumno(registerData: RegisterAlumnoDto) {
     console.log('Registering user:', registerData);
     const hashedPassword = await bcrypt.hash(registerData.password, this.seedHash);
-    const idSexo = registerData.sexo.toUpperCase() === 'MASCULINO' ? 1 : 2; // Assuming 1 for MASCULINO and 2 for FEMENINO
+    const idSexo = registerData.sexo === 'MASCULINO' ? DB_SEXO_IDS.MASCULINO : DB_SEXO_IDS.FEMENINO;
     await this.prisma.$transaction(async (tx) => {
       const user = await tx.usuario.create({
         data: {
           nombre: registerData.nombre,
+          role: 'ALUMNO',
           apellidoPaterno: registerData.apellido_paterno,
           apellidoMaterno: registerData.apellido_materno,
           correo: registerData.correo,
@@ -88,9 +85,6 @@ export class AuthService {
           idSexo: idSexo,
         },
       });
-      if (!user) {
-        throw new Error('Error al registrar el usuario');
-      }
       const numeroCelularString = registerData.numero_celular.toString();
       await tx.alumno.create({
         data: {

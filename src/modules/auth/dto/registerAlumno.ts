@@ -21,7 +21,7 @@ export class RegisterAlumnoDto {
   @IsNotEmpty({ message: AUTH_VALIDATION_ERRORS.REQUIRED_SEX })
   @MinLength(2, { message: AUTH_VALIDATION_ERRORS.SEX_TOO_SHORT })
   @MaxLength(20, { message: AUTH_VALIDATION_ERRORS.SEX_TOO_LONG })
-  sexo!: string;
+  sexo!: 'MASCULINO' | 'FEMENINO';
 
   @IsString({ message: AUTH_VALIDATION_ERRORS.INVALID_LAST_NAME })
   @IsNotEmpty({ message: AUTH_VALIDATION_ERRORS.REQUIRED_LAST_NAME })

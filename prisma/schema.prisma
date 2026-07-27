@@ -6,7 +6,12 @@ datasource db {
   provider = "postgresql"
   schemas  = ["alumno", "app_user", "core", "entrenador", "ubi"]
 }
+enum UserRole {
+  ALUMNO
+  ENTRENADOR
 
+  @@schema("app_user")
+}
 model Pais {
   id                Int                 @id @default(autoincrement()) @map("id")
   nombre            String              @map("nombre") @db.VarChar(50)
@@ -175,6 +180,7 @@ model CategoriaRutina {
 model Usuario {
   id                        String                      @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
   idSexo                    Int                         @map("id_sexo") @db.SmallInt
+  role UserRole @map("role")
   nombre                    String                      @map("nombre") @db.VarChar(20)
   apellidoPaterno           String                      @map("apellido_paterno") @db.VarChar(20)
   apellidoMaterno           String?                     @map("apellido_materno") @db.VarChar(20)
