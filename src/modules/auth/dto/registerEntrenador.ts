@@ -1,5 +1,5 @@
 import { IsNotEmpty, IsEmail, IsString, MaxLength, MinLength, IsDateString } from 'class-validator';
-import { AUTH_VALIDATION_ERRORS } from '../../../common/exception/auth-validation-errors';
+import { AUTH_VALIDATION_ERRORS } from '../../../common/exception/errors/auth-validation-errors';
 
 export class RegisterEntrenadorDto {
   @IsString({ message: AUTH_VALIDATION_ERRORS.INVALID_NAME })

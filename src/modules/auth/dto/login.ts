@@ -1,5 +1,5 @@
 import { IsEmail, IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
-import { AUTH_VALIDATION_ERRORS } from '../../../common/exception/auth-validation-errors';
+import { AUTH_VALIDATION_ERRORS } from '../../../common/exception/errors/auth-validation-errors';
 
 export class LoginDto {
   @IsEmail({}, { message: AUTH_VALIDATION_ERRORS.INVALID_EMAIL })

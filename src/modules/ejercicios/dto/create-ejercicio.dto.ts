@@ -13,7 +13,7 @@ import {
   IsUUID,
   MaxLength,
 } from 'class-validator';
-import { EJERCICIOS_VALIDATION_ERRORS } from '../../../common/exception/ejercicios-validation-errors';
+import { EJERCICIOS_VALIDATION_ERRORS } from '../../../common/exception/errors/ejercicios-validation-errors';
 
 export class CreateEjercicioPersonalizadoDto {
   @IsUUID(undefined, {

@@ -1,4 +1,4 @@
-import { validationMessage } from './validation-message';
+import { validationMessage } from '../validation-message';
 
 export const AUTH_VALIDATION_ERRORS = {
   REQUIRED_EMAIL: validationMessage('REQUIRED_EMAIL', 'El correo es obligatorio.'),

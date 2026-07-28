@@ -1,23 +1,25 @@
 import { IsInt, IsNotEmpty, IsString, IsUUID, MaxLength, Min } from 'class-validator';
 import { Type } from 'class-transformer';
+import { RUTINAS_VALIDATION_ERRORS } from '../../../common/exception/errors/rutinas-validation-errors';
 
 export class CreateRutinaDto {
-  @IsUUID('4', { message: 'created_by_usuario debe ser un UUID válido' })
-  @IsNotEmpty({ message: 'created_by_usuario es obligatorio' })
+  @IsUUID('4', { message: RUTINAS_VALIDATION_ERRORS.INVALID_CREATED_BY_USUARIO })
+  @IsNotEmpty({ message: RUTINAS_VALIDATION_ERRORS.REQUIRED_CREATED_BY_USUARIO })
   created_by_usuario!: string;
 
-  @IsString({ message: 'nombre debe ser texto' })
-  @IsNotEmpty({ message: 'nombre es obligatorio' })
-  @MaxLength(100, { message: 'nombre no puede exceder 100 caracteres' })
+  @IsString({ message: RUTINAS_VALIDATION_ERRORS.INVALID_RUTINA_NOMBRE })
+  @IsNotEmpty({ message: RUTINAS_VALIDATION_ERRORS.REQUIRED_RUTINA_NOMBRE })
+  @MaxLength(100, { message: RUTINAS_VALIDATION_ERRORS.RUTINA_NOMBRE_TOO_LONG })
   nombre!: string;
 
-  @IsString({ message: 'descripcion debe ser texto' })
-  @IsNotEmpty({ message: 'descripcion es obligatoria' })
-  @MaxLength(1000, { message: 'descripcion no puede exceder 1000 caracteres' })
+  @IsString({ message: RUTINAS_VALIDATION_ERRORS.INVALID_RUTINA_DESCRIPCION })
+  @IsNotEmpty({ message: RUTINAS_VALIDATION_ERRORS.REQUIRED_RUTINA_DESCRIPCION })
+  @MaxLength(1000, { message: RUTINAS_VALIDATION_ERRORS.RUTINA_DESCRIPCION_TOO_LONG })
   descripcion!: string;
 
+  @IsNotEmpty({ message: RUTINAS_VALIDATION_ERRORS.REQUIRED_CATEGORIA_RUTINA_ID })
   @Type(() => Number)
-  @IsInt({ message: 'id_categoria_rutina debe ser un entero' })
-  @Min(1, { message: 'id_categoria_rutina debe ser mayor a 0' })
+  @IsInt({ message: RUTINAS_VALIDATION_ERRORS.INVALID_CATEGORIA_RUTINA_ID })
+  @Min(1, { message: RUTINAS_VALIDATION_ERRORS.CATEGORIA_RUTINA_ID_TOO_LOW })
   id_categoria_rutina!: number;
 }
