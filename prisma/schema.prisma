@@ -11,6 +11,7 @@ enum UserRole {
   ENTRENADOR
 
   @@schema("app_user")
+  @@map("user_role")
 }
 model Pais {
   id                Int                 @id @default(autoincrement()) @map("id")

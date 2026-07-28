@@ -8,6 +8,7 @@ import { RegisterAlumnoDto } from './dto/registerAlumno';
 import type { JwtPayload } from '../../common/types/jwt-payload';
 import { JwtService } from '@nestjs/jwt';
 import { DB_SEXO_IDS } from '../../common/constants/db-sexo';
+import { UserRole } from '@prisma/client';
 @Injectable()
 export class AuthService {
   constructor(
@@ -19,9 +20,9 @@ export class AuthService {
   // Register method
 
   async registerEntrenador(registerData: RegisterEntrenadorDto) {
-    console.log('Registering user:', registerData);
     const hashedPassword = await bcrypt.hash(registerData.password, this.seedHash);
     const idSexo = registerData.sexo === 'MASCULINO' ? DB_SEXO_IDS.MASCULINO : DB_SEXO_IDS.FEMENINO;
+
     await this.prisma.$transaction(async (tx) => {
       const user = await tx.usuario.create({
         data: {
@@ -31,7 +32,7 @@ export class AuthService {
           correo: registerData.correo,
           hashedPassword: hashedPassword,
           fechaNacimiento: new Date(registerData.fecha_nacimiento),
-          role: 'ENTRENADOR',
+          role: UserRole.ENTRENADOR,
           idSexo: idSexo,
         },
       });
@@ -51,7 +52,6 @@ export class AuthService {
   // Login method
   //
   async login(loginData: LoginDto) {
-    console.log('Logging in user:', loginData);
     const user = await this.prisma.usuario.findUnique({
       where: { correo: loginData.correo },
     });
@@ -69,14 +69,13 @@ export class AuthService {
   // Register Alumno method
   //
   async registerAlumno(registerData: RegisterAlumnoDto) {
-    console.log('Registering user:', registerData);
     const hashedPassword = await bcrypt.hash(registerData.password, this.seedHash);
     const idSexo = registerData.sexo === 'MASCULINO' ? DB_SEXO_IDS.MASCULINO : DB_SEXO_IDS.FEMENINO;
     await this.prisma.$transaction(async (tx) => {
       const user = await tx.usuario.create({
         data: {
           nombre: registerData.nombre,
-          role: 'ALUMNO',
+          role: UserRole.ALUMNO,
           apellidoPaterno: registerData.apellido_paterno,
           apellidoMaterno: registerData.apellido_materno,
           correo: registerData.correo,
