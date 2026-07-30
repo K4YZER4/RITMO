@@ -119,3 +119,9 @@ INSERT INTO core.sexo (nombre)
 VALUES
   ('MASCULINO'),
   ('FEMENINO');
+
+  INSERT INTO entrenador.entrenador_plan (cantidad_alumno, nombre, precio)
+  VALUES
+  (10, 'Basico', 100.00),
+  (20, 'Intermedio', 200.00),
+  (30, 'Avanzado', 300.00);

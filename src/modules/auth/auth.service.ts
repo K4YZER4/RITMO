@@ -72,6 +72,32 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(registerData.password, this.seedHash);
     const idSexo = registerData.sexo === 'MASCULINO' ? DB_SEXO_IDS.MASCULINO : DB_SEXO_IDS.FEMENINO;
     await this.prisma.$transaction(async (tx) => {
+      const numeroAlumno = await tx.alumno.count({
+        where: {
+          idEntrenadorActual: registerData.id_entrenador_actual,
+        },
+      });
+      const entrenador = await tx.entrenador.findUnique({
+        where: {
+          idUsuario: registerData.id_entrenador_actual,
+        },
+      });
+      if (!entrenador) {
+        throw new UnauthorizedException('Entrenador no encontrado');
+      }
+      const plan = await tx.entrenadorPlan.findUnique({
+        where: {
+          id: entrenador.idPlan,
+        },
+      });
+      if (!plan) {
+        throw new UnauthorizedException('Plan del entrenador no encontrado');
+      }
+      if (numeroAlumno >= plan.cantidadAlumno) {
+        throw new UnauthorizedException(
+          'El entrenador ha alcanzado el límite de alumnos para su plan',
+        );
+      }
       const user = await tx.usuario.create({
         data: {
           nombre: registerData.nombre,
