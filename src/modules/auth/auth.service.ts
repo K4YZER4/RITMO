@@ -10,6 +10,8 @@ import { JwtService } from '@nestjs/jwt';
 import { DB_SEXO_IDS } from '../../common/constants/db-sexo';
 import { UserRole } from '@prisma/client';
 import { CambiarAlumnoDto } from './dto/cambiar-alumno.dto';
+import { CancelarAlumnoDto } from './dto/cancelar-alumno.dto';
+import { IsUUIDDto } from './dto/id-uuid.dto';
 @Injectable()
 export class AuthService {
   constructor(
@@ -124,7 +126,7 @@ export class AuthService {
       }
       await this.validatePLanYAlumnosLimites(cambiarData.idEntrenador);
       const alumnoUsuario = await tx.usuario.findUnique({
-        where: { id: cambiarData.idAlumno },
+        where: { id: cambiarData.correo_alumno },
       });
       if (!alumnoUsuario || alumnoUsuario.role !== UserRole.ALUMNO) {
         throw new UnauthorizedException('Alumno no encontrado');
@@ -137,10 +139,44 @@ export class AuthService {
         throw new UnauthorizedException('Contraseña incorrecta');
       }
       await tx.alumno.update({
-        where: { idUsuario: cambiarData.idAlumno },
+        where: { idUsuario: cambiarData.correo_alumno },
         data: { idEntrenadorActual: cambiarData.idEntrenador },
       });
       return { success: true, message: 'Alumno cambiado exitosamente' };
+    });
+  }
+  async cancelarAlumno(cancelarData: CancelarAlumnoDto, idAlumno: IsUUIDDto) {
+    await this.prisma.$transaction(async (tx) => {
+      const usuarioEntrenador = await tx.usuario.findUnique({
+        where: { id: cancelarData.id_entrenador },
+      });
+      if (!usuarioEntrenador || usuarioEntrenador.role !== UserRole.ENTRENADOR) {
+        throw new UnauthorizedException('El usuario no es un entrenador válido');
+      }
+      const entrenador = await tx.entrenador.findUnique({
+        where: { idUsuario: cancelarData.id_entrenador },
+      });
+      if (!entrenador) {
+        throw new UnauthorizedException('Entrenador no encontrado');
+      }
+      const contraseñaAutorizada = await bcrypt.compare(
+        cancelarData.contraseña_entrenador,
+        usuarioEntrenador.hashedPassword,
+      );
+      if (!contraseñaAutorizada) {
+        throw new UnauthorizedException('Contraseña incorrecta');
+      }
+      const alumnoUsuario = await tx.usuario.findUnique({
+        where: { id: idAlumno.id },
+      });
+      if (!alumnoUsuario || alumnoUsuario.role !== UserRole.ALUMNO) {
+        throw new UnauthorizedException('Alumno no encontrado');
+      }
+      await tx.alumno.update({
+        where: { idUsuario: idAlumno.id },
+        data: { idEntrenadorActual: null },
+      });
+      return { success: true, message: 'Alumno cancelado exitosamente' };
     });
   }
   async validatePLanYAlumnosLimites(idEntrenador: string) {
