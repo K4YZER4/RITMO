@@ -6,13 +6,7 @@ datasource db {
   provider = "postgresql"
   schemas  = ["alumno", "app_user", "core", "entrenador", "ubi"]
 }
-enum UserRole {
-  ALUMNO
-  ENTRENADOR
 
-  @@schema("app_user")
-  @@map("user_role")
-}
 model Pais {
   id                Int                 @id @default(autoincrement()) @map("id")
   nombre            String              @map("nombre") @db.VarChar(50)
@@ -181,7 +175,7 @@ model CategoriaRutina {
 model Usuario {
   id                        String                      @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
   idSexo                    Int                         @map("id_sexo") @db.SmallInt
-  role UserRole @map("role")
+  role                      UserRole                    @map("role")
   nombre                    String                      @map("nombre") @db.VarChar(20)
   apellidoPaterno           String                      @map("apellido_paterno") @db.VarChar(20)
   apellidoMaterno           String?                     @map("apellido_materno") @db.VarChar(20)
@@ -503,22 +497,12 @@ model EntrenadorTema {
   @@map("entrenador_tema")
   @@schema("entrenador")
 }
-model EntrenadorPlan {
-  id             BigInt       @id @default(autoincrement()) @map("id")
-  cantidadAlumno Int          @map("cantidad_alumno")
-  nombre         String       @db.VarChar(50) @map("nombre")
-  precio         Decimal       @db.Decimal(10,2) @map("precio")
 
-  entrenadores   Entrenador[]
-
-  @@map("entrenador_plan")
-  @@schema("entrenador")
-}
 model Entrenador {
   idUsuario                 String                      @id @map("id_usuario") @db.Uuid
   slug                      String                      @map("slug")
   idEstado                  Int                         @default(1) @map("id_estado")
-  idPlan BigInt @default(1) @map("id_plan")
+  idPlan                    Int                         @default(1) @map("id_plan")
   fechaEntrenador           DateTime                    @map("fecha_entrenador") @db.Date
   idLocalidad               BigInt?                     @map("id_localidad")
   verificacionStatus        Boolean                     @default(false) @map("verificacion_status")
@@ -530,13 +514,13 @@ model Entrenador {
   alumnoEntrenadorHistorial AlumnoEntrenadorHistorial[]
   estado                    Estado                      @relation("estado_entrenador", fields: [idEstado], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entrenador_id_estado_foreign")
   localidad                 Localidad?                  @relation(fields: [idLocalidad], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entrenador_id_localidad_foreign")
+  plan                      plan                        @relation(fields: [idPlan], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entrenador_id_plan_foreign")
   tema                      EntrenadorTema              @relation(fields: [idTema], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entrenador_id_tema_foreign")
   usuario                   Usuario                     @relation(fields: [idUsuario], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entrenador_id_usuario_foreign")
   entrenadorCategorias      EntrenadorCategorias[]
   entrenadorGimnasio        EntrenadorGimnasio[]
   entrenadorRedesSociales   EntrenadorRedesSociales[]
   entrenadorSeccion         EntrenadorSeccion[]
-  plan EntrenadorPlan @relation(fields: [idPlan], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entrenador_id_plan_foreign")
 
   @@map("entrenador")
   @@schema("entrenador")
@@ -651,4 +635,84 @@ model Sexo {
 
   @@map("sexo")
   @@schema("core")
+}
+
+model pago {
+  id             Int              @id @default(autoincrement())
+  suscripcion_id Int
+  monto          Decimal          @db.Decimal(10, 2)
+  estado         estado_pago_enum @default(pendiente)
+  esta_pagado    Boolean          @default(false)
+  vence_en       DateTime         @db.Timestamptz(6)
+  pagado_en      DateTime?        @db.Timestamptz(6)
+  creado_en      DateTime         @default(now()) @db.Timestamptz(6)
+  actualizado_en DateTime         @default(now()) @db.Timestamptz(6)
+
+  @@schema("app_user")
+}
+
+model plan {
+  id              Int                   @id @default(autoincrement())
+  nombre          String
+  descripcion     String?
+  precio          Decimal               @db.Decimal(10, 2)
+  limite_alumnos  Int
+  intervalo_cobro billing_interval_enum
+  esta_activo     Boolean               @default(true)
+  creado_en       DateTime              @default(now()) @db.Timestamptz(6)
+  actualizado_en  DateTime              @default(now()) @db.Timestamptz(6)
+  entrenadores    Entrenador[]
+
+  @@schema("app_user")
+}
+
+model suscripcion {
+  id                    Int                     @id @default(autoincrement())
+  usuario_id            String                  @db.Uuid
+  plan_id               Int
+  estado                estado_suscripcion_enum @default(activa)
+  periodo_actual_inicio DateTime                @db.Timestamptz(6)
+  periodo_actual_fin    DateTime                @db.Timestamptz(6)
+  siguiente_cobro_en    DateTime?               @db.Timestamptz(6)
+  cancelada_en          DateTime?               @db.Timestamptz(6)
+  creado_en             DateTime                @default(now()) @db.Timestamptz(6)
+  actualizado_en        DateTime                @default(now()) @db.Timestamptz(6)
+
+  @@schema("app_user")
+}
+
+enum UserRole {
+  alumno
+  entrenador
+  admin
+
+  @@map("user_role")
+  @@schema("app_user")
+}
+
+enum billing_interval_enum {
+  mes
+  a_o @map("año")
+
+  @@schema("app_user")
+}
+
+enum estado_pago_enum {
+  pendiente
+  pagado
+  fallido
+  cancelado
+  reembolsado
+
+  @@schema("app_user")
+}
+
+enum estado_suscripcion_enum {
+  prueba
+  activa
+  morosa
+  cancelada
+  expirada
+
+  @@schema("app_user")
 }

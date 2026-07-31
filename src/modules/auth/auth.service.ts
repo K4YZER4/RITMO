@@ -9,6 +9,7 @@ import type { JwtPayload } from '../../common/types/jwt-payload';
 import { JwtService } from '@nestjs/jwt';
 import { DB_SEXO_IDS } from '../../common/constants/db-sexo';
 import { UserRole } from '@prisma/client';
+import { CambiarAlumnoDto } from './dto/cambiar-alumno.dto';
 @Injectable()
 export class AuthService {
   constructor(
@@ -72,32 +73,7 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(registerData.password, this.seedHash);
     const idSexo = registerData.sexo === 'MASCULINO' ? DB_SEXO_IDS.MASCULINO : DB_SEXO_IDS.FEMENINO;
     await this.prisma.$transaction(async (tx) => {
-      const numeroAlumno = await tx.alumno.count({
-        where: {
-          idEntrenadorActual: registerData.id_entrenador_actual,
-        },
-      });
-      const entrenador = await tx.entrenador.findUnique({
-        where: {
-          idUsuario: registerData.id_entrenador_actual,
-        },
-      });
-      if (!entrenador) {
-        throw new UnauthorizedException('Entrenador no encontrado');
-      }
-      const plan = await tx.entrenadorPlan.findUnique({
-        where: {
-          id: entrenador.idPlan,
-        },
-      });
-      if (!plan) {
-        throw new UnauthorizedException('Plan del entrenador no encontrado');
-      }
-      if (numeroAlumno >= plan.cantidadAlumno) {
-        throw new UnauthorizedException(
-          'El entrenador ha alcanzado el límite de alumnos para su plan',
-        );
-      }
+      await this.validatePLanYAlumnosLimites(registerData.id_entrenador_actual);
       const user = await tx.usuario.create({
         data: {
           nombre: registerData.nombre,
@@ -128,5 +104,73 @@ export class AuthService {
       });
     });
     return { message: 'Usuario registrado exitosamente' };
+  }
+  //
+  // Cambiar Alumno method
+  //
+  async cambiarAlumno(cambiarData: CambiarAlumnoDto) {
+    await this.prisma.$transaction(async (tx) => {
+      const usuarioEntrenador = await tx.usuario.findUnique({
+        where: { id: cambiarData.idEntrenador },
+      });
+      if (!usuarioEntrenador || usuarioEntrenador.role !== UserRole.ENTRENADOR) {
+        throw new UnauthorizedException('El usuario no es un entrenador válido');
+      }
+      const entrenador = await tx.entrenador.findUnique({
+        where: { idUsuario: cambiarData.idEntrenador },
+      });
+      if (!entrenador) {
+        throw new UnauthorizedException('Entrenador no encontrado');
+      }
+      await this.validatePLanYAlumnosLimites(cambiarData.idEntrenador);
+      const alumnoUsuario = await tx.usuario.findUnique({
+        where: { id: cambiarData.idAlumno },
+      });
+      if (!alumnoUsuario || alumnoUsuario.role !== UserRole.ALUMNO) {
+        throw new UnauthorizedException('Alumno no encontrado');
+      }
+      const isPasswordValid = await bcrypt.compare(
+        cambiarData.constraseña_alumno,
+        alumnoUsuario.hashedPassword,
+      );
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Contraseña incorrecta');
+      }
+      await tx.alumno.update({
+        where: { idUsuario: cambiarData.idAlumno },
+        data: { idEntrenadorActual: cambiarData.idEntrenador },
+      });
+      return { success: true, message: 'Alumno cambiado exitosamente' };
+    });
+  }
+  async validatePLanYAlumnosLimites(idEntrenador: string) {
+    await this.prisma.$transaction(async (tx) => {
+      const numeroAlumno = await tx.alumno.count({
+        where: {
+          idEntrenadorActual: idEntrenador,
+        },
+      });
+      const entrenador = await tx.entrenador.findUnique({
+        where: {
+          idUsuario: idEntrenador,
+        },
+      });
+      if (!entrenador) {
+        throw new UnauthorizedException('Entrenador no encontrado');
+      }
+      const plan = await tx.entrenadorPlan.findUnique({
+        where: {
+          id: entrenador.idPlan,
+        },
+      });
+      if (!plan) {
+        throw new UnauthorizedException('Plan del entrenador no encontrado');
+      }
+      if (numeroAlumno >= plan.cantidadAlumno) {
+        throw new UnauthorizedException(
+          'El entrenador ha alcanzado el límite de alumnos para su plan',
+        );
+      }
+    });
   }
 }
