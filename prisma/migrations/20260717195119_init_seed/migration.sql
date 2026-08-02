@@ -120,8 +120,14 @@ VALUES
   ('MASCULINO'),
   ('FEMENINO');
 
-  INSERT INTO app_user.plan (nombre, descripcion, precio, limite_alumnos, intervalo_cobro)
+  INSERT INTO app_user.plan_entrenador (nombre, descripcion, precio, limite_alumnos, intervalo_cobro)
   VALUES
   ('Basico', 'Plan básico para principiantes', 100.00, 10, 'mes'),
   ('Intermedio', 'Plan intermedio para usuarios avanzados', 200.00, 20, 'mes'),
   ('Avanzado', 'Plan avanzado para usuarios expertos', 300.00, 30, 'mes');
+
+  INSERT INTO app_user.plan_alumno (nombre, descripcion, precio, limite_ejercicios_personalizados, intervalo_cobro)
+  VALUES
+  ('Basico', 'Plan básico para principiantes', 0.00, 5, 'mes'),
+  ('Intermedio', 'Plan intermedio para usuarios avanzados', 100.00, 10, 'mes'),
+  ('Avanzado', 'Plan avanzado para usuarios expertos', 150.00, 15, 'mes');

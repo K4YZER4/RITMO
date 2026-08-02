@@ -35,7 +35,7 @@ export class AuthService {
           correo: registerData.correo,
           hashedPassword: hashedPassword,
           fechaNacimiento: new Date(registerData.fecha_nacimiento),
-          role: UserRole.ENTRENADOR,
+          role: UserRole.entrenador,
           idSexo: idSexo,
         },
       });
@@ -75,11 +75,16 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(registerData.password, this.seedHash);
     const idSexo = registerData.sexo === 'MASCULINO' ? DB_SEXO_IDS.MASCULINO : DB_SEXO_IDS.FEMENINO;
     await this.prisma.$transaction(async (tx) => {
+      let roleAlumno: UserRole = UserRole.alumno_con_entrenador;
+      if (!registerData.id_entrenador_actual) {
+        roleAlumno = UserRole.alumno;
+      }
       await this.validatePLanYAlumnosLimites(registerData.id_entrenador_actual);
+      const entrenador = registerData.id_entrenador_actual;
       const user = await tx.usuario.create({
         data: {
           nombre: registerData.nombre,
-          role: UserRole.ALUMNO,
+          role: roleAlumno,
           apellidoPaterno: registerData.apellido_paterno,
           apellidoMaterno: registerData.apellido_materno,
           correo: registerData.correo,
@@ -101,7 +106,7 @@ export class AuthService {
           lesionesPasadas: registerData.lesiones_pasadas,
           contactoEmergenciaNombre: registerData.contacto_emergencia_nombre,
           contactoEmergenciaTelefono: registerData.contacto_emergencia_telefono,
-          idEntrenadorActual: registerData.id_entrenador_actual,
+          idEntrenadorActual: entrenador,
         },
       });
     });
@@ -115,7 +120,7 @@ export class AuthService {
       const usuarioEntrenador = await tx.usuario.findUnique({
         where: { id: cambiarData.idEntrenador },
       });
-      if (!usuarioEntrenador || usuarioEntrenador.role !== UserRole.ENTRENADOR) {
+      if (!usuarioEntrenador || usuarioEntrenador.role !== UserRole.entrenador) {
         throw new UnauthorizedException('El usuario no es un entrenador válido');
       }
       const entrenador = await tx.entrenador.findUnique({
@@ -128,7 +133,7 @@ export class AuthService {
       const alumnoUsuario = await tx.usuario.findUnique({
         where: { id: cambiarData.correo_alumno },
       });
-      if (!alumnoUsuario || alumnoUsuario.role !== UserRole.ALUMNO) {
+      if (!alumnoUsuario || alumnoUsuario.role !== UserRole.alumno) {
         throw new UnauthorizedException('Alumno no encontrado');
       }
       const isPasswordValid = await bcrypt.compare(
@@ -145,12 +150,15 @@ export class AuthService {
       return { success: true, message: 'Alumno cambiado exitosamente' };
     });
   }
+  //
+  // Cancelar Alumno method
+  //
   async cancelarAlumno(cancelarData: CancelarAlumnoDto, idAlumno: IsUUIDDto) {
     await this.prisma.$transaction(async (tx) => {
       const usuarioEntrenador = await tx.usuario.findUnique({
         where: { id: cancelarData.id_entrenador },
       });
-      if (!usuarioEntrenador || usuarioEntrenador.role !== UserRole.ENTRENADOR) {
+      if (!usuarioEntrenador || usuarioEntrenador.role !== UserRole.entrenador) {
         throw new UnauthorizedException('El usuario no es un entrenador válido');
       }
       const entrenador = await tx.entrenador.findUnique({
@@ -169,7 +177,7 @@ export class AuthService {
       const alumnoUsuario = await tx.usuario.findUnique({
         where: { id: idAlumno.id },
       });
-      if (!alumnoUsuario || alumnoUsuario.role !== UserRole.ALUMNO) {
+      if (!alumnoUsuario || alumnoUsuario.role !== UserRole.alumno) {
         throw new UnauthorizedException('Alumno no encontrado');
       }
       await tx.alumno.update({
@@ -179,6 +187,11 @@ export class AuthService {
       return { success: true, message: 'Alumno cancelado exitosamente' };
     });
   }
+  //
+  //
+  //
+  // Function Validate Plan and Students Limits method
+  //
   async validatePLanYAlumnosLimites(idEntrenador: string) {
     await this.prisma.$transaction(async (tx) => {
       const numeroAlumno = await tx.alumno.count({
@@ -194,7 +207,7 @@ export class AuthService {
       if (!entrenador) {
         throw new UnauthorizedException('Entrenador no encontrado');
       }
-      const plan = await tx.entrenadorPlan.findUnique({
+      const plan = await tx.plan.findUnique({
         where: {
           id: entrenador.idPlan,
         },
@@ -202,7 +215,7 @@ export class AuthService {
       if (!plan) {
         throw new UnauthorizedException('Plan del entrenador no encontrado');
       }
-      if (numeroAlumno >= plan.cantidadAlumno) {
+      if (numeroAlumno >= plan.limite_alumnos) {
         throw new UnauthorizedException(
           'El entrenador ha alcanzado el límite de alumnos para su plan',
         );

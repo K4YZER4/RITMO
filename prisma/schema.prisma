@@ -514,7 +514,7 @@ model Entrenador {
   alumnoEntrenadorHistorial AlumnoEntrenadorHistorial[]
   estado                    Estado                      @relation("estado_entrenador", fields: [idEstado], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entrenador_id_estado_foreign")
   localidad                 Localidad?                  @relation(fields: [idLocalidad], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entrenador_id_localidad_foreign")
-  plan                      plan                        @relation(fields: [idPlan], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entrenador_id_plan_foreign")
+  plan                      plan_entrenador             @relation(fields: [idPlan], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entrenador_id_plan_foreign")
   tema                      EntrenadorTema              @relation(fields: [idTema], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entrenador_id_tema_foreign")
   usuario                   Usuario                     @relation(fields: [idUsuario], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entrenador_id_usuario_foreign")
   entrenadorCategorias      EntrenadorCategorias[]
@@ -605,6 +605,7 @@ model Alumno {
   idUsuario                  String      @id @map("id_usuario") @db.Uuid
   idEstado                   Int         @default(1) @map("id_estado")
   numeroCelular              String?     @map("numero_celular") @db.VarChar(20)
+  id_plan                    Int         @default(1)
   fechaInicioEntrenamiento   DateTime?   @map("fecha_inicio_entrenamiento") @db.Date
   objetivo                   String?     @map("objetivo")
   nivelActividad             String?     @map("nivel_actividad")
@@ -621,6 +622,7 @@ model Alumno {
   creadoPor                  Usuario?    @relation("usuario_alumno_creado", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_created_by_foreign")
   entrenadorActual           Entrenador? @relation("alumno_entrenador_actual", fields: [idEntrenadorActual], references: [idUsuario], onDelete: NoAction, onUpdate: NoAction, map: "alumno_id_entrenador_actual_foreign")
   estado                     Estado      @relation("estado_alumno", fields: [idEstado], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_id_estado_foreign")
+  plan_alumno                plan_alumno @relation(fields: [id_plan], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_id_plan_foreign")
   usuario                    Usuario     @relation("usuario_alumno", fields: [idUsuario], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_id_usuario_foreign")
   actualizadoPor             Usuario?    @relation("usuario_alumno_actualizado", fields: [updatedBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_updated_by_foreign")
 
@@ -651,21 +653,6 @@ model pago {
   @@schema("app_user")
 }
 
-model plan {
-  id              Int                   @id @default(autoincrement())
-  nombre          String
-  descripcion     String?
-  precio          Decimal               @db.Decimal(10, 2)
-  limite_alumnos  Int
-  intervalo_cobro billing_interval_enum
-  esta_activo     Boolean               @default(true)
-  creado_en       DateTime              @default(now()) @db.Timestamptz(6)
-  actualizado_en  DateTime              @default(now()) @db.Timestamptz(6)
-  entrenadores    Entrenador[]
-
-  @@schema("app_user")
-}
-
 model suscripcion {
   id                    Int                     @id @default(autoincrement())
   usuario_id            String                  @db.Uuid
@@ -681,10 +668,41 @@ model suscripcion {
   @@schema("app_user")
 }
 
+model plan_alumno {
+  id                               Int                   @id @default(autoincrement())
+  nombre                           String
+  descripcion                      String?
+  precio                           Decimal               @db.Decimal(10, 2)
+  limite_ejercicios_personalizados Int
+  intervalo_cobro                  billing_interval_enum
+  esta_activo                      Boolean               @default(true)
+  creado_en                        DateTime              @default(now()) @db.Timestamptz(6)
+  actualizado_en                   DateTime              @default(now()) @db.Timestamptz(6)
+  alumno                           Alumno[]
+
+  @@schema("app_user")
+}
+
+model plan_entrenador {
+  id              Int                   @id @default(autoincrement())
+  nombre          String
+  descripcion     String?
+  precio          Decimal               @db.Decimal(10, 2)
+  limite_alumnos  Int
+  intervalo_cobro billing_interval_enum
+  esta_activo     Boolean               @default(true)
+  creado_en       DateTime              @default(now()) @db.Timestamptz(6)
+  actualizado_en  DateTime              @default(now()) @db.Timestamptz(6)
+  entrenadores    Entrenador[]
+
+  @@schema("app_user")
+}
+
 enum UserRole {
   alumno
   entrenador
   admin
+  alumno_con_entrenador
 
   @@map("user_role")
   @@schema("app_user")

@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateEjercicioPersonalizadoDto } from './dto/create-ejercicio.dto';
 import { DeleteEjercicioDto } from './dto/delete-ejercicio.dto';
 import { UpdateEjercicioPersonalizadoDto } from './dto/update-ejercicio.dto';
+import { UserRole } from '@prisma/client';
 @Injectable()
 export class EjerciciosService {
   constructor(private prisma: PrismaService) {}
