@@ -7,6 +7,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { RutinasModule } from './modules/rutinas/rutinas.module';
 import { EjerciciosModule } from './modules/ejercicios/ejercicios.module';
+import { AlumnoEntrenadorModule } from './modules/alumno-entrenador/alumno-entrenador.module';
 @Module({
   imports: [
     PrismaModule,
@@ -20,6 +21,7 @@ import { EjerciciosModule } from './modules/ejercicios/ejercicios.module';
     ]),
     RutinasModule,
     EjerciciosModule,
+    AlumnoEntrenadorModule,
   ],
   controllers: [AppController],
   providers: [

@@ -9,19 +9,18 @@ import type { JwtPayload } from '../../common/types/jwt-payload';
 import { JwtService } from '@nestjs/jwt';
 import { DB_SEXO_IDS } from '../../common/constants/db-sexo';
 import { UserRole } from '@prisma/client';
-import { CambiarAlumnoDto } from './dto/cambiar-alumno.dto';
-import { CancelarAlumnoDto } from './dto/cancelar-alumno.dto';
-import { IsUUIDDto } from './dto/id-uuid.dto';
+import { AlumnoEntrenadorService } from '../alumno-entrenador/alumno-entrenador.service';
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly alumnoEntrenadorService: AlumnoEntrenadorService,
   ) {}
   private readonly seedHash: number = 10;
   //
   // Register method
-
+  //
   async registerEntrenador(registerData: RegisterEntrenadorDto) {
     const hashedPassword = await bcrypt.hash(registerData.password, this.seedHash);
     const idSexo = registerData.sexo === 'MASCULINO' ? DB_SEXO_IDS.MASCULINO : DB_SEXO_IDS.FEMENINO;
@@ -79,7 +78,10 @@ export class AuthService {
       if (!registerData.id_entrenador_actual) {
         roleAlumno = UserRole.alumno;
       }
-      await this.validatePLanYAlumnosLimites(registerData.id_entrenador_actual);
+      await this.alumnoEntrenadorService.validatePLanYAlumnosLimites(
+        registerData.id_entrenador_actual,
+        tx,
+      );
       const entrenador = registerData.id_entrenador_actual;
       const user = await tx.usuario.create({
         data: {
@@ -111,115 +113,5 @@ export class AuthService {
       });
     });
     return { message: 'Usuario registrado exitosamente' };
-  }
-  //
-  // Cambiar Alumno method
-  //
-  async cambiarAlumno(cambiarData: CambiarAlumnoDto) {
-    await this.prisma.$transaction(async (tx) => {
-      const usuarioEntrenador = await tx.usuario.findUnique({
-        where: { id: cambiarData.idEntrenador },
-      });
-      if (!usuarioEntrenador || usuarioEntrenador.role !== UserRole.entrenador) {
-        throw new UnauthorizedException('El usuario no es un entrenador válido');
-      }
-      const entrenador = await tx.entrenador.findUnique({
-        where: { idUsuario: cambiarData.idEntrenador },
-      });
-      if (!entrenador) {
-        throw new UnauthorizedException('Entrenador no encontrado');
-      }
-      await this.validatePLanYAlumnosLimites(cambiarData.idEntrenador);
-      const alumnoUsuario = await tx.usuario.findUnique({
-        where: { id: cambiarData.correo_alumno },
-      });
-      if (!alumnoUsuario || alumnoUsuario.role !== UserRole.alumno) {
-        throw new UnauthorizedException('Alumno no encontrado');
-      }
-      const isPasswordValid = await bcrypt.compare(
-        cambiarData.constraseña_alumno,
-        alumnoUsuario.hashedPassword,
-      );
-      if (!isPasswordValid) {
-        throw new UnauthorizedException('Contraseña incorrecta');
-      }
-      await tx.alumno.update({
-        where: { idUsuario: cambiarData.correo_alumno },
-        data: { idEntrenadorActual: cambiarData.idEntrenador },
-      });
-      return { success: true, message: 'Alumno cambiado exitosamente' };
-    });
-  }
-  //
-  // Cancelar Alumno method
-  //
-  async cancelarAlumno(cancelarData: CancelarAlumnoDto, idAlumno: IsUUIDDto) {
-    await this.prisma.$transaction(async (tx) => {
-      const usuarioEntrenador = await tx.usuario.findUnique({
-        where: { id: cancelarData.id_entrenador },
-      });
-      if (!usuarioEntrenador || usuarioEntrenador.role !== UserRole.entrenador) {
-        throw new UnauthorizedException('El usuario no es un entrenador válido');
-      }
-      const entrenador = await tx.entrenador.findUnique({
-        where: { idUsuario: cancelarData.id_entrenador },
-      });
-      if (!entrenador) {
-        throw new UnauthorizedException('Entrenador no encontrado');
-      }
-      const contraseñaAutorizada = await bcrypt.compare(
-        cancelarData.contraseña_entrenador,
-        usuarioEntrenador.hashedPassword,
-      );
-      if (!contraseñaAutorizada) {
-        throw new UnauthorizedException('Contraseña incorrecta');
-      }
-      const alumnoUsuario = await tx.usuario.findUnique({
-        where: { id: idAlumno.id },
-      });
-      if (!alumnoUsuario || alumnoUsuario.role !== UserRole.alumno) {
-        throw new UnauthorizedException('Alumno no encontrado');
-      }
-      await tx.alumno.update({
-        where: { idUsuario: idAlumno.id },
-        data: { idEntrenadorActual: null },
-      });
-      return { success: true, message: 'Alumno cancelado exitosamente' };
-    });
-  }
-  //
-  //
-  //
-  // Function Validate Plan and Students Limits method
-  //
-  async validatePLanYAlumnosLimites(idEntrenador: string) {
-    await this.prisma.$transaction(async (tx) => {
-      const numeroAlumno = await tx.alumno.count({
-        where: {
-          idEntrenadorActual: idEntrenador,
-        },
-      });
-      const entrenador = await tx.entrenador.findUnique({
-        where: {
-          idUsuario: idEntrenador,
-        },
-      });
-      if (!entrenador) {
-        throw new UnauthorizedException('Entrenador no encontrado');
-      }
-      const plan = await tx.plan.findUnique({
-        where: {
-          id: entrenador.idPlan,
-        },
-      });
-      if (!plan) {
-        throw new UnauthorizedException('Plan del entrenador no encontrado');
-      }
-      if (numeroAlumno >= plan.limite_alumnos) {
-        throw new UnauthorizedException(
-          'El entrenador ha alcanzado el límite de alumnos para su plan',
-        );
-      }
-    });
   }
 }
