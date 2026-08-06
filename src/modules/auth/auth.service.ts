@@ -1,5 +1,4 @@
-import { Injectable } from '@nestjs/common';
-import { UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegisterEntrenadorDto } from './dto/registerEntrenador';
 import { LoginDto } from './dto/login';
@@ -10,6 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import { DB_SEXO_IDS } from '../../common/constants/db-sexo';
 import { UserRole } from '@prisma/client';
 import { AlumnoEntrenadorService } from '../alumno-entrenador/alumno-entrenador.service';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -17,9 +17,10 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly alumnoEntrenadorService: AlumnoEntrenadorService,
   ) {}
+
   private readonly seedHash: number = 10;
   //
-  // Register method
+  // Register Entrenador method
   //
   async registerEntrenador(registerData: RegisterEntrenadorDto) {
     const hashedPassword = await bcrypt.hash(registerData.password, this.seedHash);
@@ -32,12 +33,13 @@ export class AuthService {
           apellidoPaterno: registerData.apellido_paterno,
           apellidoMaterno: registerData.apellido_materno,
           correo: registerData.correo,
-          hashedPassword: hashedPassword,
+          hashedPassword,
           fechaNacimiento: new Date(registerData.fecha_nacimiento),
           role: UserRole.entrenador,
-          idSexo: idSexo,
+          idSexo,
         },
       });
+
       await tx.entrenador.create({
         data: {
           idUsuario: user.id,
@@ -47,9 +49,9 @@ export class AuthService {
         },
       });
     });
+
     return { message: 'Usuario registrado exitosamente' };
   }
-
   //
   // Login method
   //
@@ -57,14 +59,18 @@ export class AuthService {
     const user = await this.prisma.usuario.findUnique({
       where: { correo: loginData.correo },
     });
+
     if (!user) {
       throw new UnauthorizedException('Usuario no encontrado');
     }
+
     if (!(await bcrypt.compare(loginData.password, user.hashedPassword))) {
       throw new UnauthorizedException('Contraseña incorrecta');
     }
+
     const payload: JwtPayload = { sub: user.id, correo: user.correo, role: user.role };
     const token = this.jwtService.sign(payload);
+
     return { message: 'Inicio de sesión exitoso', token };
   }
   //
@@ -73,16 +79,21 @@ export class AuthService {
   async registerAlumno(registerData: RegisterAlumnoDto) {
     const hashedPassword = await bcrypt.hash(registerData.password, this.seedHash);
     const idSexo = registerData.sexo === 'MASCULINO' ? DB_SEXO_IDS.MASCULINO : DB_SEXO_IDS.FEMENINO;
+
     await this.prisma.$transaction(async (tx) => {
       let roleAlumno: UserRole = UserRole.alumno_con_entrenador;
+
       if (!registerData.id_entrenador_actual) {
         roleAlumno = UserRole.alumno;
       }
-      await this.alumnoEntrenadorService.validatePLanYAlumnosLimites(
-        registerData.id_entrenador_actual,
-        tx,
-      );
-      const entrenador = registerData.id_entrenador_actual;
+
+      if (registerData.id_entrenador_actual) {
+        await this.alumnoEntrenadorService.validatePLanYAlumnosLimites(
+          registerData.id_entrenador_actual,
+          tx,
+        );
+      }
+
       const user = await tx.usuario.create({
         data: {
           nombre: registerData.nombre,
@@ -90,12 +101,14 @@ export class AuthService {
           apellidoPaterno: registerData.apellido_paterno,
           apellidoMaterno: registerData.apellido_materno,
           correo: registerData.correo,
-          hashedPassword: hashedPassword,
+          hashedPassword,
           fechaNacimiento: new Date(registerData.fecha_nacimiento),
-          idSexo: idSexo,
+          idSexo,
         },
       });
+
       const numeroCelularString = registerData.numero_celular.toString();
+
       await tx.alumno.create({
         data: {
           idUsuario: user.id,
@@ -108,10 +121,11 @@ export class AuthService {
           lesionesPasadas: registerData.lesiones_pasadas,
           contactoEmergenciaNombre: registerData.contacto_emergencia_nombre,
           contactoEmergenciaTelefono: registerData.contacto_emergencia_telefono,
-          idEntrenadorActual: entrenador,
+          idEntrenadorActual: registerData.id_entrenador_actual ?? null,
         },
       });
     });
+
     return { message: 'Usuario registrado exitosamente' };
   }
 }

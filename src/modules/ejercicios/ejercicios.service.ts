@@ -4,6 +4,8 @@ import { CreateEjercicioPersonalizadoDto } from './dto/create-ejercicio.dto';
 import { DeleteEjercicioDto } from './dto/delete-ejercicio.dto';
 import { UpdateEjercicioPersonalizadoDto } from './dto/update-ejercicio.dto';
 import { UserRole } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { NotFoundException, UnauthorizedException } from '@nestjs/common/exceptions';
 @Injectable()
 export class EjerciciosService {
   constructor(private prisma: PrismaService) {}
@@ -12,6 +14,10 @@ export class EjerciciosService {
     createEjercicioPersonalizadoDto: CreateEjercicioPersonalizadoDto,
   ) {
     const ejercicioPersonalizado = await this.prisma.$transaction(async (tx) => {
+      await this.validarCantidadEjerciciosAlumno(
+        createEjercicioPersonalizadoDto.created_by_usuario,
+        tx,
+      );
       const ejercicioPersonalizado = await tx.ejercicioPersonalizado.create({
         data: {
           createdByUsuario: createEjercicioPersonalizadoDto.created_by_usuario,
@@ -129,5 +135,51 @@ export class EjerciciosService {
       success: true,
       message: 'Ejercicio personalizado actualizado exitosamente',
     };
+  }
+  async validarCantidadEjerciciosAlumno(idUsuario: string, tx: Prisma.TransactionClient) {
+    const usuarioAlumno = await tx.usuario.findUnique({
+      where: {
+        id: idUsuario,
+      },
+    });
+    if (!usuarioAlumno) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    if (!(usuarioAlumno.role === UserRole.entrenador)) {
+      if (usuarioAlumno.role == UserRole.alumno_con_entrenador) {
+        throw new UnauthorizedException(
+          'Alumnos con entrenador no pueden crear ejercicios personalizados',
+        );
+      }
+      if (usuarioAlumno.role !== UserRole.alumno) {
+        throw new UnauthorizedException('Usuario no es un alumno');
+      }
+      const alumno = await tx.alumno.findUnique({
+        where: {
+          idUsuario: idUsuario,
+        },
+      });
+      if (!alumno) {
+        throw new NotFoundException('Alumno no encontrado');
+      }
+      const cantidadEjercicios = await tx.ejercicioPersonalizado.count({
+        where: {
+          createdByUsuario: idUsuario,
+        },
+      });
+      const planAlumno = await tx.planAlumno.findFirst({
+        where: {
+          id: alumno.idPlan,
+        },
+      });
+      if (!planAlumno) {
+        throw new NotFoundException('Plan del alumno no encontrado');
+      }
+      if (cantidadEjercicios >= planAlumno.limiteEjerciciosPersonalizados) {
+        throw new UnauthorizedException(
+          'El alumno ha alcanzado el límite de ejercicios personalizados',
+        );
+      }
+    }
   }
 }
