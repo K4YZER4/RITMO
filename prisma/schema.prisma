@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
@@ -173,35 +174,36 @@ model CategoriaRutina {
 }
 
 model Usuario {
-  id                        String                      @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
-  idSexo                    Int                         @map("id_sexo") @db.SmallInt
-  role                      UserRole                    @map("role")
-  nombre                    String                      @map("nombre") @db.VarChar(20)
-  apellidoPaterno           String                      @map("apellido_paterno") @db.VarChar(20)
-  apellidoMaterno           String?                     @map("apellido_materno") @db.VarChar(20)
-  correo                    String                      @unique @map("correo") @db.VarChar(60)
-  hashedPassword            String                      @map("hashed_password") @db.VarChar(60)
-  fechaNacimiento           DateTime                    @map("fecha_nacimiento") @db.Date
-  fechaRegistro             DateTime                    @default(now()) @map("fecha_registro") @db.Date
-  alumnoCreado              Alumno[]                    @relation("usuario_alumno_creado")
-  alumno                    Alumno?                     @relation("usuario_alumno")
-  alumnoActualizado         Alumno[]                    @relation("usuario_alumno_actualizado")
-  alumnoEjercicioPr         AlumnoEjercicioPr[]         @relation("usuario_pr")
-  historialCreado           AlumnoEntrenadorHistorial[] @relation("usuario_historial_creado")
-  alumnoEntrenadorHistorial AlumnoEntrenadorHistorial[] @relation("usuario_historial")
-  ejercicioPersonalizado    EjercicioPersonalizado[]    @relation("usuario_ejercicio_personalizado")
-  rutina                    Rutina[]                    @relation("usuario_rutina")
-  sesionCreada              SesionEntrenamiento[]       @relation("usuario_sesion_creada")
-  sesionEntrenamiento       SesionEntrenamiento[]       @relation("usuario_sesion")
-  sesionActualizada         SesionEntrenamiento[]       @relation("usuario_sesion_actualizada")
-  sexo                      Sexo                        @relation(fields: [idSexo], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "usuario_id_sexo_foreign")
-  usuarioMedicion           UsuarioMedicion[]
-  usuarioRutinaAsignada     UsuarioRutina[]             @relation("usuario_rutina_asignada")
-  usuarioRutinaCreada       UsuarioRutina[]             @relation("usuario_rutina_creada")
-  usuarioRutina             UsuarioRutina[]             @relation("usuario_rutina_usuario")
-  usuarioRutinaActualizada  UsuarioRutina[]             @relation("usuario_rutina_actualizada")
-  entrenador                Entrenador?
-  gimnasio                  Gimnasio[]                  @relation("usuario_gimnasio")
+  id                          String                      @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  idSexo                      Int                         @map("id_sexo") @db.SmallInt
+  role                        UserRole                    @map("role")
+  nombre                      String                      @map("nombre") @db.VarChar(20)
+  apellidoPaterno             String                      @map("apellido_paterno") @db.VarChar(20)
+  apellidoMaterno             String?                     @map("apellido_materno") @db.VarChar(20)
+  correo                      String                      @unique @map("correo") @db.VarChar(60)
+  hashedPassword              String                      @map("hashed_password") @db.VarChar(60)
+  fechaNacimiento             DateTime                    @map("fecha_nacimiento") @db.Date
+  fechaRegistro               DateTime                    @default(now()) @map("fecha_registro") @db.Date
+  alumnoCreado                Alumno[]                    @relation("usuario_alumno_creado")
+  alumno                      Alumno?                     @relation("usuario_alumno")
+  alumnoActualizado           Alumno[]                    @relation("usuario_alumno_actualizado")
+  tokenVinculacionActualizado TokenVinculacionAlumno[]    @relation("usuario_token_actualizado")
+  alumnoEjercicioPr           AlumnoEjercicioPr[]         @relation("usuario_pr")
+  historialCreado             AlumnoEntrenadorHistorial[] @relation("usuario_historial_creado")
+  alumnoEntrenadorHistorial   AlumnoEntrenadorHistorial[] @relation("usuario_historial")
+  ejercicioPersonalizado      EjercicioPersonalizado[]    @relation("usuario_ejercicio_personalizado")
+  rutina                      Rutina[]                    @relation("usuario_rutina")
+  sesionCreada                SesionEntrenamiento[]       @relation("usuario_sesion_creada")
+  sesionEntrenamiento         SesionEntrenamiento[]       @relation("usuario_sesion")
+  sesionActualizada           SesionEntrenamiento[]       @relation("usuario_sesion_actualizada")
+  sexo                        Sexo                        @relation(fields: [idSexo], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "usuario_id_sexo_foreign")
+  usuarioMedicion             UsuarioMedicion[]
+  usuarioRutinaAsignada       UsuarioRutina[]             @relation("usuario_rutina_asignada")
+  usuarioRutinaCreada         UsuarioRutina[]             @relation("usuario_rutina_creada")
+  usuarioRutina               UsuarioRutina[]             @relation("usuario_rutina_usuario")
+  usuarioRutinaActualizada    UsuarioRutina[]             @relation("usuario_rutina_actualizada")
+  entrenador                  Entrenador?
+  gimnasio                    Gimnasio[]                  @relation("usuario_gimnasio")
 
   @@map("usuario")
   @@schema("app_user")
@@ -511,10 +513,11 @@ model Entrenador {
   createdAt                 DateTime                    @default(now()) @map("created_at") @db.Timestamp(0)
   updatedAt                 DateTime                    @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
   alumnoActual              Alumno[]                    @relation("alumno_entrenador_actual")
+  tokenVinculacion          TokenVinculacionAlumno[]
   alumnoEntrenadorHistorial AlumnoEntrenadorHistorial[]
   estado                    Estado                      @relation("estado_entrenador", fields: [idEstado], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entrenador_id_estado_foreign")
   localidad                 Localidad?                  @relation(fields: [idLocalidad], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entrenador_id_localidad_foreign")
-  plan PlanEntrenador @relation(fields: [idPlan], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entrenador_id_plan_foreign")
+  plan                      PlanEntrenador              @relation(fields: [idPlan], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entrenador_id_plan_foreign")
   tema                      EntrenadorTema              @relation(fields: [idTema], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entrenador_id_tema_foreign")
   usuario                   Usuario                     @relation(fields: [idUsuario], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entrenador_id_usuario_foreign")
   entrenadorCategorias      EntrenadorCategorias[]
@@ -602,31 +605,55 @@ model EntrenadorSeccion {
 }
 
 model Alumno {
-  idUsuario                  String      @id @map("id_usuario") @db.Uuid
-  idEstado                   Int         @default(1) @map("id_estado")
-  numeroCelular              String?     @map("numero_celular") @db.VarChar(20)
-  idPlan                    Int          @map("id_plan") @default(1)
-  fechaInicioEntrenamiento   DateTime?   @map("fecha_inicio_entrenamiento") @db.Date
-  objetivo                   String?     @map("objetivo")
-  nivelActividad             String?     @map("nivel_actividad")
-  observacionesMedicas       String?     @map("observaciones_medicas")
-  lesionesActuales           String?     @map("lesiones_actuales")
-  lesionesPasadas            String?     @map("lesiones_pasadas")
-  contactoEmergenciaNombre   String?     @map("contacto_emergencia_nombre") @db.VarChar(100)
-  contactoEmergenciaTelefono String?     @map("contacto_emergencia_telefono") @db.VarChar(30)
-  createdAt                  DateTime    @default(now()) @map("created_at") @db.Timestamp(0)
-  updatedAt                  DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
-  idEntrenadorActual         String?     @map("id_entrenador_actual") @db.Uuid
-  createdBy                  String?     @map("created_by") @db.Uuid
-  updatedBy                  String?     @map("updated_by") @db.Uuid
-  creadoPor                  Usuario?    @relation("usuario_alumno_creado", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_created_by_foreign")
-  entrenadorActual           Entrenador? @relation("alumno_entrenador_actual", fields: [idEntrenadorActual], references: [idUsuario], onDelete: NoAction, onUpdate: NoAction, map: "alumno_id_entrenador_actual_foreign")
-  estado                     Estado      @relation("estado_alumno", fields: [idEstado], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_id_estado_foreign")
-  plan PlanAlumno @relation(fields: [idPlan], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_id_plan_foreign")
-  usuario                    Usuario     @relation("usuario_alumno", fields: [idUsuario], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_id_usuario_foreign")
-  actualizadoPor             Usuario?    @relation("usuario_alumno_actualizado", fields: [updatedBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_updated_by_foreign")
+  idUsuario                  String                  @id @map("id_usuario") @db.Uuid
+  idEstado                   Int                     @default(1) @map("id_estado")
+  numeroCelular              String?                 @map("numero_celular") @db.VarChar(20)
+  idPlan                     Int                     @default(1) @map("id_plan")
+  fechaInicioEntrenamiento   DateTime?               @map("fecha_inicio_entrenamiento") @db.Date
+  objetivo                   String?                 @map("objetivo")
+  nivelActividad             String?                 @map("nivel_actividad")
+  observacionesMedicas       String?                 @map("observaciones_medicas")
+  lesionesActuales           String?                 @map("lesiones_actuales")
+  lesionesPasadas            String?                 @map("lesiones_pasadas")
+  contactoEmergenciaNombre   String?                 @map("contacto_emergencia_nombre") @db.VarChar(100)
+  contactoEmergenciaTelefono String?                 @map("contacto_emergencia_telefono") @db.VarChar(30)
+  createdAt                  DateTime                @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt                  DateTime                @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+  idEntrenadorActual         String?                 @map("id_entrenador_actual") @db.Uuid
+  createdBy                  String?                 @map("created_by") @db.Uuid
+  updatedBy                  String?                 @map("updated_by") @db.Uuid
+  creadoPor                  Usuario?                @relation("usuario_alumno_creado", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_created_by_foreign")
+  entrenadorActual           Entrenador?             @relation("alumno_entrenador_actual", fields: [idEntrenadorActual], references: [idUsuario], onDelete: NoAction, onUpdate: NoAction, map: "alumno_id_entrenador_actual_foreign")
+  estado                     Estado                  @relation("estado_alumno", fields: [idEstado], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_id_estado_foreign")
+  plan                       PlanAlumno              @relation(fields: [idPlan], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_id_plan_foreign")
+  usuario                    Usuario                 @relation("usuario_alumno", fields: [idUsuario], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_id_usuario_foreign")
+  actualizadoPor             Usuario?                @relation("usuario_alumno_actualizado", fields: [updatedBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_updated_by_foreign")
+  tokenVinculacion           TokenVinculacionAlumno?
 
   @@map("alumno")
+  @@schema("alumno")
+}
+
+model TokenVinculacionAlumno {
+  id                     BigInt      @id @default(autoincrement()) @map("id")
+  idAlumno               String      @unique(map: "token_vinculacion_alumno_unico_activo_idx", where: raw("((usado_en IS NULL) AND (revocado_en IS NULL))")) @map("id_alumno") @db.Uuid
+  codigoHash             String?     @map("codigo_hash") @db.Char(64)
+  secretoHash            String?     @map("secreto_hash") @db.Char(64)
+  creadoEn               DateTime?   @default(now()) @map("creado_en") @db.Timestamp(0)
+  expiraEn               DateTime?   @map("expira_en") @db.Timestamp(0)
+  usadoEn                DateTime?   @map("usado_en") @db.Timestamp(0)
+  revocadoEn             DateTime?   @map("revocado_en") @db.Timestamp(0)
+  reclamadoPorEntrenador String?     @map("reclamado_por_entrenador") @db.Uuid
+  actualizadoEn          DateTime?   @default(now()) @map("actualizado_en") @db.Timestamp(0)
+  actualizadoPor         String?     @map("actualizado_por") @db.Uuid
+  actualizadoPorUsuario  Usuario?    @relation("usuario_token_actualizado", fields: [actualizadoPor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "token_vinculacion_alumno_actualizado_por_foreign")
+  alumno                 Alumno      @relation(fields: [idAlumno], references: [idUsuario], onDelete: NoAction, onUpdate: NoAction, map: "token_vinculacion_alumno_id_alumno_foreign")
+  entrenadorReclamador   Entrenador? @relation(fields: [reclamadoPorEntrenador], references: [idUsuario], onDelete: NoAction, onUpdate: NoAction, map: "token_vinculacion_alumno_reclamado_por_entrenador_foreign")
+
+  @@index([idAlumno])
+  @@index([codigoHash])
+  @@index([secretoHash])
+  @@map("token_vinculacion_alumno")
   @@schema("alumno")
 }
 
@@ -640,66 +667,68 @@ model Sexo {
 }
 
 model Pago {
-  id             Int              @id @default(autoincrement())
-  suscripcionId  Int              @map("suscripcion_id")
-  monto          Decimal          @db.Decimal(10, 2)
-  estado         estado_pago_enum @default(pendiente)
-  estaPagado     Boolean          @default(false) @map("esta_pagado")
-  venceEn        DateTime         @map("vence_en") @db.Timestamptz(6)
-  pagadoEn       DateTime?        @map("pagado_en") @db.Timestamptz(6)
-  creadoEn       DateTime         @default(now()) @map("creado_en") @db.Timestamptz(6)
-  actualizadoEn  DateTime         @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+  id            Int              @id @default(autoincrement())
+  suscripcionId Int              @map("suscripcion_id")
+  monto         Decimal          @db.Decimal(10, 2)
+  estado        estado_pago_enum @default(pendiente)
+  estaPagado    Boolean          @default(false) @map("esta_pagado")
+  venceEn       DateTime         @map("vence_en") @db.Timestamptz(6)
+  pagadoEn      DateTime?        @map("pagado_en") @db.Timestamptz(6)
+  creadoEn      DateTime         @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn DateTime         @default(now()) @map("actualizado_en") @db.Timestamptz(6)
 
   @@map("pago")
   @@schema("app_user")
 }
 
 model Suscripcion {
-  id                    Int                     @id @default(autoincrement())
-  usuarioId             String                  @map("usuario_id") @db.Uuid
-  planId                Int                     @map("plan_id")
-  estado                estado_suscripcion_enum @default(activa)
-  periodoActualInicio   DateTime                @map("periodo_actual_inicio") @db.Timestamptz(6)
-  periodoActualFin      DateTime                @map("periodo_actual_fin") @db.Timestamptz(6)
-  siguienteCobroEn      DateTime?               @map("siguiente_cobro_en") @db.Timestamptz(6)
-  canceladaEn           DateTime?               @map("cancelada_en") @db.Timestamptz(6)
-  creadoEn              DateTime                @default(now()) @map("creado_en") @db.Timestamptz(6)
-  actualizadoEn         DateTime                @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+  id                  Int                     @id @default(autoincrement())
+  usuarioId           String                  @map("usuario_id") @db.Uuid
+  planId              Int                     @map("plan_id")
+  estado              estado_suscripcion_enum @default(activa)
+  periodoActualInicio DateTime                @map("periodo_actual_inicio") @db.Timestamptz(6)
+  periodoActualFin    DateTime                @map("periodo_actual_fin") @db.Timestamptz(6)
+  siguienteCobroEn    DateTime?               @map("siguiente_cobro_en") @db.Timestamptz(6)
+  canceladaEn         DateTime?               @map("cancelada_en") @db.Timestamptz(6)
+  creadoEn            DateTime                @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn       DateTime                @default(now()) @map("actualizado_en") @db.Timestamptz(6)
 
   @@map("suscripcion")
   @@schema("app_user")
 }
 
 model PlanAlumno {
-  id                          Int                   @id @default(autoincrement())
-  nombre                      String
-  descripcion                 String?
-  precio                      Decimal               @db.Decimal(10, 2)
-  limiteEjerciciosPersonalizados Int                @map("limite_ejercicios_personalizados")
-  intervaloCobro              billing_interval_enum @map("intervalo_cobro")
-  estaActivo                  Boolean               @default(true) @map("esta_activo")
-  creadoEn                    DateTime              @default(now()) @map("creado_en") @db.Timestamptz(6)
-  actualizadoEn               DateTime              @default(now()) @map("actualizado_en") @db.Timestamptz(6)
-  alumnos                     Alumno[]              
+  id                             Int                   @id @default(autoincrement())
+  nombre                         String
+  descripcion                    String?
+  precio                         Decimal               @db.Decimal(10, 2)
+  limiteEjerciciosPersonalizados Int                   @map("limite_ejercicios_personalizados")
+  intervaloCobro                 billing_interval_enum @map("intervalo_cobro")
+  estaActivo                     Boolean               @default(true) @map("esta_activo")
+  creadoEn                       DateTime              @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn                  DateTime              @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+  alumnos                        Alumno[]
 
   @@map("plan_alumno")
   @@schema("app_user")
 }
+
 model PlanEntrenador {
-  id              Int                   @id @default(autoincrement())
-  nombre          String
-  descripcion     String?
-  precio          Decimal               @db.Decimal(10, 2)
-  limiteAlumnos   Int                   @map("limite_alumnos")
-  intervaloCobro  billing_interval_enum @map("intervalo_cobro")
-  estaActivo      Boolean               @default(true) @map("esta_activo")
-  creadoEn        DateTime              @default(now()) @map("creado_en") @db.Timestamptz(6)
-  actualizadoEn   DateTime              @default(now()) @map("actualizado_en") @db.Timestamptz(6)
-  entrenadores    Entrenador[]
+  id             Int                   @id @default(autoincrement())
+  nombre         String
+  descripcion    String?
+  precio         Decimal               @db.Decimal(10, 2)
+  limiteAlumnos  Int                   @map("limite_alumnos")
+  intervaloCobro billing_interval_enum @map("intervalo_cobro")
+  estaActivo     Boolean               @default(true) @map("esta_activo")
+  creadoEn       DateTime              @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn  DateTime              @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+  entrenadores   Entrenador[]
 
   @@map("plan_entrenador")
   @@schema("app_user")
 }
+
 enum UserRole {
   alumno
   entrenador

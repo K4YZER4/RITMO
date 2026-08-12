@@ -5,5 +5,6 @@ import { AlumnoEntrenadorController } from './alumno-entrenador.controller';
 @Module({
   controllers: [AlumnoEntrenadorController],
   providers: [AlumnoEntrenadorService],
+  exports: [AlumnoEntrenadorService],
 })
 export class AlumnoEntrenadorModule {}

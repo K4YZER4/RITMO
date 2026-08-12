@@ -1,3 +1,6 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+
 CREATE OR REPLACE FUNCTION alumno.set_expira_token_vinculacion()
 RETURNS TRIGGER
 LANGUAGE plpgsql

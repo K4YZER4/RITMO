@@ -124,6 +124,16 @@ export class AuthService {
           idEntrenadorActual: registerData.id_entrenador_actual ?? null,
         },
       });
+
+      if (registerData.id_entrenador_actual) {
+        await tx.alumnoEntrenadorHistorial.create({
+          data: {
+            idUsuario: user.id,
+            idEntrenador: registerData.id_entrenador_actual,
+            activo: true,
+          },
+        });
+      }
     });
 
     return { message: 'Usuario registrado exitosamente' };

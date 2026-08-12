@@ -3,9 +3,9 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateEjercicioPersonalizadoDto } from './dto/create-ejercicio.dto';
 import { DeleteEjercicioDto } from './dto/delete-ejercicio.dto';
 import { UpdateEjercicioPersonalizadoDto } from './dto/update-ejercicio.dto';
+import { NotFoundException, UnauthorizedException } from '@nestjs/common/exceptions';
 import { UserRole } from '@prisma/client';
 import { Prisma } from '@prisma/client';
-import { NotFoundException, UnauthorizedException } from '@nestjs/common/exceptions';
 @Injectable()
 export class EjerciciosService {
   constructor(private prisma: PrismaService) {}

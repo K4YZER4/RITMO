@@ -7,6 +7,7 @@ import {
   IsDateString,
   IsNumber,
   IsUUID,
+  IsOptional,
 } from 'class-validator';
 import { AUTH_VALIDATION_ERRORS } from '../../../common/exception/errors/auth-validation-errors';
 
@@ -60,6 +61,7 @@ export class RegisterAlumnoDto {
 
   @IsUUID('4', { message: AUTH_VALIDATION_ERRORS.INVALID_TRAINER_ID })
   @IsNotEmpty({ message: AUTH_VALIDATION_ERRORS.REQUIRED_TRAINER_ID })
+  @IsOptional()
   id_entrenador_actual!: string;
 
   @IsNumber({}, { message: AUTH_VALIDATION_ERRORS.INVALID_PHONE })

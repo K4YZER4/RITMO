@@ -15,19 +15,19 @@ export class EjerciciosController {
   }
   @Patch(':id')
   async updateEjercicioPersonalizado(
-    @Param('id') id: IdNumberDto,
+    @Param() params: IdNumberDto,
     @Body() updateEjercicioPersonalizadoDto: UpdateEjercicioPersonalizadoDto,
   ) {
     return this.ejerciciosService.updateEjercicioPersonalizado(
       updateEjercicioPersonalizadoDto,
-      id.id,
+      params.id,
     );
   }
   @Delete(':id')
   async deleteEjercicioPersonalizado(
-    @Param('id') id: IdNumberDto,
+    @Param() params: IdNumberDto,
     @Body() deleteEjercicioDto: DeleteEjercicioDto,
   ) {
-    return this.ejerciciosService.deleteEjercicioPersonalizado(deleteEjercicioDto, id.id);
+    return this.ejerciciosService.deleteEjercicioPersonalizado(deleteEjercicioDto, params.id);
   }
 }
