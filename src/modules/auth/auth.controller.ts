@@ -10,17 +10,19 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
-  @RateLimitEspecifico(5) // Limita a 5 solicitudes por minuto
+  @RateLimitEspecifico(2) // Limita a 5 solicitudes por minuto
   @Post('login')
   login(@Body() loginData: LoginDto) {
     return this.authService.login(loginData);
   }
   @Public()
+  @RateLimitEspecifico(2) // Limita a 5 solicitudes por minuto
   @Post('registrar/entrenador')
   register(@Body() registerData: RegisterEntrenadorDto) {
     return this.authService.registerEntrenador(registerData);
   }
   @Public()
+  @RateLimitEspecifico(2) // Limita a 5 solicitudes por minuto
   @Post('registrar/alumno')
   registerAlumno(@Body() registerData: RegisterAlumnoDto) {
     return this.authService.registerAlumno(registerData);

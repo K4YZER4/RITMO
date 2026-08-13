@@ -15,7 +15,7 @@ import { AlumnoEntrenadorModule } from './modules/alumno-entrenador/alumno-entre
     ThrottlerModule.forRoot([
       {
         name: 'default',
-        ttl: 1000,
+        ttl: 3600 * 5, //24 Minutos
         limit: 30,
       },
     ]),

@@ -30,4 +30,13 @@ export const ALUMNO_ENTRENADOR_VALIDATION_ERRORS = {
     'INVALID_CONTRASEÑA_ALUMNO',
     'La contraseña del alumno debe ser texto.',
   ),
+
+  REQUIRED_CONTRASEÑA_ENTRENADOR: validationMessage(
+    'REQUIRED_CONTRASEÑA_ENTRENADOR',
+    'La contraseña del entrenador es obligatoria.',
+  ),
+  INVALID_CONTRASEÑA_ENTRENADOR: validationMessage(
+    'INVALID_CONTRASEÑA_ENTRENADOR',
+    'La contraseña del entrenador debe ser texto.',
+  ),
 } as const;
