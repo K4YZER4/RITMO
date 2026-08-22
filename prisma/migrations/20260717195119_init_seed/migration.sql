@@ -120,14 +120,28 @@ VALUES
   ('MASCULINO'),
   ('FEMENINO');
 
-  INSERT INTO app_user.plan_entrenador (nombre, descripcion, precio, limite_alumnos, intervalo_cobro)
+  INSERT INTO app_user.plan_entrenador (nombre, descripcion, precio, limite_alumnos, intervalo_cobro, limite_rutinas)
   VALUES
-  ('Basico', 'Plan básico para principiantes', 100.00, 10, 'mes'),
-  ('Intermedio', 'Plan intermedio para usuarios avanzados', 200.00, 20, 'mes'),
-  ('Avanzado', 'Plan avanzado para usuarios expertos', 300.00, 30, 'mes');
+  ('Basico', 'Plan básico para principiantes', 100.00, 10, 'mes', 15),
+  ('Intermedio', 'Plan intermedio para usuarios avanzados', 200.00, 20, 'mes', 30),
+  ('Avanzado', 'Plan avanzado para usuarios expertos', 300.00, 30, 'mes', 45);
 
-  INSERT INTO app_user.plan_alumno (nombre, descripcion, precio, limite_ejercicios_personalizados, intervalo_cobro)
+  INSERT INTO app_user.plan_alumno (nombre, descripcion, precio, limite_ejercicios_personalizados, intervalo_cobro, limite_rutinas)
   VALUES
-  ('Basico', 'Plan básico para principiantes', 0.00, 5, 'mes'),
-  ('Intermedio', 'Plan intermedio para usuarios avanzados', 100.00, 10, 'mes'),
-  ('Avanzado', 'Plan avanzado para usuarios expertos', 150.00, 15, 'mes');
+  ('Basico', 'Plan básico para principiantes', 0.00, 5, 'mes', 5),
+  ('Intermedio', 'Plan intermedio para usuarios avanzados', 100.00, 10, 'mes', 10),
+  ('Avanzado', 'Plan avanzado para usuarios expertos', 150.00, 15, 'mes', 15);
+
+  INSERT INTO core.objetivo (codigo, nombre, descripcion, orden) VALUES
+  ('perder_grasa', 'Pérdida de grasa', 'Reducir porcentaje de grasa corporal', 1),
+  ('ganar_masa', 'Ganancia de masa muscular', 'Incrementar masa muscular', 2),
+  ('fuerza', 'Fuerza', 'Mejorar fuerza máxima', 3),
+  ('resistencia', 'Resistencia', 'Mejorar capacidad cardiovascular o muscular', 4),
+  ('salud_general', 'Salud general', 'Mejorar condición física general', 5);
+
+INSERT INTO core.nivel_actividad (codigo, nombre, descripcion, orden) VALUES
+  ('sedentario', 'Sedentario', 'Poca o ninguna actividad física habitual', 1),
+  ('ligero', 'Ligero', 'Actividad física ligera', 2),
+  ('moderado', 'Moderado', 'Actividad física moderada regular', 3),
+  ('activo', 'Activo', 'Actividad física intensa frecuente', 4),
+  ('muy_activo', 'Muy activo', 'Actividad muy intensa o trabajo físico demandante', 5);

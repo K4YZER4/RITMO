@@ -515,6 +515,7 @@ model Entrenador {
   alumnoActual              Alumno[]                    @relation("alumno_entrenador_actual")
   tokenVinculacion          TokenVinculacionAlumno[]
   alumnoEntrenadorHistorial AlumnoEntrenadorHistorial[]
+  suscripcion               Suscripcion[]
   estado                    Estado                      @relation("estado_entrenador", fields: [idEstado], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entrenador_id_estado_foreign")
   localidad                 Localidad?                  @relation(fields: [idLocalidad], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entrenador_id_localidad_foreign")
   plan                      PlanEntrenador              @relation(fields: [idPlan], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entrenador_id_plan_foreign")
@@ -610,8 +611,8 @@ model Alumno {
   numeroCelular              String?                 @map("numero_celular") @db.VarChar(20)
   idPlan                     Int                     @default(1) @map("id_plan")
   fechaInicioEntrenamiento   DateTime?               @map("fecha_inicio_entrenamiento") @db.Date
-  objetivo                   String?                 @map("objetivo")
-  nivelActividad             String?                 @map("nivel_actividad")
+  idObjetivo                 Int?                    @map("id_objetivo") @db.SmallInt
+  idNivelActividad           Int?                    @map("id_nivel_actividad") @db.SmallInt
   observacionesMedicas       String?                 @map("observaciones_medicas")
   lesionesActuales           String?                 @map("lesiones_actuales")
   lesionesPasadas            String?                 @map("lesiones_pasadas")
@@ -625,10 +626,13 @@ model Alumno {
   creadoPor                  Usuario?                @relation("usuario_alumno_creado", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_created_by_foreign")
   entrenadorActual           Entrenador?             @relation("alumno_entrenador_actual", fields: [idEntrenadorActual], references: [idUsuario], onDelete: NoAction, onUpdate: NoAction, map: "alumno_id_entrenador_actual_foreign")
   estado                     Estado                  @relation("estado_alumno", fields: [idEstado], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_id_estado_foreign")
+  nivel_actividad            nivel_actividad?        @relation(fields: [idNivelActividad], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_id_nivel_actividad_foreign")
+  objetivo                   objetivo?               @relation(fields: [idObjetivo], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_id_objetivo_foreign")
   plan                       PlanAlumno              @relation(fields: [idPlan], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_id_plan_foreign")
   usuario                    Usuario                 @relation("usuario_alumno", fields: [idUsuario], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_id_usuario_foreign")
   actualizadoPor             Usuario?                @relation("usuario_alumno_actualizado", fields: [updatedBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_updated_by_foreign")
   tokenVinculacion           TokenVinculacionAlumno?
+  suscripcion                Suscripcion[]
 
   @@map("alumno")
   @@schema("alumno")
@@ -637,8 +641,8 @@ model Alumno {
 model TokenVinculacionAlumno {
   id                     BigInt      @id @default(autoincrement()) @map("id")
   idAlumno               String      @unique(map: "token_vinculacion_alumno_unico_activo_idx", where: raw("((usado_en IS NULL) AND (revocado_en IS NULL))")) @map("id_alumno") @db.Uuid
-  codigoHash             String?     @map("codigo_hash") @db.Char(64)
-  secretoHash            String?     @map("secreto_hash") @db.Char(64)
+  codigoHash             String      @map("codigo_hash") @db.Char(64)
+  secretoHash            String      @map("secreto_hash") @db.Char(64)
   creadoEn               DateTime?   @default(now()) @map("creado_en") @db.Timestamp(0)
   expiraEn               DateTime?   @map("expira_en") @db.Timestamp(0)
   usadoEn                DateTime?   @map("usado_en") @db.Timestamp(0)
@@ -667,31 +671,40 @@ model Sexo {
 }
 
 model Pago {
-  id            Int              @id @default(autoincrement())
-  suscripcionId Int              @map("suscripcion_id")
-  monto         Decimal          @db.Decimal(10, 2)
-  estado        estado_pago_enum @default(pendiente)
-  estaPagado    Boolean          @default(false) @map("esta_pagado")
-  venceEn       DateTime         @map("vence_en") @db.Timestamptz(6)
-  pagadoEn      DateTime?        @map("pagado_en") @db.Timestamptz(6)
-  creadoEn      DateTime         @default(now()) @map("creado_en") @db.Timestamptz(6)
-  actualizadoEn DateTime         @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+  id                  BigInt           @id @default(autoincrement())
+  suscripcionId       BigInt           @map("suscripcion_id")
+  monto               Decimal          @db.Decimal(10, 2)
+  estado              estado_pago_enum @default(pendiente)
+  venceEn             DateTime         @map("vence_en") @db.Timestamptz(6)
+  pagadoEn            DateTime?        @map("pagado_en") @db.Timestamptz(6)
+  proveedor           String?          @db.VarChar(30)
+  proveedor_pago_id   String?
+  proveedor_evento_id String?
+  creadoEn            DateTime         @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn       DateTime         @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+  suscripcion         Suscripcion      @relation(fields: [suscripcionId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "pago_suscripcion_foreign")
 
   @@map("pago")
   @@schema("app_user")
 }
 
 model Suscripcion {
-  id                  Int                     @id @default(autoincrement())
-  usuarioId           String                  @map("usuario_id") @db.Uuid
-  planId              Int                     @map("plan_id")
-  estado              estado_suscripcion_enum @default(activa)
-  periodoActualInicio DateTime                @map("periodo_actual_inicio") @db.Timestamptz(6)
-  periodoActualFin    DateTime                @map("periodo_actual_fin") @db.Timestamptz(6)
-  siguienteCobroEn    DateTime?               @map("siguiente_cobro_en") @db.Timestamptz(6)
-  canceladaEn         DateTime?               @map("cancelada_en") @db.Timestamptz(6)
-  creadoEn            DateTime                @default(now()) @map("creado_en") @db.Timestamptz(6)
-  actualizadoEn       DateTime                @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+  id                        BigInt                  @id @default(autoincrement())
+  alumno_id                 String?                 @db.Uuid
+  entrenador_id             String?                 @db.Uuid
+  estado                    estado_suscripcion_enum @default(prueba)
+  periodoActualInicio       DateTime                @map("periodo_actual_inicio") @db.Timestamptz(6)
+  periodoActualFin          DateTime                @map("periodo_actual_fin") @db.Timestamptz(6)
+  siguienteCobroEn          DateTime?               @map("siguiente_cobro_en") @db.Timestamptz(6)
+  canceladaEn               DateTime?               @map("cancelada_en") @db.Timestamptz(6)
+  proveedor                 String?                 @db.VarChar(30)
+  proveedor_customer_id     String?
+  proveedor_subscription_id String?
+  creadoEn                  DateTime                @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn             DateTime                @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+  pago                      Pago[]
+  alumno                    Alumno?                 @relation(fields: [alumno_id], references: [idUsuario], onDelete: NoAction, onUpdate: NoAction, map: "suscripcion_alumno_foreign")
+  entrenador                Entrenador?             @relation(fields: [entrenador_id], references: [idUsuario], onDelete: NoAction, onUpdate: NoAction, map: "suscripcion_entrenador_foreign")
 
   @@map("suscripcion")
   @@schema("app_user")
@@ -707,6 +720,7 @@ model PlanAlumno {
   estaActivo                     Boolean               @default(true) @map("esta_activo")
   creadoEn                       DateTime              @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn                  DateTime              @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+  limite_rutinas                 Int
   alumnos                        Alumno[]
 
   @@map("plan_alumno")
@@ -723,10 +737,35 @@ model PlanEntrenador {
   estaActivo     Boolean               @default(true) @map("esta_activo")
   creadoEn       DateTime              @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn  DateTime              @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+  limite_rutinas Int
   entrenadores   Entrenador[]
 
   @@map("plan_entrenador")
   @@schema("app_user")
+}
+
+model nivel_actividad {
+  id          Int      @id @default(autoincrement()) @db.SmallInt
+  codigo      String   @unique @db.VarChar(50)
+  nombre      String   @db.VarChar(100)
+  descripcion String?
+  activo      Boolean  @default(true)
+  orden       Int      @db.SmallInt
+  alumno      Alumno[]
+
+  @@schema("core")
+}
+
+model objetivo {
+  id          Int      @id @default(autoincrement()) @db.SmallInt
+  codigo      String   @unique @db.VarChar(50)
+  nombre      String   @db.VarChar(100)
+  descripcion String?
+  activo      Boolean  @default(true)
+  orden       Int      @db.SmallInt
+  alumno      Alumno[]
+
+  @@schema("core")
 }
 
 enum UserRole {
