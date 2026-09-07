@@ -1,7 +1,8 @@
-import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
-import { ALUMNO_ENTRENADOR_VALIDATION_ERRORS } from '../../../common/exception/errors/alumno-entrenador-validation-errors';
+import { IsNotEmpty, IsString } from 'class-validator';
+import { ALUMNO_ENTRENADOR_VALIDATION_ERRORS } from '../errors/alumno-entrenador-validation-errors';
 
 export class ConsumirTokenDto {
+  /** Código del token de vinculación generado por el alumno. */
   @IsString({
     message: ALUMNO_ENTRENADOR_VALIDATION_ERRORS.INVALID_CODIGO,
   })
@@ -10,6 +11,7 @@ export class ConsumirTokenDto {
   })
   codigo!: string;
 
+  /** Secreto del token de vinculación generado por el alumno. */
   @IsString({
     message: ALUMNO_ENTRENADOR_VALIDATION_ERRORS.INVALID_SECRETO,
   })
@@ -17,12 +19,4 @@ export class ConsumirTokenDto {
     message: ALUMNO_ENTRENADOR_VALIDATION_ERRORS.REQUIRED_SECRETO,
   })
   secreto!: string;
-
-  @IsUUID(undefined, {
-    message: ALUMNO_ENTRENADOR_VALIDATION_ERRORS.INVALID_ID_ENTRENADOR,
-  })
-  @IsNotEmpty({
-    message: ALUMNO_ENTRENADOR_VALIDATION_ERRORS.REQUIRED_ID_ENTRENADOR,
-  })
-  id_entrenador!: string;
 }

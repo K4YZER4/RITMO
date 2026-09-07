@@ -28,6 +28,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     if (exception instanceof Prisma.PrismaClientValidationError) {
+      console.error('Prisma validation error:', exception.message);
       return response.status(HttpStatus.BAD_REQUEST).json({
         requestId,
         code: 'PRISMA_VALIDATION_ERROR',
@@ -35,11 +36,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         statusCode: HttpStatus.BAD_REQUEST,
         timestamp,
         path,
-        details: exception.message,
+        details: null,
       });
     }
 
     if (exception instanceof Prisma.PrismaClientInitializationError) {
+      console.error('Prisma initialization error:', exception.message);
       return response.status(HttpStatus.SERVICE_UNAVAILABLE).json({
         requestId,
         code: 'PRISMA_INITIALIZATION_ERROR',
@@ -47,11 +49,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         statusCode: HttpStatus.SERVICE_UNAVAILABLE,
         timestamp,
         path,
-        details: exception.message,
+        details: null,
       });
     }
 
     if (exception instanceof Prisma.PrismaClientRustPanicError) {
+      console.error('Prisma engine panic:', exception.message);
       return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         requestId,
         code: 'PRISMA_ENGINE_PANIC',
@@ -59,11 +62,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         timestamp,
         path,
-        details: exception.message,
+        details: null,
       });
     }
 
     if (exception instanceof Prisma.PrismaClientUnknownRequestError) {
+      console.error('Prisma unknown error:', exception.message);
       return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         requestId,
         code: 'PRISMA_UNKNOWN_ERROR',
@@ -71,7 +75,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         timestamp,
         path,
-        details: exception.message,
+        details: null,
       });
     }
 

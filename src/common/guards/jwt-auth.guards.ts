@@ -4,6 +4,7 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { JwtPayload } from '../types/jwt-payload';
+import { validate as uuidValidate } from 'uuid';
 export const IS_PUBLIC_KEY = 'isPublic';
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -34,6 +35,12 @@ export class JwtAuthGuard implements CanActivate {
 
     try {
       const payload = await this.jwtService.verifyAsync<JwtPayload>(token);
+      if (!payload || !payload.id || !payload.correo || !payload.sub) {
+        throw new UnauthorizedException('Invalid token payload');
+      }
+      if (!uuidValidate(payload.id) || !uuidValidate(payload.sub)) {
+        throw new UnauthorizedException('Invalid user ID in token');
+      }
       req.user = payload;
       return true;
     } catch {

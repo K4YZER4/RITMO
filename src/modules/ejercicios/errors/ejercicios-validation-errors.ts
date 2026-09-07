@@ -1,4 +1,4 @@
-import { validationMessage } from '../validation-message';
+import { validationMessage } from '../../../common/exception/validation-message';
 
 export const EJERCICIOS_VALIDATION_ERRORS = {
   REQUIRED_CREATED_BY_USUARIO: validationMessage(

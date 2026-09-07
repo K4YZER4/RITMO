@@ -5,22 +5,22 @@ import { CancelarAlumnoDto } from './dto/cancelar-alumno.dto';
 import * as bcrypt from 'bcrypt';
 import { Prisma } from '@prisma/client';
 import { NotFoundException, UnauthorizedException } from '@nestjs/common/exceptions';
-import { IsUUIDDto } from './dto/is-uuid.dto';
 import { ConsumirTokenDto } from './dto/consumir-token.dto';
 import { CancelarMiEntrenadorDto } from './dto/cancelar-mi-entrenador.dto';
 import * as crypto from 'crypto';
+import { validate as isUUID } from 'uuid';
 @Injectable()
 export class AlumnoEntrenadorService {
   constructor(private readonly prisma: PrismaService) {}
   //
   // Cancelar Mi Entrenador method (el alumno se quita a su entrenador)
   //
-  async cancelarMiEntrenador(cancelarData: CancelarMiEntrenadorDto) {
-    await this.prisma.$transaction(async (tx) => {
+  async cancelarMiEntrenador(cancelarData: CancelarMiEntrenadorDto, alumnoId: string) {
+    return await this.prisma.$transaction(async (tx) => {
       const alumnoUsuario = await tx.usuario.findUnique({
-        where: { id: cancelarData.id_alumno },
+        where: { id: alumnoId },
       });
-      if (!alumnoUsuario || alumnoUsuario.role !== UserRole.alumno_con_entrenador) {
+      if (!alumnoUsuario || alumnoUsuario.role !== UserRole.alumnoConEntrenador) {
         throw new UnauthorizedException('Alumno no encontrado');
       }
       const contraseñaAutorizada = await bcrypt.compare(
@@ -31,33 +31,28 @@ export class AlumnoEntrenadorService {
         throw new UnauthorizedException('Contraseña incorrecta');
       }
       const alumno = await tx.alumno.findUnique({
-        where: { idUsuario: cancelarData.id_alumno },
+        where: { idUsuario: alumnoId },
       });
       if (!alumno || !alumno.idEntrenadorActual) {
         throw new UnauthorizedException('El alumno no tiene un entrenador asignado');
       }
-      await this.finalizarVinculacion(
-        tx,
-        cancelarData.id_alumno,
-        cancelarData.id_alumno,
-        'Cancelado por el alumno',
-      );
+      await this.finalizarVinculacion(tx, alumnoId, alumnoId, 'Cancelado por el alumno');
       return { success: true, message: 'Alumno desvinculado de su entrenador exitosamente' };
     });
   }
   //
   // Cancelar Alumno method (el entrenador quita a su alumno)
   //
-  async cancelarAlumno(cancelarData: CancelarAlumnoDto, idAlumno: string) {
-    await this.prisma.$transaction(async (tx) => {
+  async cancelarAlumno(cancelarData: CancelarAlumnoDto, idAlumno: string, entrenadorId: string) {
+    return await this.prisma.$transaction(async (tx) => {
       const usuarioEntrenador = await tx.usuario.findUnique({
-        where: { id: cancelarData.id_entrenador },
+        where: { id: entrenadorId },
       });
       if (!usuarioEntrenador || usuarioEntrenador.role !== UserRole.entrenador) {
         throw new UnauthorizedException('El usuario no es un entrenador válido');
       }
       const entrenador = await tx.entrenador.findUnique({
-        where: { idUsuario: cancelarData.id_entrenador },
+        where: { idUsuario: entrenadorId },
       });
       if (!entrenador) {
         throw new UnauthorizedException('Entrenador no encontrado');
@@ -72,21 +67,16 @@ export class AlumnoEntrenadorService {
       const alumnoUsuario = await tx.usuario.findUnique({
         where: { id: idAlumno },
       });
-      if (!alumnoUsuario || alumnoUsuario.role !== UserRole.alumno_con_entrenador) {
+      if (!alumnoUsuario || alumnoUsuario.role !== UserRole.alumnoConEntrenador) {
         throw new UnauthorizedException('Alumno no encontrado');
       }
       const alumno = await tx.alumno.findUnique({
         where: { idUsuario: idAlumno },
       });
-      if (!alumno || alumno.idEntrenadorActual !== cancelarData.id_entrenador) {
+      if (!alumno || alumno.idEntrenadorActual !== entrenadorId) {
         throw new UnauthorizedException('El entrenador no tiene asignado a este alumno');
       }
-      await this.finalizarVinculacion(
-        tx,
-        idAlumno,
-        cancelarData.id_entrenador,
-        'Cancelado por el entrenador',
-      );
+      await this.finalizarVinculacion(tx, idAlumno, entrenadorId, 'Cancelado por el entrenador');
       return { success: true, message: 'Alumno cancelado exitosamente' };
     });
   }
@@ -99,6 +89,12 @@ export class AlumnoEntrenadorService {
     actualizadoPor: string,
     motivoCambio: string,
   ) {
+    if (!isUUID(idAlumno)) {
+      throw new NotFoundException('ID de alumno no válido');
+    }
+    if (!isUUID(actualizadoPor)) {
+      throw new NotFoundException('ID de usuario que actualiza no válido');
+    }
     await tx.alumnoEntrenadorHistorial.updateMany({
       where: {
         idUsuario: idAlumno,
@@ -158,13 +154,13 @@ export class AlumnoEntrenadorService {
   //
   // Generar Token Alumno method
   //
-  async generarTokenAlumno(id: IsUUIDDto) {
+  async generarTokenAlumno(id: string) {
     const codigo = crypto.randomBytes(4).toString('hex').toUpperCase();
     const secreto = crypto.randomBytes(32).toString('hex');
     const token = await this.prisma.$transaction(async (tx) => {
       const usuarioAlumno = await tx.usuario.findUnique({
         where: {
-          id: id.id,
+          id: id,
         },
       });
       if (!usuarioAlumno || usuarioAlumno.role !== UserRole.alumno) {
@@ -172,7 +168,7 @@ export class AlumnoEntrenadorService {
       }
       const alumno = await tx.alumno.findUnique({
         where: {
-          idUsuario: id.id,
+          idUsuario: id,
         },
       });
       if (!alumno) {
@@ -180,7 +176,7 @@ export class AlumnoEntrenadorService {
       }
       const tokenActivo = await tx.tokenVinculacionAlumno.findFirst({
         where: {
-          idAlumno: id.id,
+          idAlumno: id,
           usadoEn: null,
           revocadoEn: null,
         },
@@ -193,16 +189,18 @@ export class AlumnoEntrenadorService {
           data: {
             revocadoEn: new Date(),
             actualizadoEn: new Date(),
-            actualizadoPor: id.id,
+            actualizadoPor: id,
           },
         });
       }
+      const expiraEn = new Date(Date.now() + 30 * 60 * 1000);
       return tx.tokenVinculacionAlumno.create({
         data: {
-          idAlumno: id.id,
+          idAlumno: id,
           codigoHash: this.hashToken(codigo),
           secretoHash: this.hashToken(secreto),
-          actualizadoPor: id.id,
+          actualizadoPor: id,
+          expiraEn: expiraEn,
         },
       });
     });
@@ -219,13 +217,13 @@ export class AlumnoEntrenadorService {
   //
   // Consumir Token method
   //
-  async consumirToken(consumirTokenDto: ConsumirTokenDto) {
+  async consumirToken(consumirTokenDto: ConsumirTokenDto, usuarioId: string) {
     const codigoHash = this.hashToken(consumirTokenDto.codigo);
     const secretoHash = this.hashToken(consumirTokenDto.secreto);
     const resultado = await this.prisma.$transaction(async (tx) => {
       const usuarioEntrenador = await tx.usuario.findUnique({
         where: {
-          id: consumirTokenDto.id_entrenador,
+          id: usuarioId,
         },
       });
       if (!usuarioEntrenador || usuarioEntrenador.role !== UserRole.entrenador) {
@@ -233,13 +231,13 @@ export class AlumnoEntrenadorService {
       }
       const entrenador = await tx.entrenador.findUnique({
         where: {
-          idUsuario: consumirTokenDto.id_entrenador,
+          idUsuario: usuarioId,
         },
       });
       if (!entrenador) {
         throw new UnauthorizedException('Entrenador no encontrado');
       }
-      await this.validatePLanYAlumnosLimites(consumirTokenDto.id_entrenador, tx);
+      await this.validatePLanYAlumnosLimites(usuarioId, tx);
       const token = await tx.tokenVinculacionAlumno.findFirst({
         where: {
           codigoHash,
@@ -274,9 +272,9 @@ export class AlumnoEntrenadorService {
         },
         data: {
           usadoEn: new Date(),
-          reclamadoPorEntrenador: consumirTokenDto.id_entrenador,
+          reclamadoPorEntrenador: usuarioId,
           actualizadoEn: new Date(),
-          actualizadoPor: consumirTokenDto.id_entrenador,
+          actualizadoPor: usuarioId,
         },
       });
       await tx.alumno.update({
@@ -284,15 +282,15 @@ export class AlumnoEntrenadorService {
           idUsuario: token.idAlumno,
         },
         data: {
-          idEntrenadorActual: consumirTokenDto.id_entrenador,
+          idEntrenadorActual: usuarioId,
         },
       });
       await tx.alumnoEntrenadorHistorial.create({
         data: {
           idUsuario: token.idAlumno,
-          idEntrenador: consumirTokenDto.id_entrenador,
+          idEntrenador: usuarioId,
           activo: true,
-          createdBy: consumirTokenDto.id_entrenador,
+          createdBy: usuarioId,
         },
       });
       await tx.usuario.update({
@@ -300,7 +298,7 @@ export class AlumnoEntrenadorService {
           id: token.idAlumno,
         },
         data: {
-          role: UserRole.alumno_con_entrenador,
+          role: UserRole.alumnoConEntrenador,
         },
       });
       return {

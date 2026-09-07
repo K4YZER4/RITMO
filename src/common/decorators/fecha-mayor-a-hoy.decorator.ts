@@ -16,20 +16,12 @@ export function IsTodayOrFutureDate(validationOptions?: ValidationOptions) {
           if (typeof value !== 'string') {
             return false;
           }
-
-          const inputDate = new Date(value);
-
-          if (Number.isNaN(inputDate.getTime())) {
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
             return false;
           }
 
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-
-          const normalizedInputDate = new Date(inputDate);
-          normalizedInputDate.setHours(0, 0, 0, 0);
-
-          return normalizedInputDate.getTime() >= today.getTime();
+          const today = new Date().toLocaleDateString('en-CA');
+          return value >= today;
         },
 
         defaultMessage(args: ValidationArguments): string {
