@@ -1,21 +1,20 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { RegisterEntrenadorDto } from './dto/registerEntrenador';
-import { LoginDto } from './dto/login';
+import { RegisterEntrenadorDto } from './dto/register-entrenador.dto';
+import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
-import { RegisterAlumnoDto } from './dto/registerAlumno';
+import { RegisterAlumnoDto } from './dto/register-alumno.dto';
 import type { JwtPayload } from '../../common/types/jwt-payload';
 import { JwtService } from '@nestjs/jwt';
 import { DB_SEXO_IDS } from '../../common/constants/db-sexo';
 import { UserRole } from '@prisma/client';
-import { AlumnoEntrenadorService } from '../alumno-entrenador/alumno-entrenador.service';
-
+import { SuscripcionesService } from '../suscripciones/suscripciones.service';
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
-    private readonly alumnoEntrenadorService: AlumnoEntrenadorService,
+    private readonly suscripcionesService: SuscripcionesService,
   ) {}
 
   private readonly seedHash: number = 10;
@@ -48,8 +47,8 @@ export class AuthService {
           nombrePublico: registerData.nombre_publico,
         },
       });
+      await this.suscripcionesService.activarSuscripcionInicial(user.id, tx);
     });
-
     return { message: 'Usuario registrado exitosamente' };
   }
   //
@@ -68,7 +67,7 @@ export class AuthService {
       throw new UnauthorizedException('Contraseña incorrecta');
     }
 
-    const payload: JwtPayload = { sub: user.id, correo: user.correo, role: user.role };
+    const payload: JwtPayload = { sub: user.id, id: user.id, correo: user.correo, role: user.role };
     const token = this.jwtService.sign(payload);
 
     return { message: 'Inicio de sesión exitoso', token };
@@ -81,18 +80,7 @@ export class AuthService {
     const idSexo = registerData.sexo === 'MASCULINO' ? DB_SEXO_IDS.MASCULINO : DB_SEXO_IDS.FEMENINO;
 
     await this.prisma.$transaction(async (tx) => {
-      let roleAlumno: UserRole = UserRole.alumno_con_entrenador;
-
-      if (!registerData.id_entrenador_actual) {
-        roleAlumno = UserRole.alumno;
-      }
-
-      if (registerData.id_entrenador_actual) {
-        await this.alumnoEntrenadorService.validatePLanYAlumnosLimites(
-          registerData.id_entrenador_actual,
-          tx,
-        );
-      }
+      const roleAlumno: UserRole = UserRole.alumno;
 
       const user = await tx.usuario.create({
         data: {
@@ -114,28 +102,17 @@ export class AuthService {
           idUsuario: user.id,
           numeroCelular: numeroCelularString,
           fechaInicioEntrenamiento: new Date(registerData.fecha_inicio_entrenamiento),
-          objetivo: registerData.objetivo,
-          nivelActividad: registerData.nivel_actividad,
+          idObjetivo: registerData.id_objetivo,
+          idNivelActividad: registerData.id_nivel_actividad,
           observacionesMedicas: registerData.observaciones_medicas,
           lesionesActuales: registerData.lesiones_actuales,
           lesionesPasadas: registerData.lesiones_pasadas,
           contactoEmergenciaNombre: registerData.contacto_emergencia_nombre,
           contactoEmergenciaTelefono: registerData.contacto_emergencia_telefono,
-          idEntrenadorActual: registerData.id_entrenador_actual ?? null,
         },
       });
-
-      if (registerData.id_entrenador_actual) {
-        await tx.alumnoEntrenadorHistorial.create({
-          data: {
-            idUsuario: user.id,
-            idEntrenador: registerData.id_entrenador_actual,
-            activo: true,
-          },
-        });
-      }
+      await this.suscripcionesService.activarSuscripcionInicial(user.id, tx);
     });
-
     return { message: 'Usuario registrado exitosamente' };
   }
 }

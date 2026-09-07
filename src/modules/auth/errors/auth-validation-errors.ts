@@ -1,4 +1,4 @@
-import { validationMessage } from '../validation-message';
+import { validationMessage } from '../../../common/exception/validation-message';
 
 export const AUTH_VALIDATION_ERRORS = {
   REQUIRED_EMAIL: validationMessage('REQUIRED_EMAIL', 'El correo es obligatorio.'),
@@ -129,7 +129,7 @@ export const AUTH_VALIDATION_ERRORS = {
   ),
 
   REQUIRED_GOAL: validationMessage('REQUIRED_GOAL', 'El objetivo es obligatorio.'),
-  INVALID_GOAL: validationMessage('INVALID_GOAL', 'El objetivo debe ser texto.'),
+  INVALID_GOAL: validationMessage('INVALID_GOAL', 'El objetivo debe ser un número.'),
 
   REQUIRED_ACTIVITY_LEVEL: validationMessage(
     'REQUIRED_ACTIVITY_LEVEL',
@@ -137,7 +137,7 @@ export const AUTH_VALIDATION_ERRORS = {
   ),
   INVALID_ACTIVITY_LEVEL: validationMessage(
     'INVALID_ACTIVITY_LEVEL',
-    'El nivel de actividad debe ser texto.',
+    'El nivel de actividad debe ser un número.',
   ),
 
   REQUIRED_MEDICAL_NOTES: validationMessage(

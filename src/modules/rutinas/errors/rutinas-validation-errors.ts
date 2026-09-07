@@ -1,4 +1,4 @@
-import { validationMessage } from '../validation-message';
+import { validationMessage } from '../../../common/exception/validation-message';
 
 export const RUTINAS_VALIDATION_ERRORS = {
   REQUIRED_ALUMNO_ID: validationMessage('REQUIRED_ALUMNO_ID', 'El id del alumno es obligatorio.'),
@@ -117,6 +117,10 @@ export const RUTINAS_VALIDATION_ERRORS = {
   ID_EJERCICIO_PERSONALIZADO_TOO_LOW: validationMessage(
     'ID_EJERCICIO_PERSONALIZADO_TOO_LOW',
     'id_ejercicio_personalizado debe ser mayor a 0.',
+  ),
+  REQUIRED_ID_EJERCICIO: validationMessage(
+    'REQUIRED_ID_EJERCICIO',
+    'Cada ejercicio debe indicar al menos id_ejercicio_estandar o id_ejercicio_personalizado.',
   ),
 
   REQUIRED_ORDEN: validationMessage('REQUIRED_ORDEN', 'orden es obligatorio.'),

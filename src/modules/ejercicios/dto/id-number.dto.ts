@@ -1,17 +1,21 @@
-import { Type } from 'class-transformer';
-import { IsInt, IsNotEmpty, Min } from 'class-validator';
-import { EJERCICIOS_VALIDATION_ERRORS } from '../../../common/exception/errors/ejercicios-validation-errors';
+import { IsNotEmpty } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsBigInt } from '../../pagos/dto/is-big-int.decorator';
+import { ToBigInt } from '../../../common/decorators/to-big-int.decorator';
+import { EJERCICIOS_VALIDATION_ERRORS } from '../errors/ejercicios-validation-errors';
 
 export class IdNumberDto {
-  @Type(() => Number)
-  @IsInt({
-    message: EJERCICIOS_VALIDATION_ERRORS.INVALID_ID,
+  @ApiProperty({
+    type: String,
+    description: 'ID del ejercicio personalizado (bigint serializado como string).',
+    example: '123',
   })
-  @Min(1, {
+  @ToBigInt()
+  @IsBigInt({
     message: EJERCICIOS_VALIDATION_ERRORS.INVALID_ID,
   })
   @IsNotEmpty({
     message: EJERCICIOS_VALIDATION_ERRORS.REQUIRED_ID,
   })
-  id!: number;
+  id!: bigint;
 }

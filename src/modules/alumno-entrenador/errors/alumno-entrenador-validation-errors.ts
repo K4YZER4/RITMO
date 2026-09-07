@@ -1,4 +1,4 @@
-import { validationMessage } from '../validation-message';
+import { validationMessage } from '../../../common/exception/validation-message';
 
 export const ALUMNO_ENTRENADOR_VALIDATION_ERRORS = {
   REQUIRED_CODIGO: validationMessage('REQUIRED_CODIGO', 'El código del token es obligatorio.'),

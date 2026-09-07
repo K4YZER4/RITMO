@@ -2,10 +2,8 @@ import { Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { PrismaModule } from '../../prisma/prisma.module';
+import { SuscripcionesModule } from '../suscripciones/suscripciones.module';
 import { JwtModule } from '@nestjs/jwt';
-import { APP_GUARD } from '@nestjs/core';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guards';
-import { AlumnoEntrenadorModule } from '../alumno-entrenador/alumno-entrenador.module';
 const jwtExpiration = parseInt(process.env.JWT_EXPIRATION_TIME ?? '86400', 10);
 @Module({
   imports: [
@@ -14,15 +12,10 @@ const jwtExpiration = parseInt(process.env.JWT_EXPIRATION_TIME ?? '86400', 10);
       signOptions: { expiresIn: jwtExpiration },
     }),
     PrismaModule,
-    AlumnoEntrenadorModule,
+    SuscripcionesModule,
   ],
   controllers: [AuthController],
-  providers: [
-    AuthService,
-    {
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard,
-    },
-  ],
+  providers: [AuthService],
+  exports: [JwtModule],
 })
 export class AuthModule {}

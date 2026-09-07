@@ -1,13 +1,15 @@
 import { IsEmail, IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
-import { AUTH_VALIDATION_ERRORS } from '../../../common/exception/errors/auth-validation-errors';
+import { AUTH_VALIDATION_ERRORS } from '../errors/auth-validation-errors';
 
 export class LoginDto {
+  /** Correo electrónico del usuario. */
   @IsEmail({}, { message: AUTH_VALIDATION_ERRORS.INVALID_EMAIL })
   @IsNotEmpty({ message: AUTH_VALIDATION_ERRORS.REQUIRED_EMAIL })
   @MinLength(5, { message: AUTH_VALIDATION_ERRORS.EMAIL_TOO_SHORT })
   @MaxLength(60, { message: AUTH_VALIDATION_ERRORS.EMAIL_TOO_LONG })
   correo!: string;
 
+  /** Contraseña del usuario (mínimo 8 caracteres). */
   @IsString({ message: AUTH_VALIDATION_ERRORS.INVALID_PASSWORD_TYPE })
   @IsNotEmpty({ message: AUTH_VALIDATION_ERRORS.REQUIRED_PASSWORD })
   @MinLength(8, { message: AUTH_VALIDATION_ERRORS.PASSWORD_TOO_SHORT })

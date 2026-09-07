@@ -152,7 +152,9 @@ CREATE TYPE app_user.estado_suscripcion_enum AS ENUM (
   'cancelada',
   'expirada'
 );
-
+CREATE TYPE app_user.proveedor_pago_enum AS ENUM (
+  'stripe'
+);
 CREATE TYPE app_user.estado_pago_enum AS ENUM (
   'pendiente',
   'pagado',
@@ -161,29 +163,72 @@ CREATE TYPE app_user.estado_pago_enum AS ENUM (
   'reembolsado'
 );
 CREATE TYPE app_user.billing_interval_enum AS ENUM ('mes', 'año');
+CREATE TYPE app_user.unidad_periodo_enum AS ENUM (
+  'dia',
+  'semana',
+  'mes',
+  'año'
+);
 CREATE TABLE app_user.plan_entrenador (
-  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  nombre text NOT NULL,
-  descripcion text,
-  precio numeric(10,2) NOT NULL,
-  limite_alumnos integer NOT NULL,
-  intervalo_cobro app_user.billing_interval_enum NOT NULL,
-  esta_activo boolean NOT NULL DEFAULT true,
-  creado_en timestamptz NOT NULL DEFAULT now(),
-  actualizado_en timestamptz NOT NULL DEFAULT now(),
-  limite_rutinas integer NOT NULL
+  id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+  nombre TEXT NOT NULL,
+  descripcion TEXT,
+
+  precio NUMERIC(10, 2) NOT NULL,
+  moneda CHAR(3) NOT NULL DEFAULT 'MXN',
+  proveedor_precio_id VARCHAR(255),
+
+  limite_alumnos INTEGER NOT NULL,
+  limite_rutinas INTEGER NOT NULL,
+
+  intervalo_cobro app_user.billing_interval_enum,
+  cantidad_intervalos_cobro SMALLINT,
+
+  duracion_unidad app_user.unidad_periodo_enum,
+  duracion_cantidad SMALLINT,
+
+  es_gratuito BOOLEAN NOT NULL DEFAULT false,
+  es_vitalicio BOOLEAN NOT NULL DEFAULT false,
+
+  cobra_recurrentemente BOOLEAN NOT NULL DEFAULT true,
+  numero_cobros SMALLINT,
+
+  esta_activo BOOLEAN NOT NULL DEFAULT true,
+
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  actualizado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE TABLE app_user.plan_alumno (
-  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  nombre text NOT NULL,
-  descripcion text,
-  precio numeric(10,2) NOT NULL,
-  limite_ejercicios_personalizados integer NOT NULL,
-  intervalo_cobro app_user.billing_interval_enum NOT NULL,
-  esta_activo boolean NOT NULL DEFAULT true,
-  creado_en timestamptz NOT NULL DEFAULT now(),
-  actualizado_en timestamptz NOT NULL DEFAULT now(),
-  limite_rutinas integer NOT NULL
+  id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+  nombre TEXT NOT NULL,
+  descripcion TEXT,
+
+  precio NUMERIC(10, 2) NOT NULL,
+  moneda CHAR(3) NOT NULL DEFAULT 'MXN',
+  proveedor_precio_id VARCHAR(255),
+
+  limite_ejercicios_personalizados INTEGER NOT NULL,
+  limite_rutinas INTEGER NOT NULL,
+
+  intervalo_cobro app_user.billing_interval_enum,
+  cantidad_intervalos_cobro SMALLINT,
+
+
+  duracion_unidad app_user.unidad_periodo_enum,
+  duracion_cantidad SMALLINT,
+
+  es_gratuito BOOLEAN NOT NULL DEFAULT false,
+  es_vitalicio BOOLEAN NOT NULL DEFAULT false,
+
+  cobra_recurrentemente BOOLEAN NOT NULL DEFAULT false,
+  numero_cobros SMALLINT,
+
+  esta_activo BOOLEAN NOT NULL DEFAULT true,
+
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  actualizado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE app_user.suscripcion (
@@ -192,31 +237,62 @@ CREATE TABLE app_user.suscripcion (
   alumno_id UUID,
   entrenador_id UUID,
 
+  plan_alumno_id INTEGER,
+  plan_entrenador_id INTEGER,
+
   estado app_user.estado_suscripcion_enum NOT NULL DEFAULT 'prueba',
 
   periodo_actual_inicio TIMESTAMPTZ NOT NULL,
-  periodo_actual_fin TIMESTAMPTZ NOT NULL,
+  periodo_actual_fin TIMESTAMPTZ,
   siguiente_cobro_en TIMESTAMPTZ,
   cancelada_en TIMESTAMPTZ,
+  cancelar_al_final_del_periodo BOOLEAN NOT NULL DEFAULT false,
 
-  proveedor VARCHAR(30),
-  proveedor_customer_id TEXT,
-  proveedor_subscription_id TEXT,
+  vitalicia BOOLEAN NOT NULL DEFAULT false,
+
+  plan_nombre_snapshot TEXT NOT NULL,
+  precio_snapshot NUMERIC(10, 2) NOT NULL,
+  moneda_snapshot CHAR(3) NOT NULL DEFAULT 'MXN',
+  proveedor_precio_id_snapshot VARCHAR(255),
+  duracion_unidad_snapshot app_user.unidad_periodo_enum,
+  duracion_cantidad_snapshot SMALLINT,
+
+  proveedor app_user.proveedor_pago_enum ,
+  proveedor_customer_id VARCHAR(255),
+  proveedor_subscription_id VARCHAR(255),
 
   creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   actualizado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+CREATE TABLE app_user.evento_stripe (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
+  stripe_event_id VARCHAR(255) NOT NULL,
+  tipo_evento VARCHAR(100) NOT NULL,
+
+  suscripcion_id BIGINT,
+  pago_id BIGINT,
+
+  procesado BOOLEAN NOT NULL DEFAULT FALSE,
+  procesado_en TIMESTAMPTZ,
+  error_mensaje TEXT,
+
+  payload JSONB NOT NULL,
+
+  recibido_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 CREATE TABLE app_user.pago (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   suscripcion_id BIGINT NOT NULL,
   monto NUMERIC(10, 2) NOT NULL,
+  moneda CHAR(3) NOT NULL DEFAULT 'MXN',
   estado app_user.estado_pago_enum NOT NULL DEFAULT 'pendiente',
   vence_en TIMESTAMPTZ NOT NULL,
   pagado_en TIMESTAMPTZ,
-  proveedor VARCHAR(30),
-  proveedor_pago_id TEXT,
-  proveedor_evento_id TEXT,
+  proveedor app_user.proveedor_pago_enum NOT NULL DEFAULT 'stripe',
+  proveedor_pago_id VARCHAR(255),
+  proveedor_factura_id VARCHAR(255),
   creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   actualizado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -893,14 +969,142 @@ ALTER TABLE app_user.alumno_ejercicio_pr
   UNIQUE (id_usuario, id_ejercicio_personalizado, peso);
 
 ALTER TABLE app_user.pago
-  ADD CONSTRAINT pago_suscripcion_foreign
-    FOREIGN KEY (suscripcion_id)
-    REFERENCES app_user.suscripcion(id);
-
-ALTER TABLE app_user.pago
   ADD CONSTRAINT pago_monto_valido_check
     CHECK (monto >= 0);
 
+ALTER TABLE app_user.pago
+  ADD CONSTRAINT pago_no_pagado_sin_fecha_check
+    CHECK (
+      (estado = 'pagado' AND pagado_en IS NOT NULL)
+      OR
+      (estado <> 'pagado' AND pagado_en IS NULL)
+    );
+
+ALTER TABLE app_user.suscripcion
+  ADD CONSTRAINT suscripcion_suscriptor_plan_consistente_check
+    CHECK (
+      (
+        alumno_id IS NOT NULL
+        AND entrenador_id IS NULL
+        AND plan_alumno_id IS NOT NULL
+        AND plan_entrenador_id IS NULL
+      )
+      OR
+      (
+        alumno_id IS NULL
+        AND entrenador_id IS NOT NULL
+        AND plan_alumno_id IS NULL
+        AND plan_entrenador_id IS NOT NULL
+      )
+    );
+    
+ALTER TABLE app_user.plan_entrenador
+  ADD CONSTRAINT plan_entrenador_precio_check
+    CHECK (precio >= 0);
+
+ALTER TABLE app_user.plan_entrenador
+  ADD CONSTRAINT plan_entrenador_moneda_check
+    CHECK (moneda = UPPER(moneda));
+
+ALTER TABLE app_user.plan_entrenador
+  ADD CONSTRAINT plan_entrenador_limite_alumnos_check
+    CHECK (limite_alumnos >= 0);
+
+ALTER TABLE app_user.plan_entrenador
+  ADD CONSTRAINT plan_entrenador_limite_rutinas_check
+    CHECK (limite_rutinas >= 0);
+
+ALTER TABLE app_user.plan_entrenador
+  ADD CONSTRAINT plan_entrenador_configuracion_check
+    CHECK (
+      (
+        es_vitalicio = true
+        AND es_gratuito = true
+        AND precio = 0
+        AND cobra_recurrentemente = false
+        AND intervalo_cobro IS NULL
+        AND cantidad_intervalos_cobro IS NULL
+        AND duracion_unidad IS NULL
+        AND duracion_cantidad IS NULL
+        AND numero_cobros IS NULL
+      )
+      OR
+      (
+        es_vitalicio = false
+        AND duracion_unidad IS NOT NULL
+        AND duracion_cantidad IS NOT NULL
+        AND duracion_cantidad > 0
+        AND (
+          (
+            cobra_recurrentemente = true
+            AND intervalo_cobro IS NOT NULL
+            AND cantidad_intervalos_cobro IS NOT NULL
+            AND cantidad_intervalos_cobro > 0
+            AND numero_cobros IS NULL
+          )
+          OR
+          (
+            cobra_recurrentemente = false
+            AND numero_cobros IS NOT NULL
+            AND numero_cobros > 0
+          )
+        )
+      )
+    );
+
+ALTER TABLE app_user.plan_alumno
+  ADD CONSTRAINT plan_alumno_precio_check
+    CHECK (precio >= 0);
+
+ALTER TABLE app_user.plan_alumno
+  ADD CONSTRAINT plan_alumno_moneda_check
+    CHECK (moneda = UPPER(moneda));
+
+ALTER TABLE app_user.plan_alumno
+  ADD CONSTRAINT plan_alumno_limite_ejercicios_check
+    CHECK (limite_ejercicios_personalizados >= 0);
+
+ALTER TABLE app_user.plan_alumno
+  ADD CONSTRAINT plan_alumno_limite_rutinas_check
+    CHECK (limite_rutinas >= 0);
+
+ALTER TABLE app_user.plan_alumno
+  ADD CONSTRAINT plan_alumno_configuracion_check
+    CHECK (
+      (
+        es_vitalicio = true
+        AND es_gratuito = true
+        AND precio = 0
+        AND cobra_recurrentemente = false
+        AND intervalo_cobro IS NULL
+        AND cantidad_intervalos_cobro IS NULL
+        AND duracion_unidad IS NULL
+        AND duracion_cantidad IS NULL
+        AND numero_cobros IS NULL
+      )
+      OR
+      (
+        es_vitalicio = false
+        AND duracion_unidad IS NOT NULL
+        AND duracion_cantidad IS NOT NULL
+        AND duracion_cantidad > 0
+        AND (
+          (
+            cobra_recurrentemente = true
+            AND intervalo_cobro IS NOT NULL
+            AND cantidad_intervalos_cobro IS NOT NULL
+            AND cantidad_intervalos_cobro > 0
+            AND numero_cobros IS NULL
+          )
+          OR
+          (
+            cobra_recurrentemente = false
+            AND numero_cobros IS NOT NULL
+            AND numero_cobros > 0
+          )
+        )
+      )
+    );
 ALTER TABLE app_user.suscripcion
   ADD CONSTRAINT suscripcion_alumno_foreign
     FOREIGN KEY (alumno_id)
@@ -912,13 +1116,185 @@ ALTER TABLE app_user.suscripcion
     REFERENCES entrenador.entrenador(id_usuario);
 
 ALTER TABLE app_user.suscripcion
-  ADD CONSTRAINT suscripcion_un_solo_suscriptor_check
+  ADD CONSTRAINT suscripcion_plan_alumno_foreign
+    FOREIGN KEY (plan_alumno_id)
+    REFERENCES app_user.plan_alumno(id);
+
+ALTER TABLE app_user.suscripcion
+  ADD CONSTRAINT suscripcion_plan_entrenador_foreign
+    FOREIGN KEY (plan_entrenador_id)
+    REFERENCES app_user.plan_entrenador(id);
+
+ALTER TABLE app_user.suscripcion
+  ADD CONSTRAINT suscripcion_precio_snapshot_check
+    CHECK (precio_snapshot >= 0);
+
+ALTER TABLE app_user.suscripcion
+  ADD CONSTRAINT suscripcion_moneda_snapshot_check
+    CHECK (moneda_snapshot = UPPER(moneda_snapshot));
+
+ALTER TABLE app_user.suscripcion
+  ADD CONSTRAINT suscripcion_duracion_snapshot_check
     CHECK (
-      (alumno_id IS NOT NULL AND entrenador_id IS NULL)
+      (
+        vitalicia = true
+        AND duracion_unidad_snapshot IS NULL
+        AND duracion_cantidad_snapshot IS NULL
+      )
       OR
-      (alumno_id IS NULL AND entrenador_id IS NOT NULL)
+      (
+        vitalicia = false
+        AND duracion_unidad_snapshot IS NOT NULL
+        AND duracion_cantidad_snapshot IS NOT NULL
+        AND duracion_cantidad_snapshot > 0
+      )
     );
 
 ALTER TABLE app_user.suscripcion
-  ADD CONSTRAINT suscripcion_periodo_valido_check
-    CHECK (periodo_actual_fin > periodo_actual_inicio)
+  ADD CONSTRAINT suscripcion_periodo_check
+    CHECK (
+      (
+        vitalicia = true
+        AND periodo_actual_fin IS NULL
+        AND siguiente_cobro_en IS NULL
+      )
+      OR
+      (
+        vitalicia = false
+        AND periodo_actual_fin IS NOT NULL
+        AND periodo_actual_fin > periodo_actual_inicio
+      )
+    );
+ALTER TABLE app_user.pago
+  ADD CONSTRAINT pago_suscripcion_foreign
+    FOREIGN KEY (suscripcion_id)
+    REFERENCES app_user.suscripcion(id);
+
+ALTER TABLE app_user.pago
+  ADD CONSTRAINT pago_monto_check
+    CHECK (monto >= 0);
+
+ALTER TABLE app_user.pago
+  ADD CONSTRAINT pago_moneda_check
+    CHECK (moneda = UPPER(moneda));
+
+ALTER TABLE app_user.pago
+  ADD CONSTRAINT pago_estado_fecha_check
+    CHECK (
+      (estado = 'pagado' AND pagado_en IS NOT NULL)
+      OR
+      (estado <> 'pagado' AND pagado_en IS NULL)
+    );
+CREATE INDEX suscripcion_alumno_historial_idx
+  ON app_user.suscripcion (alumno_id, periodo_actual_inicio DESC);
+
+CREATE INDEX suscripcion_entrenador_historial_idx
+  ON app_user.suscripcion (entrenador_id, periodo_actual_inicio DESC);
+
+CREATE INDEX suscripcion_estado_fin_idx
+  ON app_user.suscripcion (estado, periodo_actual_fin);
+
+CREATE UNIQUE INDEX suscripcion_alumno_vigente_unique_idx
+  ON app_user.suscripcion (alumno_id)
+  WHERE estado IN ('prueba', 'activa', 'morosa');
+
+CREATE UNIQUE INDEX suscripcion_entrenador_vigente_unique_idx
+  ON app_user.suscripcion (entrenador_id)
+  WHERE estado IN ('prueba', 'activa', 'morosa');
+
+CREATE UNIQUE INDEX suscripcion_proveedor_subscription_unique_idx
+  ON app_user.suscripcion (proveedor, proveedor_subscription_id)
+  WHERE proveedor IS NOT NULL
+    AND proveedor_subscription_id IS NOT NULL;
+CREATE INDEX pago_suscripcion_vence_idx
+  ON app_user.pago (suscripcion_id, vence_en DESC);
+
+CREATE INDEX pago_estado_vence_idx
+  ON app_user.pago (estado, vence_en);
+
+CREATE UNIQUE INDEX pago_proveedor_pago_unique_idx
+  ON app_user.pago (proveedor, proveedor_pago_id)
+  WHERE proveedor IS NOT NULL
+    AND proveedor_pago_id IS NOT NULL;
+ALTER TABLE app_user.evento_stripe
+ADD CONSTRAINT evento_stripe_pago_foreign
+FOREIGN KEY (pago_id)
+REFERENCES app_user.pago(id);
+CREATE UNIQUE INDEX plan_alumno_proveedor_precio_unique_idx
+ON app_user.plan_alumno (proveedor_precio_id)
+WHERE proveedor_precio_id IS NOT NULL;
+ALTER TABLE app_user.plan_alumno
+ADD CONSTRAINT plan_alumno_proveedor_precio_requerido_check
+CHECK (
+  (
+    es_gratuito = true
+    AND proveedor_precio_id IS NULL
+  )
+  OR
+  (
+    es_gratuito = false
+    AND cobra_recurrentemente = true
+    AND proveedor_precio_id IS NOT NULL
+  )
+  OR
+  (
+    es_gratuito = false
+    AND cobra_recurrentemente = false
+    AND proveedor_precio_id IS NULL
+  )
+);
+CREATE UNIQUE INDEX plan_entrenador_proveedor_precio_unique_idx
+ON app_user.plan_entrenador (proveedor_precio_id)
+WHERE proveedor_precio_id IS NOT NULL;
+ALTER TABLE app_user.plan_entrenador
+ADD CONSTRAINT plan_entrenador_proveedor_precio_requerido_check
+CHECK (
+  (
+    es_gratuito = true
+    AND proveedor_precio_id IS NULL
+  )
+  OR
+  (
+    es_gratuito = false
+    AND cobra_recurrentemente = true
+    AND proveedor_precio_id IS NOT NULL
+  )
+  OR
+  (
+    es_gratuito = false
+    AND cobra_recurrentemente = false
+    AND proveedor_precio_id IS NULL
+  )
+);
+ALTER TABLE app_user.plan_alumno
+ADD CONSTRAINT plan_alumno_proveedor_precio_formato_check
+CHECK (
+  proveedor_precio_id IS NULL
+  OR proveedor_precio_id LIKE 'price_%'
+);
+ALTER TABLE app_user.plan_entrenador
+ADD CONSTRAINT plan_entrenador_proveedor_precio_formato_check
+CHECK (
+  proveedor_precio_id IS NULL
+  OR proveedor_precio_id LIKE 'price_%'
+);
+CREATE INDEX evento_stripe_suscripcion_idx
+  ON app_user.evento_stripe (suscripcion_id);
+
+CREATE INDEX evento_stripe_pago_idx
+  ON app_user.evento_stripe (pago_id);
+
+CREATE INDEX evento_stripe_pendiente_idx
+  ON app_user.evento_stripe (recibido_en)
+  WHERE procesado = FALSE;
+
+ALTER TABLE app_user.evento_stripe
+  ADD CONSTRAINT evento_stripe_event_id_unique
+  UNIQUE (stripe_event_id);
+
+ALTER TABLE app_user.evento_stripe
+  ADD CONSTRAINT evento_stripe_suscripcion_foreign
+  FOREIGN KEY (suscripcion_id)
+  REFERENCES app_user.suscripcion(id)
+  ON DELETE NO ACTION
+  ON UPDATE NO ACTION;

@@ -1,98 +1,205 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# RITMO — Backend (NestJS)
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend de la plataforma **RITMO**, una aplicación de entrenamiento que conecta a **entrenadores** con **alumnos** mediante rutinas y ejercicios, con sistema de **suscripciones** y **pagos** integrados con **Stripe**.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## Propósito del proyecto
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+RITMO es una plataforma de entrenamiento físico que permite:
 
-## Project setup
+- **Registro** e **inicio de sesión** de alumnos y entrenadores (autenticación JWT).
+- **Gestión de rutinas** por entrenador: crear rutinas, asignarles ejercicios y asignarlas a alumnos en días específicos, resolviendo solapamientos de fechas.
+- **Gestión de ejercicios personalizados** por alumno, con músculos y equipos asociados y límites según el plan.
+- **Vinculación alumno ↔ entrenador** mediante tokens (código + secreto) de una sola vez y con caducidad.
+- **Suscripciones** con planes (gratuitos y de pago), estados (`prueba`, `activa`, `morosa`, `cancelada`, `expirada`) y cobros recurrentes.
+- **Pagos con Stripe**: sesiones de Checkout, webhooks (`checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.deleted`) con deduplicación de eventos.
+
+---
+
+## Stack
+
+| Capa | Tecnología |
+|------|-----------|
+| Framework | NestJS 11 |
+| Lenguaje | TypeScript 5.7 |
+| ORM | Prisma 7 (`@prisma/client` con `@prisma/adapter-pg` / Prisma Accelerate) |
+| Base de datos | PostgreSQL (multi-schema: `alumno`, `app_user`, `core`, `entrenador`, `ubi`) |
+| Host de DB | Neón (remoto; ver `DIRECT_URL`) |
+| Pagos | Stripe API v22 |
+| Validación | `class-validator` + `class-transformer` |
+| Configuración de entorno | `zod` (`config/env.schema.ts`) |
+| Hashing / tokens | `bcrypt`, `uuid` |
+| Tests | Jest + `ts-jest` |
+| Lint / formato | ESLint 9 + Prettier |
+
+---
+
+## Requisitos
+
+- **Node.js** 18 o superior (recomendado 20+).
+- **pnpm** (gestor de paquetes usado por el proyecto).
+- Una base de datos **PostgreSQL** accesible (el proyecto se usa típicamente con **Neón**).
+- Cuenta de **Stripe** (claves `test`/`live` y secreto de webhook).
+- (Opcional) Prisma CLI para migraciones.
+
+---
+
+## Instalación local
+
+> El proyecto no se entrega con un `.env`; los valores los crea quien lo despliegue.
+
+1. **Clonar e instalar dependencias**
+
+   ```bash
+   pnpm install
+   ```
+
+2. **Configurar variables de entorno**
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Completa los valores en `.env` según la sección [Variables de entorno](#variables-de-entorno).
+
+3. **Generar el cliente de Prisma**
+
+   ```bash
+   pnpm prisma:generate
+   ```
+
+4. **Aplicar las migraciones a la base de datos**
+
+   ```bash
+   pnpm prisma migrate deploy
+   ```
+
+   > En despliegues con Neón usa `prisma migrate deploy` (no interactivo). `prisma migrate dev` es interactivo y puede pedir confirmación.
+
+5. **Ejecutar el servidor**
+
+   ```bash
+   pnpm start:dev
+   ```
+
+   El servidor escucha en `http://localhost:3000` (o el `PORT` configurado).
+
+---
+
+## Variables de entorno
+
+Todas las variables están **validadas** por `src/config/env.schema.ts` antes de arrancar. Si falta una o no cumple el formato, la app no inicia.
+
+| Variable | Descripción | Formato / validación |
+|----------|-------------|----------------------|
+| `NODE_ENV` | Entorno de ejecución. | `development` \| `test` \| `production`. Default: `development`. |
+| `PORT` | Puerto HTTP donde escucha NestJS. | Entero 1–65535. Default: `3000`. |
+| `DATABASE_URL` | URL de conexión a PostgreSQL usada por Prisma en runtime. | String no vacía. |
+| `DIRECT_URL` | URL directa usada por Prisma para migraciones y operaciones que no pasan por el pooler (en Neón, host directo). | String no vacía. |
+| `JWT_SECRET` | Secreto para firmar y verificar los JWT. | Mínimo **32 caracteres**. |
+| `JWT_EXPIRATION_TIME` | Vigencia del JWT en **segundos**. | Entero positivo. 86400 = 24 h. |
+| `RATE_LIMIT_TTL` | Ventana de tiempo del rate limit en **milisegundos**. | Entero positivo. 10000 = 10 s. |
+| `RATE_LIMIT_GLOBAL_LIMIT` | Máximo de peticiones por IP dentro de `RATE_LIMIT_TTL`. | Entero positivo. |
+| `STRIPE_SECRET_KEY` | Clave secreta de Stripe. | Debe iniciar con `sk_test_` o `sk_live_`. |
+| `STRIPE_WEBHOOK_SECRET` | Firma para verificar los webhooks de Stripe. | Debe iniciar con `whsec_`. |
+| `FRONTEND_URL` | URL del frontend, usada para construir las URLs de éxito/cancelación del Checkout. | Debe ser una URL válida. |
+
+> ⚠️ Pendiente de confirmar: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` y `FRONTEND_URL` están **validados en el schema** y se usan en el código, pero **no aparecen** en `.env.example`. Habría que añadirlos a `.env.example` para que la instalación local quede documentada de forma completa.
+
+---
+
+## Scripts disponibles
+
+| Script | Comando |
+|--------|---------|
+| `start` | `nest start` |
+| `start:dev` | `nest start --watch` (hot reload) |
+| `start:debug` | `nest start --debug --watch` |
+| `start:prod` | `node dist/main` |
+| `build` | `nest build` (compila a `dist/`) |
+| `format` | `prettier --write "src/**/*.ts" "test/**/*.ts"` |
+| `lint` | `eslint "{src,apps,libs,test}/**/*.ts" --fix` |
+| `test` | `jest` |
+| `test:watch` | `jest --watch` |
+| `test:cov` | `jest --coverage` |
+| `test:debug` | `jest --runInBand` con inspector |
+| `test:e2e` | `jest --config ./test/jest-e2e.json` |
+| `prisma:generate` | `prisma generate` |
+| `prisma:migrate` | `prisma migrate dev` |
+| `prisma:push` | `prisma db push` |
+| `prisma:studio` | `prisma studio` |
+
+---
+
+## Cómo ejecutar tests
+
+Ejecutar **toda** la suite:
 
 ```bash
-$ pnpm install
+pnpm test
 ```
 
-## Compile and run the project
+Otras variantes:
 
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+pnpm test:watch    # modo watch
+pnpm test:cov      # con cobertura
+pnpm test:e2e      # tests end-to-end
 ```
 
-## Run tests
+Para ejecutar un único archivo:
 
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+pnpm test path/al/archivo.spec.ts
 ```
 
-## Deployment
+> Nota de configuración: Jest usa `moduleNameMapper` para resolver `uuid` a un shim CJS (`test/uuid-cjs-shim.js`), porque `uuid@14` es ESM puro. El `testRegex` es `.*\.spec\.ts$`, por lo que los tests e2e (que terminan en `e2e-spec.ts`) no coinciden con `pnpm test` y se corren con `pnpm test:e2e`.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+---
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## Estructura de carpetas
 
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+```
+ritmo/
+├── prisma/
+│   ├── schema.prisma          # Modelos, relaciones y enums (multi-schema)
+│   └── migrations/            # Migraciones SQL versionadas
+├── src/
+│   ├── main.ts                # Bootstrap, pipes globales, puerto
+│   ├── app.module.ts          # Módulo raíz, guards globales, throttler
+│   ├── app.controller.ts      # GET / (health/ping)
+│   ├── app.service.ts
+│   ├── common/
+│   │   ├── constants/          # DB_SEXO_IDS
+│   │   ├── decorators/         # @Public, @SinSuscripcion, @CurrentUser, @RateLimit, validadores de fecha
+│   │   ├── exception/          # AppBadRequestException, mensajes de validación
+│   │   ├── filter/             # GlobalExceptionFilter (errores Prisma/formato)
+│   │   ├── guards/             # JwtAuthGuard, SuscripcionGuard
+│   │   ├── middleware/         # RequestIdMiddleware
+│   │   ├── pipes/              # AppValidationPipe, ParseBigIntPipe
+│   │   └── types/              # JwtPayload
+│   ├── config/
+│   │   └── env.schema.ts       # Schema de variables de entorno (zod)
+│   ├── modules/
+│   │   ├── alumno-entrenador/  # Vinculación/desvinculación alumno-entrenador
+│   │   ├── auth/               # Login y registro
+│   │   ├── ejercicios/         # Ejercicios personalizados
+│   │   ├── pagos/              # Checkout + webhooks Stripe
+│   │   ├── rutinas/            # CRUD de rutinas y asignación
+│   │   ├── stripe/             # Cliente Stripe (wrapper)
+│   │   └── suscripciones/      # Ciclo de vida de suscripciones
+│   ├── prisma/
+│   │   ├── prisma.module.ts    # Módulo global de Prisma
+│   │   └── prisma.service.ts   # PrismaService (acceso a DB)
+│   └── types/                  # Augment de Express Request (user, requestId), RawBodyRequest
+└── test/                       # Tests e2e y shims de Jest
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+---
 
-## Resources
+## Documentación técnica
 
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- [`docs/architecture.md`](./docs/architecture.md) — arquitectura, responsabilidades, módulos, flujos de autenticación/roles y diagrama.
+- [`docs/api-resumen.md`](./docs/api-resumen.md) — tabla resumen de todos los endpoints.
+- [`docs/api-detallada.md`](./docs/api-detallada.md) — especificación detallada por endpoint (guards, DTOs, errores).

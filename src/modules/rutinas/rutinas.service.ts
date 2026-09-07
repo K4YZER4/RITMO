@@ -3,18 +3,72 @@ import { RutinaEjercicioDto } from './dto/rutina-ejercicio.dto';
 import { CreateRutinaDto } from './dto/create-rutina.dto';
 import { AsignarRutinaDto } from './dto/asignar-rutina.dto';
 import { PrismaService } from '../../prisma/prisma.service';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { UserRole } from '@prisma/client';
 @Injectable()
 export class RutinasService {
   constructor(private readonly prisma: PrismaService) {}
   //
   // Create routine method
   //
-  async create(createRutinaDto: CreateRutinaDto) {
+  async create(createRutinaDto: CreateRutinaDto, usuarioId: string) {
+    const usuario = await this.prisma.usuario.findUnique({
+      where: { id: usuarioId },
+    });
+    if (!usuario) {
+      throw new BadRequestException('Usuario no encontrado');
+    }
+    if (usuario.role === UserRole.admin || usuario.role === UserRole.alumnoConEntrenador) {
+      throw new BadRequestException('No tienes permisos para crear rutinas');
+    }
+    if (usuario.role === UserRole.entrenador) {
+      const entrenador = await this.prisma.entrenador.findUnique({
+        where: { idUsuario: usuarioId },
+      });
+      if (!entrenador) {
+        throw new BadRequestException('Entrenador no encontrado');
+      }
+      const planEntrenador = await this.prisma.planEntrenador.findFirst({
+        where: { id: entrenador.idPlan },
+      });
+      if (!planEntrenador || planEntrenador.estaActivo === false) {
+        throw new BadRequestException('Plan del entrenador no encontrado o inactivo');
+      }
+      const cantidadRutinas = await this.prisma.rutina.count({
+        where: { createdByUsuario: usuarioId },
+      });
+      if (cantidadRutinas >= planEntrenador.limiteRutinas) {
+        throw new BadRequestException(
+          `Has alcanzado el límite de rutinas permitidas por tu plan (${planEntrenador.limiteRutinas})`,
+        );
+      }
+    }
+    if (usuario.role === UserRole.alumno) {
+      const alumno = await this.prisma.alumno.findUnique({
+        where: { idUsuario: usuarioId },
+      });
+      if (!alumno) {
+        throw new BadRequestException('Alumno no encontrado');
+      }
+      const planAlumno = await this.prisma.planAlumno.findFirst({
+        where: { id: alumno.idPlan },
+      });
+      if (!planAlumno || planAlumno.estaActivo === false) {
+        throw new BadRequestException('Plan del alumno no encontrado o inactivo');
+      }
+      const cantidadRutinas = await this.prisma.rutina.count({
+        where: { createdByUsuario: usuarioId },
+      });
+      if (cantidadRutinas >= planAlumno.limiteRutinas) {
+        throw new BadRequestException(
+          `Has alcanzado el límite de rutinas permitidas por tu plan (${planAlumno.limiteRutinas})`,
+        );
+      }
+    }
     await this.prisma.rutina.create({
       data: {
-        createdByUsuario: createRutinaDto.created_by_usuario,
+        createdByUsuario: usuarioId,
         nombre: createRutinaDto.nombre,
         descripcion: createRutinaDto.descripcion,
         idCategoriaRutina: createRutinaDto.id_categoria_rutina,
@@ -25,7 +79,7 @@ export class RutinasService {
   //
   // Update routine exercises method
   //
-  async updateRutinaEjercicios(id_rutina: number, rutinaEjercicioDto: RutinaEjercicioDto) {
+  async updateRutinaEjercicios(id_rutina: bigint, rutinaEjercicioDto: RutinaEjercicioDto) {
     await this.prisma.$transaction(async (tx) => {
       await tx.rutinaEjercicio.deleteMany({
         where: {
@@ -53,7 +107,11 @@ export class RutinasService {
   //
   // Assign routine to student method
   //
-  async asignarRutinaAAlumno(id_rutina: number, asignarRutinaDto: AsignarRutinaDto) {
+  async asignarRutinaAAlumno(
+    id_rutina: bigint,
+    asignarRutinaDto: AsignarRutinaDto,
+    usuarioId: string,
+  ) {
     const fechaInicio = new Date(asignarRutinaDto.fecha_inicio);
     const fechaFin = asignarRutinaDto.fecha_fin ? new Date(asignarRutinaDto.fecha_fin) : null;
 
@@ -61,6 +119,19 @@ export class RutinasService {
 
     await this.prisma.$transaction(
       async (tx) => {
+        const rutina = await tx.rutina.findUnique({
+          where: { id: id_rutina },
+        });
+        if (!rutina || rutina.createdByUsuario !== usuarioId) {
+          throw new ForbiddenException('No tienes permiso para asignar esta rutina');
+        }
+        const alumno = await tx.usuario.findUnique({
+          where: { id: asignarRutinaDto.id_alumno },
+        });
+        if (!alumno || alumno.role !== UserRole.alumno) {
+          throw new ForbiddenException('El usuario destino no es un alumno válido');
+        }
+
         const conflictos = await tx.usuarioRutina.findMany({
           where: {
             idUsuario: asignarRutinaDto.id_alumno,
@@ -119,7 +190,7 @@ export class RutinasService {
             idDiaSemana: asignarRutinaDto.numero_dia,
             fechaInicio,
             fechaFin,
-            asignadaPorUsuario: asignarRutinaDto.asignada_por_usuario,
+            asignadaPorUsuario: usuarioId,
           },
         });
       },
