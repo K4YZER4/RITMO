@@ -52,8 +52,9 @@ export class RutinasController {
   updateRutinaEjercicios(
     @Param('id', ParseBigIntPipe) id: bigint,
     @Body() rutinaEjercicioDto: RutinaEjercicioDto,
+    @CurrentUser('id') usuarioId: string,
   ) {
-    return this.rutinasService.updateRutinaEjercicios(id, rutinaEjercicioDto);
+    return this.rutinasService.updateRutinaEjercicios(id, rutinaEjercicioDto, usuarioId);
   }
 
   @Post(':id/asignaciones')

@@ -79,8 +79,23 @@ export class RutinasService {
   //
   // Update routine exercises method
   //
-  async updateRutinaEjercicios(id_rutina: bigint, rutinaEjercicioDto: RutinaEjercicioDto) {
+  async updateRutinaEjercicios(
+    id_rutina: bigint,
+    rutinaEjercicioDto: RutinaEjercicioDto,
+    usuarioId: string,
+  ) {
     await this.prisma.$transaction(async (tx) => {
+      const rutina = await tx.rutina.findUnique({
+        where: { id: id_rutina },
+      });
+      if (!rutina || rutina.createdByUsuario !== usuarioId) {
+        throw new ForbiddenException(
+          'No tienes permiso para actualizar los ejercicios de esta rutina',
+        );
+      }
+      if (rutina.activa === false) {
+        throw new ForbiddenException('No puedes actualizar los ejercicios de una rutina inactiva');
+      }
       await tx.rutinaEjercicio.deleteMany({
         where: {
           idRutina: id_rutina,
