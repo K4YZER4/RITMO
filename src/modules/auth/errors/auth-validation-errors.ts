@@ -197,4 +197,5 @@ export const AUTH_VALIDATION_ERRORS = {
     'INVALID_TRAINER_DATE',
     'La fecha de inicio como entrenador debe tener un formato válido.',
   ),
+  INVALID_SEX_VALUE: validationMessage('INVALID_SEX_VALUE', 'El valor del sexo no es válido.'),
 } as const;

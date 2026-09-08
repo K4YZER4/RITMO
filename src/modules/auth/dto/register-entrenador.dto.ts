@@ -1,4 +1,12 @@
-import { IsNotEmpty, IsEmail, IsString, MaxLength, MinLength, IsDateString } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsEmail,
+  IsString,
+  MaxLength,
+  MinLength,
+  IsDateString,
+  IsIn,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { AUTH_VALIDATION_ERRORS } from '../errors/auth-validation-errors';
 
@@ -19,6 +27,7 @@ export class RegisterEntrenadorDto {
   @IsNotEmpty({ message: AUTH_VALIDATION_ERRORS.REQUIRED_SEX })
   @MinLength(2, { message: AUTH_VALIDATION_ERRORS.SEX_TOO_SHORT })
   @MaxLength(20, { message: AUTH_VALIDATION_ERRORS.SEX_TOO_LONG })
+  @IsIn(['MASCULINO', 'FEMENINO'], { message: AUTH_VALIDATION_ERRORS.INVALID_SEX_VALUE })
   sexo!: 'MASCULINO' | 'FEMENINO';
 
   /** Apellido paterno del entrenador. */
