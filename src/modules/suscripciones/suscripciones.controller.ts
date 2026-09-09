@@ -66,19 +66,32 @@ export class SuscripcionesController {
   @SinSuscripcion()
   @ApiOperation({
     summary: 'Cambiar de plan',
-    description: 'Cambia el plan del usuario autenticado (según su rol).',
+    description:
+      'Cambia el plan del usuario autenticado (según su rol). El modo "instantaneo" cancela la suscripción Stripe y cobra el nuevo plan de inmediato; el modo "finalPeriodo" programa el cambio para cuando termine el periodo ya pagado.',
   })
   @ApiOkResponse({
-    description: 'Plan cambiado exitosamente.',
+    description: 'Plan cambiado o programado exitosamente.',
+    schema: {
+      example: {
+        programado: true,
+        modoCambio: 'finalPeriodo',
+        idPlanPendiente: 2,
+        suscripcionId: '1',
+      },
+    },
   })
   @ApiResponse({
     status: 400,
-    description: 'No puedes cambiar de plan mientras exista una suscripción Stripe activa.',
+    description: 'Plan no encontrado/inactivo o suscripción Stripe no disponible.',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Ya tienes asignado este plan o ya existe un cambio pendiente.',
   })
   @ApiResponse({ status: 403, description: 'Rol no válido para cambiar plan.' })
   @ApiResponse({ status: 404, description: 'Suscripción o plan no encontrado.' })
   cambiarPlan(@CurrentUser('id') usuarioId: string, @Body() dto: CambiarPlanDto) {
-    return this.suscripcionesService.cambiarPlan(usuarioId, dto.idPlanNuevo);
+    return this.suscripcionesService.cambiarPlan(usuarioId, dto.idPlanNuevo, dto.modoCambio);
   }
 
   @Post('cancelar')

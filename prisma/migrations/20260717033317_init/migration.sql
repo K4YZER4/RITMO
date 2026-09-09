@@ -215,7 +215,6 @@ CREATE TABLE app_user.plan_alumno (
   intervalo_cobro app_user.billing_interval_enum,
   cantidad_intervalos_cobro SMALLINT,
 
-
   duracion_unidad app_user.unidad_periodo_enum,
   duracion_cantidad SMALLINT,
 
@@ -239,6 +238,9 @@ CREATE TABLE app_user.suscripcion (
 
   plan_alumno_id INTEGER,
   plan_entrenador_id INTEGER,
+
+  plan_alumno_pendiente_id INTEGER,
+  plan_entrenador_pendiente_id INTEGER,
 
   estado app_user.estado_suscripcion_enum NOT NULL DEFAULT 'prueba',
 
@@ -988,6 +990,7 @@ ALTER TABLE app_user.suscripcion
         AND entrenador_id IS NULL
         AND plan_alumno_id IS NOT NULL
         AND plan_entrenador_id IS NULL
+        AND plan_entrenador_pendiente_id IS NULL
       )
       OR
       (
@@ -995,9 +998,21 @@ ALTER TABLE app_user.suscripcion
         AND entrenador_id IS NOT NULL
         AND plan_alumno_id IS NULL
         AND plan_entrenador_id IS NOT NULL
+        AND plan_alumno_pendiente_id IS NULL
       )
     );
-    
+
+ALTER TABLE app_user.suscripcion
+ADD CONSTRAINT suscripcion_plan_alumno_pendiente_id_foreign
+FOREIGN KEY (plan_alumno_pendiente_id)
+REFERENCES app_user.plan_alumno (id)
+DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE app_user.suscripcion
+ADD CONSTRAINT suscripcion_plan_entrenador_pendiente_id_foreign
+FOREIGN KEY (plan_entrenador_pendiente_id)
+REFERENCES app_user.plan_entrenador (id)
+DEFERRABLE INITIALLY IMMEDIATE;
 ALTER TABLE app_user.plan_entrenador
   ADD CONSTRAINT plan_entrenador_precio_check
     CHECK (precio >= 0);

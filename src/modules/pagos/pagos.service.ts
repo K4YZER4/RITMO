@@ -218,6 +218,10 @@ export class PagosService {
       },
       select: {
         id: true,
+        alumnoId: true,
+        entrenadorId: true,
+        planAlumnoPendienteId: true,
+        planEntrenadorPendienteId: true,
       },
     });
 
@@ -226,6 +230,29 @@ export class PagosService {
         recibido: true,
         ignorado: true,
         motivo: 'No existe una suscripción local relacionada',
+      };
+    }
+
+    const tienePlanPendiente =
+      suscripcion.planAlumnoPendienteId !== null || suscripcion.planEntrenadorPendienteId !== null;
+
+    if (tienePlanPendiente) {
+      await this.suscripcionesService.aplicarCambioPlanPendiente(suscripcion.id);
+
+      await this.prisma.eventoStripe.update({
+        where: {
+          stripeEventId: evento.id,
+        },
+        data: {
+          suscripcionId: suscripcion.id,
+        },
+      });
+
+      return {
+        recibido: true,
+        tipo: evento.type,
+        cambioAplicado: true,
+        suscripcionId: suscripcion.id.toString(),
       };
     }
 

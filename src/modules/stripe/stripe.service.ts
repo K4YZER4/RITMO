@@ -78,6 +78,10 @@ export class StripeService {
     return this.stripe.subscriptions.retrieve(stripeSubscriptionId);
   }
 
+  async cancelarInmediatamente(stripeSubscriptionId: string): Promise<Stripe.Subscription> {
+    return this.stripe.subscriptions.cancel(stripeSubscriptionId);
+  }
+
   async cancelarAlFinalDelPeriodo(stripeSubscriptionId: string): Promise<Stripe.Subscription> {
     return this.stripe.subscriptions.update(stripeSubscriptionId, {
       cancel_at_period_end: true,
