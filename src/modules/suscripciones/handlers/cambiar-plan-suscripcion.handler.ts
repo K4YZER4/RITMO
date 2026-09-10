@@ -437,11 +437,41 @@ export class CambiarPlanSuscripcionHandler {
     });
 
     if (nuevoPlan.esGratuito) {
+      if (nuevoPlan.esVitalicio) {
+        return tx.suscripcion.create({
+          data: {
+            entrenadorId,
+            planEntrenadorId: nuevoPlan.id,
+            estado: EstadoSuscripcionEnum.activa,
+            periodoActualInicio: ahora,
+            periodoActualFin: null,
+            siguienteCobroEn: null,
+            cancelarAlFinalDelPeriodo: false,
+            vitalicia: true,
+            planNombreSnapshot: nuevoPlan.nombre,
+            precioSnapshot: nuevoPlan.precio,
+            monedaSnapshot: nuevoPlan.moneda.toUpperCase(),
+            proveedorPrecioIdSnapshot: nuevoPlan.proveedorPrecioId,
+            duracionUnidadSnapshot: nuevoPlan.duracionUnidad,
+            duracionCantidadSnapshot: nuevoPlan.duracionCantidad,
+          },
+        });
+      }
+
       const finPrueba = this.calcularFinSegunPlan(ahora, nuevoPlan);
 
       if (!finPrueba) {
         throw new BadRequestException('El plan de prueba del entrenador debe tener duración');
       }
+
+      await tx.entrenador.update({
+        where: {
+          idUsuario: entrenadorId,
+        },
+        data: {
+          pruebaUtilizada: true,
+        },
+      });
 
       return tx.suscripcion.create({
         data: {

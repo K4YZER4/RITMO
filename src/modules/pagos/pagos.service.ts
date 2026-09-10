@@ -39,6 +39,8 @@ export class PagosService {
             id: true,
             alumnoId: true,
             entrenadorId: true,
+            estado: true,
+            periodoActualFin: true,
             proveedorCustomerId: true,
             proveedorPrecioIdSnapshot: true,
           },
@@ -87,12 +89,18 @@ export class PagosService {
 
     const frontendUrl = this.configService.getOrThrow<string>('FRONTEND_URL');
 
+    const trialEnd =
+      suscripcion.estado === EstadoSuscripcionEnum.prueba && suscripcion.periodoActualFin
+        ? Math.floor(suscripcion.periodoActualFin.getTime() / 1000)
+        : undefined;
+
     const session = await this.stripeService.crearCheckoutSuscripcion({
       pagoId: pago.id,
       suscripcionId: suscripcion.id,
       usuarioId,
       proveedorPriceId: suscripcion.proveedorPrecioIdSnapshot,
       customerId: suscripcion.proveedorCustomerId,
+      trialEnd,
       successUrl: `${frontendUrl}/pago/exito?session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${frontendUrl}/pago/cancelado`,
     });

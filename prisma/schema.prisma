@@ -509,6 +509,8 @@ model Entrenador {
   verificacionStatus        Boolean                     @default(false) @map("verificacion_status")
   idTema                    BigInt                      @default(1) @map("id_tema")
   nombrePublico             String?                     @map("nombre_publico") @db.VarChar(50)
+  pruebaUtilizada           Boolean?                    @default(false) @map("prueba_utilizada")
+  proveedorCustomerId       String?                     @map("proveedor_customer_id") @db.VarChar(255)
   createdAt                 DateTime                    @default(now()) @map("created_at") @db.Timestamp(0)
   updatedAt                 DateTime                    @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
   alumnoActual              Alumno[]                    @relation("alumno_entrenador_actual")
@@ -622,6 +624,8 @@ model Alumno {
   idEntrenadorActual         String?                 @map("id_entrenador_actual") @db.Uuid
   createdBy                  String?                 @map("created_by") @db.Uuid
   updatedBy                  String?                 @map("updated_by") @db.Uuid
+  pruebaUtilizada            Boolean?                @default(false) @map("prueba_utilizada")
+  proveedorCustomerId        String?                 @map("proveedor_customer_id") @db.VarChar(255)
   creadoPor                  Usuario?                @relation("usuario_alumno_creado", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_created_by_foreign")
   entrenadorActual           Entrenador?             @relation("alumno_entrenador_actual", fields: [idEntrenadorActual], references: [idUsuario], onDelete: NoAction, onUpdate: NoAction, map: "alumno_id_entrenador_actual_foreign")
   estado                     Estado                  @relation("estado_alumno", fields: [idEstado], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_id_estado_foreign")
@@ -752,6 +756,8 @@ model PlanAlumno {
   esVitalicio                                                   Boolean              @default(false) @map("es_vitalicio")
   cobraRecurrentemente                                          Boolean              @default(false) @map("cobra_recurrentemente")
   numeroCobros                                                  Int?                 @map("numero_cobros") @db.SmallInt
+  periodoPrueba                                                 Int?                 @default(0) @map("periodo_prueba") @db.SmallInt
+  unidadPeriodoPrueba                                           UnidadPeriodoEnum?   @map("unidad_periodo_prueba")
   estaActivo                                                    Boolean              @default(true) @map("esta_activo")
   creadoEn                                                      DateTime             @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn                                                 DateTime             @default(now()) @map("actualizado_en") @db.Timestamptz(6)
@@ -780,6 +786,8 @@ model PlanEntrenador {
   esVitalicio                                                           Boolean              @default(false) @map("es_vitalicio")
   cobraRecurrentemente                                                  Boolean              @default(true) @map("cobra_recurrentemente")
   numeroCobros                                                          Int?                 @map("numero_cobros") @db.SmallInt
+  periodoPrueba                                                         Int?                 @default(0) @map("periodo_prueba") @db.SmallInt
+  unidadPeriodoPrueba                                                   UnidadPeriodoEnum?   @map("unidad_periodo_prueba")
   estaActivo                                                            Boolean              @default(true) @map("esta_activo")
   creadoEn                                                              DateTime             @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn                                                         DateTime             @default(now()) @map("actualizado_en") @db.Timestamptz(6)

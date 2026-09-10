@@ -198,4 +198,7 @@ export const AUTH_VALIDATION_ERRORS = {
     'La fecha de inicio como entrenador debe tener un formato válido.',
   ),
   INVALID_SEX_VALUE: validationMessage('INVALID_SEX_VALUE', 'El valor del sexo no es válido.'),
+
+  INVALID_PLAN_ID: validationMessage('INVALID_PLAN_ID', 'El plan debe ser un número entero.'),
+  PLAN_ID_TOO_SMALL: validationMessage('PLAN_ID_TOO_SMALL', 'El plan debe ser mayor o igual a 1.'),
 } as const;

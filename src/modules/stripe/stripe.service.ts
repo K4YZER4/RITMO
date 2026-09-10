@@ -8,8 +8,16 @@ export type CrearCheckoutSuscripcionInput = {
   usuarioId: string;
   proveedorPriceId: string;
   customerId?: string | null;
+  trialEnd?: number;
   successUrl: string;
   cancelUrl: string;
+};
+
+export type CrearOConsultarCustomerInput = {
+  usuarioId: string;
+  correo?: string;
+  nombre?: string;
+  customerId?: string | null;
 };
 
 @Injectable()
@@ -31,6 +39,28 @@ export class StripeService {
     } catch {
       throw new BadRequestException('Firma de webhook de Stripe inválida');
     }
+  }
+
+  async crearOActualizarCustomer(
+    input: CrearOConsultarCustomerInput,
+  ): Promise<{ id: string }> {
+    const payload = {
+      email: input.correo,
+      name: input.nombre,
+      metadata: {
+        usuarioId: input.usuarioId,
+      },
+    };
+
+    if (input.customerId) {
+      const customer = await this.stripe.customers.update(input.customerId, payload);
+
+      return { id: customer.id };
+    }
+
+    const customer = await this.stripe.customers.create(payload);
+
+    return { id: customer.id };
   }
 
   async crearCheckoutSuscripcion(
@@ -58,6 +88,7 @@ export class StripeService {
         metadata,
 
         subscription_data: {
+          trial_end: input.trialEnd ?? undefined,
           metadata,
         },
 

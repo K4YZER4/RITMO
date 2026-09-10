@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegisterEntrenadorDto } from './dto/register-entrenador.dto';
 import { LoginDto } from './dto/login.dto';
@@ -25,7 +30,11 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(registerData.password, this.seedHash);
     const idSexo = registerData.sexo === 'MASCULINO' ? DB_SEXO_IDS.MASCULINO : DB_SEXO_IDS.FEMENINO;
 
-    await this.prisma.$transaction(async (tx) => {
+    const idPlan = registerData.id_plan ?? 1;
+
+    await this.validarPlanEntrenador(idPlan);
+
+    return this.prisma.$transaction(async (tx) => {
       const user = await tx.usuario.create({
         data: {
           nombre: registerData.nombre,
@@ -42,14 +51,17 @@ export class AuthService {
       await tx.entrenador.create({
         data: {
           idUsuario: user.id,
+          idPlan,
           slug: registerData.nombre_publico.toLowerCase().replace(/\s+/g, '-'),
           fechaEntrenador: new Date(registerData.fecha_entrenador),
           nombrePublico: registerData.nombre_publico,
         },
       });
-      await this.suscripcionesService.activarSuscripcionInicial(user.id, tx);
+
+      const resultado = await this.suscripcionesService.activarSuscripcionInicial(user.id, tx);
+
+      return this.construirRespuestaRegistro(resultado);
     });
-    return { message: 'Usuario registrado exitosamente' };
   }
   //
   // Login method
@@ -79,7 +91,11 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(registerData.password, this.seedHash);
     const idSexo = registerData.sexo === 'MASCULINO' ? DB_SEXO_IDS.MASCULINO : DB_SEXO_IDS.FEMENINO;
 
-    await this.prisma.$transaction(async (tx) => {
+    const idPlan = registerData.id_plan ?? 1;
+
+    await this.validarPlanAlumno(idPlan);
+
+    return this.prisma.$transaction(async (tx) => {
       const roleAlumno: UserRole = UserRole.alumno;
 
       const user = await tx.usuario.create({
@@ -100,6 +116,7 @@ export class AuthService {
       await tx.alumno.create({
         data: {
           idUsuario: user.id,
+          idPlan,
           numeroCelular: numeroCelularString,
           fechaInicioEntrenamiento: new Date(registerData.fecha_inicio_entrenamiento),
           idObjetivo: registerData.id_objetivo,
@@ -111,8 +128,67 @@ export class AuthService {
           contactoEmergenciaTelefono: registerData.contacto_emergencia_telefono,
         },
       });
-      await this.suscripcionesService.activarSuscripcionInicial(user.id, tx);
+
+      const resultado = await this.suscripcionesService.activarSuscripcionInicial(user.id, tx);
+
+      return this.construirRespuestaRegistro(resultado);
     });
-    return { message: 'Usuario registrado exitosamente' };
+  }
+
+  private async validarPlanEntrenador(idPlan: number): Promise<void> {
+    const plan = await this.prisma.planEntrenador.findUnique({
+      where: {
+        id: idPlan,
+      },
+      select: {
+        id: true,
+        estaActivo: true,
+      },
+    });
+
+    if (!plan) {
+      throw new NotFoundException(`El plan de entrenador ${idPlan} no existe`);
+    }
+
+    if (!plan.estaActivo) {
+      throw new BadRequestException(`El plan de entrenador ${idPlan} está inactivo`);
+    }
+  }
+
+  private async validarPlanAlumno(idPlan: number): Promise<void> {
+    const plan = await this.prisma.planAlumno.findUnique({
+      where: {
+        id: idPlan,
+      },
+      select: {
+        id: true,
+        estaActivo: true,
+      },
+    });
+
+    if (!plan) {
+      throw new NotFoundException(`El plan de alumno ${idPlan} no existe`);
+    }
+
+    if (!plan.estaActivo) {
+      throw new BadRequestException(`El plan de alumno ${idPlan} está inactivo`);
+    }
+  }
+
+  private construirRespuestaRegistro(resultado: { pagoId?: bigint; suscripcion: { id: bigint } }) {
+    const pagoId = resultado.pagoId;
+
+    if (!pagoId) {
+      return {
+        message: 'Usuario registrado exitosamente',
+      };
+    }
+
+    return {
+      message: 'Usuario registrado exitosamente',
+      requierePago: true,
+      pagoId: pagoId.toString(),
+      suscripcionId: resultado.suscripcion.id.toString(),
+    };
   }
 }

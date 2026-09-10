@@ -24,6 +24,7 @@ type SuscripcionResultado = {
     proveedorPrecioIdSnapshot: string | null;
   };
   creada: boolean;
+  pagoId?: bigint;
 };
 
 type SuscriptorWhere =
@@ -185,6 +186,7 @@ export class ActivarSuscripcionInicialHandler {
     return {
       suscripcion: resultado.suscripcion,
       creada: true,
+      pagoId: resultado.pagoId,
     };
   }
 
@@ -229,11 +231,47 @@ export class ActivarSuscripcionInicialHandler {
     const ahora = new Date();
 
     if (planEntrenador.esGratuito) {
+      if (planEntrenador.esVitalicio) {
+        const suscripcion = await tx.suscripcion.create({
+          data: {
+            entrenadorId: usuarioId,
+            planEntrenadorId: planEntrenador.id,
+            estado: EstadoSuscripcionEnum.activa,
+            periodoActualInicio: ahora,
+            periodoActualFin: null,
+            siguienteCobroEn: null,
+            cancelarAlFinalDelPeriodo: false,
+            vitalicia: true,
+            planNombreSnapshot: planEntrenador.nombre,
+            precioSnapshot: planEntrenador.precio,
+            monedaSnapshot: planEntrenador.moneda.toUpperCase(),
+            proveedorPrecioIdSnapshot: planEntrenador.proveedorPrecioId,
+            duracionUnidadSnapshot: planEntrenador.duracionUnidad,
+            duracionCantidadSnapshot: planEntrenador.duracionCantidad,
+          },
+          select: SELECT_SUSCRIPCION_RESULTADO,
+        });
+
+        return {
+          suscripcion,
+          creada: true,
+        };
+      }
+
       const finPrueba = this.calcularFinSegunPlan(ahora, planEntrenador);
 
       if (!finPrueba) {
         throw new BadRequestException('El plan de prueba del entrenador debe tener duración');
       }
+
+      await tx.entrenador.update({
+        where: {
+          idUsuario: usuarioId,
+        },
+        data: {
+          pruebaUtilizada: true,
+        },
+      });
 
       const suscripcion = await tx.suscripcion.create({
         data: {
@@ -274,6 +312,7 @@ export class ActivarSuscripcionInicialHandler {
     return {
       suscripcion: resultado.suscripcion,
       creada: true,
+      pagoId: resultado.pagoId,
     };
   }
 
