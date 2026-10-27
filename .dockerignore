@@ -6,9 +6,9 @@
 .env
 .env.*
 !.env.example
-Dockerfile
-docker-compose.yml
-.dockerignore
+# Dockerfile
+# docker-compose.yml
+# .dockerignore
 docs
 test
 README.md
