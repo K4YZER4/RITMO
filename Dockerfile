@@ -10,6 +10,7 @@ WORKDIR /app
 # Primero manifiestos y Prisma: Docker puede reutilizar la caché
 # mientras package.json/pnpm-lock.yaml no cambien.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY prisma.config.ts ./
 COPY prisma ./prisma
 
 # Instala dependencies + devDependencies.
@@ -21,6 +22,8 @@ COPY src ./src
 COPY tsconfig.json tsconfig.build.json nest-cli.json ./
 
 # Prisma CLI genera el cliente dentro de node_modules de pnpm.
+ARG DATABASE_URL="postgresql://user:pass@localhost:5432/db"
+ENV DATABASE_URL=$DATABASE_URL
 RUN pnpm prisma generate
 
 # Compila TypeScript -> JavaScript en /app/dist.
