@@ -20,6 +20,7 @@ import { StripeModule } from './modules/stripe/stripe.module';
 import { CatalogosModule } from './modules/catalogos/catalogos.module';
 import { PerfilModule } from './modules/perfil/perfil.module';
 import { EntrenadorModule } from './modules/entrenador/entrenador.module';
+import { EntrenamientoModule } from './modules/entrenamiento/entrenamiento.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -49,6 +50,7 @@ import { EntrenadorModule } from './modules/entrenador/entrenador.module';
     CatalogosModule,
     PerfilModule,
     EntrenadorModule,
+    EntrenamientoModule,
   ],
   controllers: [AppController],
   providers: [
