@@ -17,10 +17,32 @@ export class AppController {
     description: 'Punto de verificación del servicio. No exige autenticación ni suscripción.',
   })
   @ApiOkResponse({
-    description: 'El servicio está activo.',
-    schema: { example: 'Hello World!' },
+    description: 'Información básica de la API.',
+    schema: { example: { name: 'RITMO API', status: 'ok', docs: '/api/docs' } },
   })
-  getHello(): string {
-    return this.appService.getHello();
+  getRoot() {
+    return {
+      name: 'RITMO API',
+      status: 'ok',
+      docs: '/api/docs',
+    };
+  }
+
+  @Get('health')
+  @Public()
+  @SinSuscripcion()
+  @ApiOperation({ summary: 'Comprobar la salud de la API y PostgreSQL' })
+  @ApiOkResponse({
+    description: 'La API y la base de datos están disponibles.',
+    schema: {
+      example: {
+        status: 'ok',
+        database: 'connected',
+        timestamp: '2026-11-05T00:00:00.000Z',
+      },
+    },
+  })
+  getHealth() {
+    return this.appService.getHealth();
   }
 }

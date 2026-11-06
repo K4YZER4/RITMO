@@ -13,6 +13,7 @@ import {
 import { asegurarEjercicioEstandar, limpiarDatos } from './utils/db';
 import { asignarRutinaPayload, rutinaEjerciciosPayload, rutinaPayload } from './utils/fixtures';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { UserRole } from '@prisma/client';
 
 async function crearRutina(
   app: INestApplication<App>,
@@ -68,6 +69,14 @@ describe('Rutinas (e2e)', () => {
 
     const alumno = await registrarYLoguearAlumno(app);
     idAlumno = alumno.token ? getIdDesdeToken(alumno.token) : '';
+    await prisma.alumno.update({
+      where: { idUsuario: idAlumno },
+      data: { idEntrenadorActual: idUsuarioEntrenador },
+    });
+    await prisma.usuario.update({
+      where: { id: idAlumno },
+      data: { role: UserRole.alumnoConEntrenador },
+    });
   });
 
   afterAll(async () => {

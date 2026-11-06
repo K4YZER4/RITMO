@@ -1,6 +1,8 @@
 import { IsEmail, IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { AUTH_VALIDATION_ERRORS } from '../errors/auth-validation-errors';
+import { Transform } from 'class-transformer';
+import { normalizeEmail } from '../../../common/transforms/normalize-email.transform';
 
 export class LoginDto {
   /** Correo electrónico del usuario. */
@@ -13,6 +15,7 @@ export class LoginDto {
   @IsNotEmpty({ message: AUTH_VALIDATION_ERRORS.REQUIRED_EMAIL })
   @MinLength(5, { message: AUTH_VALIDATION_ERRORS.EMAIL_TOO_SHORT })
   @MaxLength(60, { message: AUTH_VALIDATION_ERRORS.EMAIL_TOO_LONG })
+  @Transform(normalizeEmail)
   correo!: string;
 
   /** Contraseña del usuario (mínimo 8 caracteres). */
