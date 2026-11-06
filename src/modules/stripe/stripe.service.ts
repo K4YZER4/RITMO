@@ -41,9 +41,7 @@ export class StripeService {
     }
   }
 
-  async crearOActualizarCustomer(
-    input: CrearOConsultarCustomerInput,
-  ): Promise<{ id: string }> {
+  async crearOActualizarCustomer(input: CrearOConsultarCustomerInput): Promise<{ id: string }> {
     const payload = {
       email: input.correo,
       name: input.nombre,

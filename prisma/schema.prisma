@@ -739,6 +739,18 @@ model Suscripcion {
   @@schema("app_user")
 }
 
+model TokenRevocado {
+  jti        String   @id @db.VarChar(128)
+  usuarioId  String?  @map("usuario_id") @db.Uuid
+  expiraEn   DateTime @map("expira_en") @db.Timestamptz(6)
+  revocadoEn DateTime @default(now()) @map("revocado_en") @db.Timestamptz(6)
+
+  @@index([expiraEn], map: "token_revocado_expira_en_idx")
+  @@index([usuarioId], map: "token_revocado_usuario_id_idx")
+  @@map("token_revocado")
+  @@schema("app_user")
+}
+
 model PlanAlumno {
   id                                                            Int                  @id @default(autoincrement())
   nombre                                                        String

@@ -4,6 +4,7 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { JwtPayload } from '../types/jwt-payload';
+import { PrismaService } from '../../prisma/prisma.service';
 import { validate as uuidValidate } from 'uuid';
 export const IS_PUBLIC_KEY = 'isPublic';
 @Injectable()
@@ -11,6 +12,7 @@ export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
     private readonly reflector: Reflector,
+    private readonly prisma: PrismaService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -41,9 +43,25 @@ export class JwtAuthGuard implements CanActivate {
       if (!uuidValidate(payload.id) || !uuidValidate(payload.sub)) {
         throw new UnauthorizedException('Invalid user ID in token');
       }
+      if (payload.jti) {
+        const revocado = await this.prisma.tokenRevocado.findUnique({
+          where: {
+            jti: payload.jti,
+          },
+          select: {
+            jti: true,
+          },
+        });
+        if (revocado) {
+          throw new UnauthorizedException('Token revocado');
+        }
+      }
       req.user = payload;
       return true;
-    } catch {
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
       throw new UnauthorizedException('Invalid or expired token');
     }
   }

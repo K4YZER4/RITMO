@@ -113,7 +113,14 @@ export const AUTH_VALIDATION_ERRORS = {
   ),
 
   REQUIRED_PHONE: validationMessage('REQUIRED_PHONE', 'El número celular es obligatorio.'),
-  INVALID_PHONE: validationMessage('INVALID_PHONE', 'El número celular debe ser numérico.'),
+  INVALID_PHONE: validationMessage(
+    'INVALID_PHONE',
+    'El número celular debe ser texto y no exceder los 20 caracteres.',
+  ),
+  INVALID_PHONE_FORMAT: validationMessage(
+    'INVALID_PHONE_FORMAT',
+    'El número celular debe tener un formato válido (ej. +5215512345678 o 5551234567).',
+  ),
 
   REQUIRED_TRAINING_START_DATE: validationMessage(
     'REQUIRED_TRAINING_START_DATE',

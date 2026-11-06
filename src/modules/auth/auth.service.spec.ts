@@ -45,11 +45,17 @@ describe('AuthService', () => {
     planAlumno: {
       findUnique: jest.fn(),
     },
+    tokenRevocado: {
+      findUnique: jest.fn(),
+      upsert: jest.fn(),
+      deleteMany: jest.fn(),
+    },
     $transaction: jest.fn(),
   };
 
   const jwtServiceMock = {
     sign: jest.fn(),
+    verifyAsync: jest.fn(),
   };
 
   const suscripcionesServiceMock = {
@@ -129,6 +135,7 @@ describe('AuthService', () => {
         id: userMock.id,
         correo: userMock.correo,
         role: userMock.role,
+        jti: expect.any(String),
       });
 
       expect(result).toEqual({
@@ -157,6 +164,73 @@ describe('AuthService', () => {
       );
 
       expect(jwtServiceMock.sign).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('logout', () => {
+    it('debe revocar el token guardando su jti en la denylist', async () => {
+      jwtServiceMock.verifyAsync.mockResolvedValue({
+        sub: usuarioId,
+        id: usuarioId,
+        correo: 'ana@test.com',
+        role: 'alumno',
+        jti: 'jti-falso',
+        exp: 2000000000,
+      });
+
+      const result = await service.logout('jwt-token-falso');
+
+      expect(jwtServiceMock.verifyAsync).toHaveBeenCalledWith('jwt-token-falso');
+      expect(prismaMock.tokenRevocado.upsert).toHaveBeenCalledWith({
+        where: { jti: 'jti-falso' },
+        update: {},
+        create: {
+          jti: 'jti-falso',
+          usuarioId,
+          expiraEn: new Date(2000000000 * 1000),
+        },
+      });
+      expect(result).toEqual({ message: 'Sesión cerrada exitosamente' });
+    });
+
+    it('debe ser idempotente y no revocar dos veces si el jti ya existe', async () => {
+      jwtServiceMock.verifyAsync.mockResolvedValue({
+        sub: usuarioId,
+        id: usuarioId,
+        correo: 'ana@test.com',
+        role: 'alumno',
+        jti: 'jti-falso',
+      });
+      prismaMock.tokenRevocado.upsert.mockResolvedValue({});
+
+      const result = await service.logout('jwt-token-falso');
+
+      expect(prismaMock.tokenRevocado.upsert).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({ message: 'Sesión cerrada exitosamente' });
+    });
+
+    it('debe no hacer nada si el token no tiene jti (legacy)', async () => {
+      jwtServiceMock.verifyAsync.mockResolvedValue({
+        sub: usuarioId,
+        id: usuarioId,
+        correo: 'ana@test.com',
+        role: 'alumno',
+      });
+
+      const result = await service.logout('jwt-viejo');
+
+      expect(prismaMock.tokenRevocado.upsert).not.toHaveBeenCalled();
+      expect(result).toEqual({ message: 'Sesión cerrada exitosamente' });
+    });
+
+    it('debe lanzar UnauthorizedException si el token es inválido o expirado', async () => {
+      jwtServiceMock.verifyAsync.mockRejectedValue(new Error('jwt expired'));
+
+      await expect(service.logout('token-roto')).rejects.toThrow(
+        new UnauthorizedException('Token inválido o expirado'),
+      );
+
+      expect(prismaMock.tokenRevocado.upsert).not.toHaveBeenCalled();
     });
   });
 
@@ -312,7 +386,7 @@ describe('AuthService', () => {
       password: 'password-secreta',
       fecha_nacimiento: '2000-04-20',
       sexo: 'FEMENINO' as const,
-      numero_celular: 5551234567,
+      numero_celular: '5551234567',
       fecha_inicio_entrenamiento: '2026-08-20',
       id_objetivo: 1,
       id_nivel_actividad: 3,

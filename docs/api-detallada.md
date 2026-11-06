@@ -13,6 +13,7 @@ Especificación por endpoint: método y ruta, guards/decoradores, body (DTO) con
   - [POST /auth/login](#post-authlogin)
   - [POST /auth/registrar/entrenador](#post-authregistrarentrenador)
   - [POST /auth/registrar/alumno](#post-authregistraralumno)
+  - [POST /auth/logout](#post-authlogout)
 - [Suscripciones](#suscripciones)
   - [GET /suscripciones/actual](#get-suscripcionesactual)
   - [GET /suscripciones/estado-pago](#get-suscripcionesestado-pago)
@@ -65,7 +66,7 @@ Especificación por endpoint: método y ruta, guards/decoradores, body (DTO) con
 - **Flujo**:
   1. Busca el usuario por `correo` (único). Si no existe → error.
   2. `bcrypt.compare(password, user.hashedPassword)`. Si no coincide → error.
-  3. Firma `JwtPayload = { sub: user.id, id: user.id, correo, role }` con `JWT_SECRET` y vencimiento `JWT_EXPIRATION_TIME`.
+  3. Firma `JwtPayload = { sub: user.id, id: user.id, correo, role, jti: <UUID> }` con `JWT_SECRET` y vencimiento `JWT_EXPIRATION_TIME`. El `jti` permite revocar el token vía `/auth/logout`.
 - **Respuesta 200**:
 
   ```json
@@ -124,7 +125,7 @@ Especificación por endpoint: método y ruta, guards/decoradores, body (DTO) con
 | `correo` | string | `@IsEmail`, `@IsNotEmpty`, `@MinLength(5)`, `@MaxLength(60)` |
 | `password` | string | `@IsString`, `@IsNotEmpty`, `@MinLength(8)`, `@MaxLength(60)` |
 | `fecha_nacimiento` | string (ISO date) | `@IsString`, `@IsNotEmpty`, `@IsDateString` |
-| `numero_celular` | number | `@IsNumber`, `@IsNotEmpty` |
+| `numero_celular` | string | `@IsString`, `@IsNotEmpty`, `@MaxLength(20)`, `@Matches(/^\+?\d[\d\s().-]*$/)` |
 | `fecha_inicio_entrenamiento` | string (ISO date) | `@IsString`, `@IsNotEmpty`, `@IsDateString` |
 | `id_objetivo` | number | `@IsNumber`, `@IsNotEmpty` |
 | `id_nivel_actividad` | number | `@IsNumber`, `@IsNotEmpty` |
@@ -138,7 +139,7 @@ Especificación por endpoint: método y ruta, guards/decoradores, body (DTO) con
 - **Flujo** (en una transacción):
   1. Hash de contraseña y mapeo de `sexo` (idéntico a entrenador).
   2. Crea `Usuario` con `role: alumno`.
-  3. Crea el perfil `Alumno` (convierte `numero_celular` a string).
+  3. Crea el perfil `Alumno` (el `numero_celular` ya llega como string).
   4. `suscripcionesService.activarSuscripcionInicial(user.id)`.
 - **Respuesta 200**:
 
@@ -150,6 +151,24 @@ Especificación por endpoint: método y ruta, guards/decoradores, body (DTO) con
   - `400` — errores de validación de body.
   - `429` — rate limit.
   - Posibles errores de negocio de `activarSuscripcionInicial` (p. ej. `404 Plan del alumno no encontrado o inactivo`).
+
+### POST /auth/logout
+
+- **Header requerido**: `Authorization: Bearer <token>` (el token a revocar).
+- **Descripción**: revoca el token JWT actual agregando su `jti` a la tabla `app_user.token_revocado` (deny-list). A partir de ese momento el guard global `JwtAuthGuard` rechaza ese token con `401 Token revocado`. Los registros vencidos se limpian en background cada 24h.
+- **Flujo**:
+  1. `jwtService.verifyAsync(token)`. Si el token es inválido/expirado → `401 Token inválido o expirado`.
+  2. Si el payload no tiene `jti` (token legacy) → no-op, responde OK.
+  3. `tokenRevocado.upsert({ where: { jti }, create: { jti, usuarioId, expiraEn } })`.
+- **Respuesta 200**:
+
+  ```json
+  { "message": "Sesión cerrada exitosamente" }
+  ```
+
+- **Errores**:
+  - `401 UnauthorizedException` — `Token inválido o expirado`.
+  - `429` — rate limit (5/min).
 
 ---
 

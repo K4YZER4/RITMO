@@ -104,9 +104,7 @@ export class CrearSuscripcionPendientePagoService {
     const suscripcion = await tx.suscripcion.create({
       data: {
         ...titular,
-        estado: usarPrueba
-          ? EstadoSuscripcionEnum.prueba
-          : EstadoSuscripcionEnum.morosa,
+        estado: usarPrueba ? EstadoSuscripcionEnum.prueba : EstadoSuscripcionEnum.morosa,
         periodoActualInicio: ahora,
         periodoActualFin: trialEnd,
         siguienteCobroEn: trialEnd,

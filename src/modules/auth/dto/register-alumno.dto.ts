@@ -10,6 +10,7 @@ import {
   IsOptional,
   IsInt,
   Min,
+  Matches,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { AUTH_VALIDATION_ERRORS } from '../errors/auth-validation-errors';
@@ -68,10 +69,18 @@ export class RegisterAlumnoDto {
   @IsDateString({}, { message: AUTH_VALIDATION_ERRORS.INVALID_BIRTH_DATE })
   fecha_nacimiento!: string;
 
-  /** Número de celular del alumno. */
-  @IsNumber({}, { message: AUTH_VALIDATION_ERRORS.INVALID_PHONE })
+  /** Número de celular del alumno (con o sin prefijo, ej. +5215512345678 o 5551234567). */
+  @ApiProperty({
+    description:
+      'Número de celular del alumno (con o sin prefijo, ej. +5215512345678 o 5551234567).',
+    example: '+5215512345678',
+    maxLength: 20,
+  })
+  @IsString({ message: AUTH_VALIDATION_ERRORS.INVALID_PHONE })
   @IsNotEmpty({ message: AUTH_VALIDATION_ERRORS.REQUIRED_PHONE })
-  numero_celular!: number;
+  @MaxLength(20, { message: AUTH_VALIDATION_ERRORS.INVALID_PHONE })
+  @Matches(/^\+?\d[\d\s().-]*$/, { message: AUTH_VALIDATION_ERRORS.INVALID_PHONE_FORMAT })
+  numero_celular!: string;
 
   /** Fecha de inicio del entrenamiento en formato ISO (aaaa-mm-dd). */
   @IsString({ message: AUTH_VALIDATION_ERRORS.INVALID_TRAINING_START_DATE_TYPE })

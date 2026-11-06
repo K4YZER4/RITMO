@@ -12,10 +12,16 @@ import {
   IsUrl,
   MaxLength,
 } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 import { EJERCICIOS_VALIDATION_ERRORS } from '../errors/ejercicios-validation-errors';
 
 export class CreateEjercicioPersonalizadoDto {
   /** Nombre del ejercicio personalizado (máximo 150 caracteres). */
+  @ApiProperty({
+    description: 'Nombre del ejercicio personalizado (máximo 150 caracteres).',
+    example: 'Prensa de pierna',
+    maxLength: 150,
+  })
   @IsString({
     message: EJERCICIOS_VALIDATION_ERRORS.INVALID_NOMBRE,
   })
@@ -28,6 +34,11 @@ export class CreateEjercicioPersonalizadoDto {
   nombre!: string;
 
   /** Indica si el ejercicio está activo. Por defecto `true`. */
+  @ApiProperty({
+    description: 'Indica si el ejercicio está activo. Por defecto true.',
+    example: true,
+    required: false,
+  })
   @IsOptional()
   @IsBoolean({
     message: EJERCICIOS_VALIDATION_ERRORS.INVALID_ACTIVA,
@@ -35,6 +46,11 @@ export class CreateEjercicioPersonalizadoDto {
   activa?: boolean;
 
   /** Descripción del ejercicio. */
+  @ApiProperty({
+    description: 'Descripción del ejercicio.',
+    example: 'Ejercicio de cuádriceps y glúteos.',
+    required: false,
+  })
   @IsOptional()
   @IsString({
     message: EJERCICIOS_VALIDATION_ERRORS.INVALID_DESCRIPCION,
@@ -45,6 +61,11 @@ export class CreateEjercicioPersonalizadoDto {
   descripcion?: string;
 
   /** URL de la imagen del ejercicio. */
+  @ApiProperty({
+    description: 'URL de la imagen del ejercicio.',
+    example: 'https://ejemplo.com/prensa.jpg',
+    required: false,
+  })
   @IsOptional()
   @IsString({
     message: EJERCICIOS_VALIDATION_ERRORS.INVALID_URL_IMAGEN_TYPE,
@@ -61,6 +82,11 @@ export class CreateEjercicioPersonalizadoDto {
   url_imagen?: string;
 
   /** URL con información adicional del ejercicio. */
+  @ApiProperty({
+    description: 'URL con información adicional del ejercicio.',
+    example: 'https://ejemplo.com/guia-prensa',
+    required: false,
+  })
   @IsOptional()
   @IsString({
     message: EJERCICIOS_VALIDATION_ERRORS.INVALID_LINK_INFORMACION_TYPE,
@@ -77,6 +103,11 @@ export class CreateEjercicioPersonalizadoDto {
   link_informacion?: string;
 
   /** IDs de los músculos que trabaja el ejercicio (mínimo 1, sin repetidos). */
+  @ApiProperty({
+    description: 'IDs de los músculos que trabaja el ejercicio (mínimo 1, sin repetidos).',
+    example: [1, 2],
+    type: [Number],
+  })
   @IsArray({
     message: EJERCICIOS_VALIDATION_ERRORS.INVALID_MUSCULOS,
   })
@@ -97,6 +128,12 @@ export class CreateEjercicioPersonalizadoDto {
   musculos!: number[];
 
   /** IDs de los equipos requeridos para el ejercicio (sin repetidos). */
+  @ApiProperty({
+    description: 'IDs de los equipos requeridos para el ejercicio (sin repetidos).',
+    example: [3],
+    type: [Number],
+    required: false,
+  })
   @IsOptional()
   @IsArray({
     message: EJERCICIOS_VALIDATION_ERRORS.INVALID_EQUIPOS,

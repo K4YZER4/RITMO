@@ -1,4 +1,5 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Req } from '@nestjs/common';
+import type { Request } from 'express';
 import { ApiCreatedResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { LoginDto } from './dto/login.dto';
 import { RegisterEntrenadorDto } from './dto/register-entrenador.dto';
@@ -14,7 +15,7 @@ import { SinSuscripcion } from '../../common/decorators/sin-suscripcion.decorato
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @RateLimitEspecifico(2) // Limita a 5 solicitudes por minuto
+  @RateLimitEspecifico(2) // Limita a 2 solicitudes por ventana RATE_LIMIT_TTL
   @Post('login')
   @ApiOperation({
     summary: 'Iniciar sesión',
@@ -35,7 +36,7 @@ export class AuthController {
   login(@Body() loginData: LoginDto) {
     return this.authService.login(loginData);
   }
-  @RateLimitEspecifico(2) // Limita a 5 solicitudes por minuto
+  @RateLimitEspecifico(3) // Limita a 3 solicitudes por ventana RATE_LIMIT_TTL
   @Post('registrar/entrenador')
   @ApiOperation({
     summary: 'Registrar entrenador',
@@ -52,7 +53,7 @@ export class AuthController {
   register(@Body() registerData: RegisterEntrenadorDto) {
     return this.authService.registerEntrenador(registerData);
   }
-  @RateLimitEspecifico(2) // Limita a 5 solicitudes por minuto
+  @RateLimitEspecifico(3) // Limita a 3 solicitudes por ventana RATE_LIMIT_TTL
   @Post('registrar/alumno')
   @ApiOperation({
     summary: 'Registrar alumno',
@@ -67,5 +68,26 @@ export class AuthController {
   @ApiResponse({ status: 429, description: 'Demasiadas solicitudes (rate limit).' })
   registerAlumno(@Body() registerData: RegisterAlumnoDto) {
     return this.authService.registerAlumno(registerData);
+  }
+
+  @RateLimitEspecifico(5) // Limita a 5 solicitudes por ventana RATE_LIMIT_TTL
+  @Post('logout')
+  @ApiOperation({
+    summary: 'Cerrar sesión',
+    description:
+      'Revoca el access token actual (por su jti). Mientras el token no expira, no volverá a ser aceptado.',
+  })
+  @ApiCreatedResponse({
+    description: 'Sesión cerrada exitosamente.',
+    schema: { example: { message: 'Sesión cerrada exitosamente' } },
+  })
+  @ApiResponse({ status: 401, description: 'Token inválido o expirado.' })
+  @ApiResponse({ status: 429, description: 'Demasiadas solicitudes (rate limit).' })
+  logout(@Req() request: Request) {
+    const authHeader = request.headers.authorization;
+
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : '';
+
+    return this.authService.logout(token);
   }
 }
