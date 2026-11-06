@@ -17,6 +17,9 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guards';
 import { SuscripcionGuard } from './common/guards/suscripcion.guards';
 import { PagosModule } from './modules/pagos/pagos.module';
 import { StripeModule } from './modules/stripe/stripe.module';
+import { CatalogosModule } from './modules/catalogos/catalogos.module';
+import { PerfilModule } from './modules/perfil/perfil.module';
+import { EntrenadorModule } from './modules/entrenador/entrenador.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -43,6 +46,9 @@ import { StripeModule } from './modules/stripe/stripe.module';
     SuscripcionesModule,
     PagosModule,
     StripeModule,
+    CatalogosModule,
+    PerfilModule,
+    EntrenadorModule,
   ],
   controllers: [AppController],
   providers: [

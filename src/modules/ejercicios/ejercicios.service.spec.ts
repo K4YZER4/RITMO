@@ -150,15 +150,24 @@ describe('EjerciciosService', () => {
       expect(transactionMock.ejercicioPersonalizado.create).not.toHaveBeenCalled();
     });
 
-    it('debe lanzar ForbiddenException si el alumno tiene entrenador', async () => {
+    it('debe permitir crear ejercicios a un alumno con entrenador', async () => {
       transactionMock.usuario.findUnique.mockResolvedValue({
         id: usuarioId,
         role: UserRole.alumnoConEntrenador,
       });
+      transactionMock.alumno.findUnique.mockResolvedValue({ idUsuario: usuarioId, idPlan: 1 });
+      transactionMock.ejercicioPersonalizado.count.mockResolvedValue(0);
+      transactionMock.planAlumno.findFirst.mockResolvedValue({
+        id: 1,
+        limiteEjerciciosPersonalizados: 10,
+      });
+      transactionMock.ejercicioPersonalizado.create.mockResolvedValue({ id: BigInt(5) });
 
-      await expect(service.createEjercicioPersonalizado(dto, usuarioId)).rejects.toThrow(
-        new ForbiddenException('Alumnos con entrenador no pueden crear ejercicios personalizados'),
-      );
+      await expect(service.createEjercicioPersonalizado(dto, usuarioId)).resolves.toEqual({
+        success: true,
+        message: 'Ejercicio personalizado creado exitosamente',
+        data: { id: '5' },
+      });
     });
   });
 

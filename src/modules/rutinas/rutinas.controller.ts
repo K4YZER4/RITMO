@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Patch, Param } from '@nestjs/common';
+import { Controller, Post, Body, Patch, Param, Get } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -19,6 +19,21 @@ import { ParseBigIntPipe } from '../../common/pipes/parse-big-int.pipe';
 @Controller('rutinas')
 export class RutinasController {
   constructor(private readonly rutinasService: RutinasService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Listar rutinas creadas por el usuario' })
+  @ApiOkResponse({ description: 'Rutinas activas e inactivas del usuario autenticado.' })
+  findAll(@CurrentUser('id') usuarioId: string) {
+    return this.rutinasService.findAll(usuarioId);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Obtener el detalle de una rutina' })
+  @ApiParam({ name: 'id', type: String, description: 'ID de la rutina.' })
+  @ApiOkResponse({ description: 'Rutina con ejercicios y asignaciones.' })
+  findOne(@Param('id', ParseBigIntPipe) id: bigint, @CurrentUser('id') usuarioId: string) {
+    return this.rutinasService.findOne(id, usuarioId);
+  }
 
   @Post()
   @ApiOperation({

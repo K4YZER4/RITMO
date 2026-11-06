@@ -9,6 +9,37 @@ import { Prisma } from '@prisma/client';
 export class EjerciciosService {
   constructor(private prisma: PrismaService) {}
 
+  async listarEjercicios(usuarioId: string, buscar?: string) {
+    const filtroNombre = buscar?.trim()
+      ? { contains: buscar.trim(), mode: Prisma.QueryMode.insensitive }
+      : undefined;
+
+    const [estandar, personalizados] = await Promise.all([
+      this.prisma.ejercicioEstandar.findMany({
+        where: filtroNombre ? { nombre: filtroNombre } : undefined,
+        orderBy: { nombre: 'asc' },
+        include: {
+          ejercicioEstandarMusculo: { include: { musculo: true } },
+          ejercicioEstandarEquipo: { include: { equipo: true } },
+        },
+      }),
+      this.prisma.ejercicioPersonalizado.findMany({
+        where: {
+          createdByUsuario: usuarioId,
+          activa: true,
+          ...(filtroNombre ? { nombre: filtroNombre } : {}),
+        },
+        orderBy: { nombre: 'asc' },
+        include: {
+          ejercicioPersonalizadoMusculo: { include: { musculo: true } },
+          ejercicioPersonalizadoEquipo: { include: { equipo: true } },
+        },
+      }),
+    ]);
+
+    return { estandar, personalizados };
+  }
+
   async createEjercicioPersonalizado(
     createEjercicioPersonalizadoDto: CreateEjercicioPersonalizadoDto,
     usuarioId: string,
@@ -156,12 +187,10 @@ export class EjerciciosService {
       throw new NotFoundException('Usuario no encontrado');
     }
     if (!(usuarioAlumno.role === UserRole.entrenador)) {
-      if (usuarioAlumno.role == UserRole.alumnoConEntrenador) {
-        throw new ForbiddenException(
-          'Alumnos con entrenador no pueden crear ejercicios personalizados',
-        );
-      }
-      if (usuarioAlumno.role !== UserRole.alumno) {
+      if (
+        usuarioAlumno.role !== UserRole.alumno &&
+        usuarioAlumno.role !== UserRole.alumnoConEntrenador
+      ) {
         throw new ForbiddenException('Usuario no es un alumno');
       }
       const alumno = await tx.alumno.findUnique({
@@ -175,11 +204,13 @@ export class EjerciciosService {
       const cantidadEjercicios = await tx.ejercicioPersonalizado.count({
         where: {
           createdByUsuario: idUsuario,
+          activa: true,
         },
       });
       const planAlumno = await tx.planAlumno.findFirst({
         where: {
           id: alumno.idPlan,
+          estaActivo: true,
         },
       });
       if (!planAlumno) {
