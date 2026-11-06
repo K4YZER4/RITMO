@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
   OnApplicationBootstrap,
+  OnApplicationShutdown,
   UnauthorizedException,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
@@ -17,7 +18,7 @@ import { DB_SEXO_IDS } from '../../common/constants/db-sexo';
 import { UserRole } from '@prisma/client';
 import { SuscripcionesService } from '../suscripciones/suscripciones.service';
 @Injectable()
-export class AuthService implements OnApplicationBootstrap {
+export class AuthService implements OnApplicationBootstrap, OnApplicationShutdown {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
@@ -25,19 +26,29 @@ export class AuthService implements OnApplicationBootstrap {
   ) {}
 
   private readonly seedHash: number = 10;
+  private cleanupInterval?: NodeJS.Timeout;
 
-  onApplicationBootstrap() {
+  async onApplicationBootstrap(): Promise<void> {
     const INTERVALO_HORAS = 24;
 
-    const ejecutar = () => {
-      this.limpiarTokensRevocadosVencidos().catch((err) => {
+    const ejecutar = async () => {
+      try {
+        await this.limpiarTokensRevocadosVencidos();
+      } catch (err) {
         console.error('Error al limpiar tokens revocados vencidos:', err);
-      });
+      }
     };
 
-    ejecutar();
+    await ejecutar();
 
-    setInterval(ejecutar, INTERVALO_HORAS * 60 * 60 * 1000);
+    this.cleanupInterval = setInterval(() => void ejecutar(), INTERVALO_HORAS * 60 * 60 * 1000);
+    this.cleanupInterval.unref();
+  }
+
+  onApplicationShutdown() {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+    }
   }
 
   private async limpiarTokensRevocadosVencidos(): Promise<void> {
@@ -66,7 +77,7 @@ export class AuthService implements OnApplicationBootstrap {
           nombre: registerData.nombre,
           apellidoPaterno: registerData.apellido_paterno,
           apellidoMaterno: registerData.apellido_materno,
-          correo: registerData.correo,
+          correo: this.normalizarCorreo(registerData.correo),
           hashedPassword,
           fechaNacimiento: new Date(registerData.fecha_nacimiento),
           role: UserRole.entrenador,
@@ -93,16 +104,17 @@ export class AuthService implements OnApplicationBootstrap {
   // Login method
   //
   async login(loginData: LoginDto) {
+    const correo = this.normalizarCorreo(loginData.correo);
     const user = await this.prisma.usuario.findUnique({
-      where: { correo: loginData.correo },
+      where: { correo },
     });
 
     if (!user) {
-      throw new UnauthorizedException('Usuario no encontrado');
+      throw new UnauthorizedException('Correo o contraseña incorrectos');
     }
 
     if (!(await bcrypt.compare(loginData.password, user.hashedPassword))) {
-      throw new UnauthorizedException('Contraseña incorrecta');
+      throw new UnauthorizedException('Correo o contraseña incorrectos');
     }
 
     const payload: JwtPayload = {
@@ -168,7 +180,7 @@ export class AuthService implements OnApplicationBootstrap {
           role: roleAlumno,
           apellidoPaterno: registerData.apellido_paterno,
           apellidoMaterno: registerData.apellido_materno,
-          correo: registerData.correo,
+          correo: this.normalizarCorreo(registerData.correo),
           hashedPassword,
           fechaNacimiento: new Date(registerData.fecha_nacimiento),
           idSexo,
@@ -252,5 +264,9 @@ export class AuthService implements OnApplicationBootstrap {
       pagoId: pagoId.toString(),
       suscripcionId: resultado.suscripcion.id.toString(),
     };
+  }
+
+  private normalizarCorreo(correo: string): string {
+    return correo.trim().toLowerCase();
   }
 }

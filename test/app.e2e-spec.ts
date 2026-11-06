@@ -17,7 +17,24 @@ describe('AppController (e2e)', () => {
   });
 
   it('/ (GET)', () => {
-    return request(app.getHttpServer()).get('/').expect(200).expect('Hello World!');
+    return request(app.getHttpServer()).get('/').expect(200).expect({
+      name: 'RITMO API',
+      status: 'ok',
+      docs: '/api/docs',
+    });
+  });
+
+  it('/health (GET)', () => {
+    return request(app.getHttpServer())
+      .get('/health')
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual({
+          status: 'ok',
+          database: 'connected',
+          timestamp: expect.any(String),
+        });
+      });
   });
 
   afterEach(async () => {

@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
-import { EstadoPagoEnum, ProveedorPagoEnum } from '@prisma/client';
+import { EstadoPagoEnum, Prisma, ProveedorPagoEnum } from '@prisma/client';
 
 import { PagosService } from './pagos.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -25,6 +25,7 @@ const prismaMock = {
   },
   eventoStripe: {
     create: jest.fn(),
+    findUnique: jest.fn(),
     update: jest.fn(),
   },
   $transaction: jest.fn(),
@@ -72,7 +73,10 @@ describe('PagosService', () => {
         { provide: StripeService, useValue: stripeServiceMock },
         { provide: ConfigService, useValue: configServiceMock },
         { provide: ProcesarFacturaHandler, useValue: procesarFacturaHandlerMock },
-        { provide: ProcesarCheckoutCompletadoHandler, useValue: procesarCheckoutCompletadoHandlerMock },
+        {
+          provide: ProcesarCheckoutCompletadoHandler,
+          useValue: procesarCheckoutCompletadoHandlerMock,
+        },
       ],
     }).compile();
 
@@ -217,6 +221,52 @@ describe('PagosService', () => {
       expect(result).toEqual({ recibido: true, ignorado: true, tipo: 'charge.updated' });
       expect(prismaMock.eventoStripe.update).toHaveBeenCalledWith({
         where: { stripeEventId: 'evt_2' },
+        data: { procesado: true, procesadoEn: expect.any(Date), errorMensaje: null },
+      });
+    });
+
+    it('debe tratar un evento procesado como duplicado', async () => {
+      const evento = { id: 'evt_processed', type: 'invoice.paid' };
+      stripeServiceMock.verificarWebhook.mockReturnValue(evento);
+      prismaMock.eventoStripe.create.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('duplicate', {
+          code: 'P2002',
+          clientVersion: '7.8.0',
+        }),
+      );
+      prismaMock.eventoStripe.findUnique.mockResolvedValue({
+        procesado: true,
+        errorMensaje: null,
+      });
+
+      const result = await service.procesarWebhookStripe(Buffer.from('raw'), 'firma');
+
+      expect(result).toEqual({ recibido: true, duplicado: true, tipo: 'invoice.paid' });
+      expect(procesarFacturaHandlerMock.procesarFacturaPagada).not.toHaveBeenCalled();
+    });
+
+    it('debe reintentar un evento que falló anteriormente', async () => {
+      const evento = { id: 'evt_failed', type: 'invoice.paid' };
+      stripeServiceMock.verificarWebhook.mockReturnValue(evento);
+      prismaMock.eventoStripe.create.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('duplicate', {
+          code: 'P2002',
+          clientVersion: '7.8.0',
+        }),
+      );
+      prismaMock.eventoStripe.findUnique.mockResolvedValue({
+        procesado: false,
+        errorMensaje: 'temporary failure',
+      });
+      procesarFacturaHandlerMock.procesarFacturaPagada.mockResolvedValue({ recibido: true });
+      prismaMock.eventoStripe.update.mockResolvedValue({});
+
+      const result = await service.procesarWebhookStripe(Buffer.from('raw'), 'firma');
+
+      expect(procesarFacturaHandlerMock.procesarFacturaPagada).toHaveBeenCalledWith(evento);
+      expect(result).toEqual({ recibido: true });
+      expect(prismaMock.eventoStripe.update).toHaveBeenCalledWith({
+        where: { stripeEventId: 'evt_failed' },
         data: { procesado: true, procesadoEn: expect.any(Date), errorMensaje: null },
       });
     });

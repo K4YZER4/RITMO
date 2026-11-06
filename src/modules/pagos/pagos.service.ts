@@ -210,7 +210,14 @@ export class PagosService {
       return true;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        return false;
+        const eventoExistente = await this.prisma.eventoStripe.findUnique({
+          where: { stripeEventId: evento.id },
+          select: { procesado: true, errorMensaje: true },
+        });
+
+        return Boolean(
+          eventoExistente && !eventoExistente.procesado && eventoExistente.errorMensaje,
+        );
       }
 
       throw error;

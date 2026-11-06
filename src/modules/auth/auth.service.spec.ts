@@ -144,26 +144,38 @@ describe('AuthService', () => {
       });
     });
 
-    it('debe lanzar UnauthorizedException si el usuario no existe', async () => {
+    it('debe lanzar un error genérico si el usuario no existe', async () => {
       prismaMock.usuario.findUnique.mockResolvedValue(null);
 
       await expect(service.login(loginData)).rejects.toThrow(
-        new UnauthorizedException('Usuario no encontrado'),
+        new UnauthorizedException('Correo o contraseña incorrectos'),
       );
 
       expect(bcryptCompareMock).not.toHaveBeenCalled();
       expect(jwtServiceMock.sign).not.toHaveBeenCalled();
     });
 
-    it('debe lanzar UnauthorizedException si la contraseña es incorrecta', async () => {
+    it('debe lanzar el mismo error genérico si la contraseña es incorrecta', async () => {
       prismaMock.usuario.findUnique.mockResolvedValue(userMock);
       bcryptCompareMock.mockResolvedValue(false);
 
       await expect(service.login(loginData)).rejects.toThrow(
-        new UnauthorizedException('Contraseña incorrecta'),
+        new UnauthorizedException('Correo o contraseña incorrectos'),
       );
 
       expect(jwtServiceMock.sign).not.toHaveBeenCalled();
+    });
+
+    it('debe normalizar el correo antes de buscar al usuario', async () => {
+      prismaMock.usuario.findUnique.mockResolvedValue(userMock);
+      bcryptCompareMock.mockResolvedValue(true);
+      jwtServiceMock.sign.mockReturnValue('jwt-token-falso');
+
+      await service.login({ correo: '  ANA@TEST.COM  ', password: loginData.password });
+
+      expect(prismaMock.usuario.findUnique).toHaveBeenCalledWith({
+        where: { correo: 'ana@test.com' },
+      });
     });
   });
 
@@ -290,6 +302,20 @@ describe('AuthService', () => {
 
       expect(result).toEqual({
         message: 'Usuario registrado exitosamente',
+      });
+    });
+
+    it('debe normalizar el correo del entrenador al registrarlo', async () => {
+      bcryptHashMock.mockResolvedValue('hash-falso');
+      transactionMock.usuario.create.mockResolvedValue({ id: usuarioId });
+
+      await service.registerEntrenador({
+        ...registerEntrenadorData,
+        correo: '  CARLOS@TEST.COM  ',
+      });
+
+      expect(transactionMock.usuario.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ correo: 'carlos@test.com' }),
       });
     });
 
@@ -495,9 +521,9 @@ describe('AuthService', () => {
 
       prismaMock.planAlumno.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.registerAlumno({ ...registerAlumnoData, id_plan: 99 }),
-      ).rejects.toThrow('El plan de alumno 99 no existe');
+      await expect(service.registerAlumno({ ...registerAlumnoData, id_plan: 99 })).rejects.toThrow(
+        'El plan de alumno 99 no existe',
+      );
 
       expect(transactionMock.usuario.create).not.toHaveBeenCalled();
     });

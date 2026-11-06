@@ -19,7 +19,7 @@ export class RutinasService {
     if (!usuario) {
       throw new BadRequestException('Usuario no encontrado');
     }
-    if (usuario.role === UserRole.admin || usuario.role === UserRole.alumnoConEntrenador) {
+    if (usuario.role === UserRole.admin) {
       throw new BadRequestException('No tienes permisos para crear rutinas');
     }
     if (usuario.role === UserRole.entrenador) {
@@ -44,7 +44,7 @@ export class RutinasService {
         );
       }
     }
-    if (usuario.role === UserRole.alumno) {
+    if (usuario.role === UserRole.alumno || usuario.role === UserRole.alumnoConEntrenador) {
       const alumno = await this.prisma.alumno.findUnique({
         where: { idUsuario: usuarioId },
       });
@@ -140,11 +140,33 @@ export class RutinasService {
         if (!rutina || rutina.createdByUsuario !== usuarioId) {
           throw new ForbiddenException('No tienes permiso para asignar esta rutina');
         }
-        const alumno = await tx.usuario.findUnique({
-          where: { id: asignarRutinaDto.id_alumno },
+
+        const solicitante = await tx.usuario.findUnique({
+          where: { id: usuarioId },
+          select: { role: true },
         });
-        if (!alumno || alumno.role !== UserRole.alumno) {
+        if (!solicitante || solicitante.role !== UserRole.entrenador) {
+          throw new ForbiddenException('Solo un entrenador puede asignar rutinas');
+        }
+
+        const alumnoUsuario = await tx.usuario.findUnique({
+          where: { id: asignarRutinaDto.id_alumno },
+          select: { role: true },
+        });
+        if (
+          !alumnoUsuario ||
+          (alumnoUsuario.role !== UserRole.alumno &&
+            alumnoUsuario.role !== UserRole.alumnoConEntrenador)
+        ) {
           throw new ForbiddenException('El usuario destino no es un alumno válido');
+        }
+
+        const alumno = await tx.alumno.findUnique({
+          where: { idUsuario: asignarRutinaDto.id_alumno },
+          select: { idEntrenadorActual: true },
+        });
+        if (!alumno || alumno.idEntrenadorActual !== usuarioId) {
+          throw new ForbiddenException('El alumno no está vinculado a este entrenador');
         }
 
         const conflictos = await tx.usuarioRutina.findMany({

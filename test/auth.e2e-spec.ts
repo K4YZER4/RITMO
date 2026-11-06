@@ -11,7 +11,7 @@ import {
   registrarYLoguearAlumno,
 } from './utils/app-builder';
 import { limpiarDatos } from './utils/db';
-import { PASSWORD_E2E } from './utils/fixtures';
+import { alumnoPayload, PASSWORD_E2E } from './utils/fixtures';
 
 /**
  * Pruebas del flujo de autenticación (registro, login, logout y validación de token).
@@ -62,6 +62,23 @@ describe('Auth (e2e)', () => {
     expect(token.split('.')).toHaveLength(3);
   });
 
+  it('normaliza mayúsculas y espacios en el correo de login', async () => {
+    const { payload } = await registrarAlumno(app);
+
+    const token = await iniciarSesion(app, `  ${payload.correo.toUpperCase()}  `, payload.password);
+
+    expect(token.split('.')).toHaveLength(3);
+  });
+
+  it('rechaza una fecha de nacimiento futura', async () => {
+    const respuesta = await request(app.getHttpServer())
+      .post('/auth/registrar/alumno')
+      .send(alumnoPayload({ fecha_nacimiento: '2999-01-01' }))
+      .expect(400);
+
+    expect(respuesta.body.message).toContain('fecha de nacimiento');
+  });
+
   it('el token permite acceder a un endpoint protegido', async () => {
     const { token } = await registrarYLoguearAlumno(app);
 
@@ -86,13 +103,16 @@ describe('Auth (e2e)', () => {
       .expect(401);
 
     expect(respuesta.body.code).toBe('HTTP_EXCEPTION');
+    expect(respuesta.body.message).toBe('Correo o contraseña incorrectos');
   });
 
   it('rechaza login de un correo inexistente (401)', async () => {
-    await request(app.getHttpServer())
+    const respuesta = await request(app.getHttpServer())
       .post('/auth/login')
       .send({ correo: 'noexiste@test.com', password: PASSWORD_E2E })
       .expect(401);
+
+    expect(respuesta.body.message).toBe('Correo o contraseña incorrectos');
   });
 
   it('hace logout y revoca el token emitido', async () => {

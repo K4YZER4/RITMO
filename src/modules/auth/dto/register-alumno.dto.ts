@@ -14,6 +14,9 @@ import {
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { AUTH_VALIDATION_ERRORS } from '../errors/auth-validation-errors';
+import { Transform } from 'class-transformer';
+import { IsPastDate } from '../../../common/decorators/fecha-pasada.decorator';
+import { normalizeEmail } from '../../../common/transforms/normalize-email.transform';
 
 export class RegisterAlumnoDto {
   /** Nombre del alumno (mínimo 2 caracteres). */
@@ -54,6 +57,7 @@ export class RegisterAlumnoDto {
   @IsNotEmpty({ message: AUTH_VALIDATION_ERRORS.REQUIRED_EMAIL })
   @MinLength(5, { message: AUTH_VALIDATION_ERRORS.EMAIL_TOO_SHORT })
   @MaxLength(60, { message: AUTH_VALIDATION_ERRORS.EMAIL_TOO_LONG })
+  @Transform(normalizeEmail)
   correo!: string;
 
   /** Contraseña del alumno (mínimo 8 caracteres). */
@@ -67,6 +71,7 @@ export class RegisterAlumnoDto {
   @IsString({ message: AUTH_VALIDATION_ERRORS.INVALID_BIRTH_DATE_TYPE })
   @IsNotEmpty({ message: AUTH_VALIDATION_ERRORS.REQUIRED_BIRTH_DATE })
   @IsDateString({}, { message: AUTH_VALIDATION_ERRORS.INVALID_BIRTH_DATE })
+  @IsPastDate({ message: 'La fecha de nacimiento debe ser anterior a hoy' })
   fecha_nacimiento!: string;
 
   /** Número de celular del alumno (con o sin prefijo, ej. +5215512345678 o 5551234567). */

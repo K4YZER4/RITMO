@@ -71,7 +71,7 @@ describe('RutinasService', () => {
   let service: RutinasService;
 
   beforeEach(async () => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
 
     prismaMock.$transaction.mockImplementation(
       async (callback: (tx: typeof transactionMock) => Promise<unknown>) =>
@@ -132,6 +132,29 @@ describe('RutinasService', () => {
       await expect(service.create(dto, entrenadorId)).rejects.toThrow(
         new BadRequestException('No tienes permisos para crear rutinas'),
       );
+    });
+
+    it('debe permitir que un alumno vinculado cree sus propias rutinas', async () => {
+      prismaMock.usuario.findUnique.mockResolvedValue({
+        id: alumnoId,
+        role: UserRole.alumnoConEntrenador,
+      });
+      prismaMock.alumno.findUnique.mockResolvedValue({
+        idUsuario: alumnoId,
+        idPlan: 1,
+      });
+      prismaMock.planAlumno.findFirst.mockResolvedValue({
+        id: 1,
+        estaActivo: true,
+        limiteRutinas: 5,
+      });
+      prismaMock.rutina.count.mockResolvedValue(1);
+
+      await service.create(dto, alumnoId);
+
+      expect(prismaMock.rutina.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ createdByUsuario: alumnoId }),
+      });
     });
 
     it('debe lanzar BadRequestException si se alcanzó el límite del plan', async () => {
@@ -218,9 +241,12 @@ describe('RutinasService', () => {
         id: BigInt(5),
         createdByUsuario: entrenadorId,
       });
-      transactionMock.usuario.findUnique.mockResolvedValue({
-        id: alumnoId,
-        role: UserRole.alumno,
+      transactionMock.usuario.findUnique
+        .mockResolvedValueOnce({ id: entrenadorId, role: UserRole.entrenador })
+        .mockResolvedValueOnce({ id: alumnoId, role: UserRole.alumnoConEntrenador });
+      transactionMock.alumno.findUnique.mockResolvedValue({
+        idUsuario: alumnoId,
+        idEntrenadorActual: entrenadorId,
       });
       transactionMock.usuarioRutina.findMany.mockResolvedValue([]);
       transactionMock.usuarioRutina.create.mockResolvedValue({});
@@ -259,13 +285,44 @@ describe('RutinasService', () => {
         id: BigInt(5),
         createdByUsuario: entrenadorId,
       });
-      transactionMock.usuario.findUnique.mockResolvedValue({
-        id: alumnoId,
-        role: UserRole.entrenador,
-      });
+      transactionMock.usuario.findUnique
+        .mockResolvedValueOnce({ id: entrenadorId, role: UserRole.entrenador })
+        .mockResolvedValueOnce({ id: alumnoId, role: UserRole.entrenador });
 
       await expect(service.asignarRutinaAAlumno(BigInt(5), dto, entrenadorId)).rejects.toThrow(
         new ForbiddenException('El usuario destino no es un alumno válido'),
+      );
+    });
+
+    it('debe impedir que un alumno asigne rutinas a otro usuario', async () => {
+      transactionMock.rutina.findUnique.mockResolvedValue({
+        id: BigInt(5),
+        createdByUsuario: alumnoId,
+      });
+      transactionMock.usuario.findUnique
+        .mockResolvedValueOnce({ id: alumnoId, role: UserRole.alumno })
+        .mockResolvedValueOnce({ id: entrenadorId, role: UserRole.alumno });
+
+      await expect(
+        service.asignarRutinaAAlumno(BigInt(5), { ...dto, id_alumno: entrenadorId }, alumnoId),
+      ).rejects.toThrow(new ForbiddenException('Solo un entrenador puede asignar rutinas'));
+    });
+
+    it('debe impedir asignar una rutina a un alumno de otro entrenador', async () => {
+      transactionMock.rutina.findUnique.mockResolvedValue({
+        id: BigInt(5),
+        createdByUsuario: entrenadorId,
+      });
+      transactionMock.usuario.findUnique
+        .mockResolvedValueOnce({ id: entrenadorId, role: UserRole.entrenador })
+        .mockResolvedValueOnce({ id: alumnoId, role: UserRole.alumnoConEntrenador });
+      transactionMock.alumno.findUnique.mockResolvedValue({
+        idUsuario: alumnoId,
+        idEntrenadorActual: 'otro-entrenador',
+      });
+
+      await expect(service.asignarRutinaAAlumno(BigInt(5), dto, entrenadorId)).rejects.toThrow(
+        new ForbiddenException('El alumno no está vinculado a este entrenador'),
       );
     });
 
@@ -274,9 +331,12 @@ describe('RutinasService', () => {
         id: BigInt(5),
         createdByUsuario: entrenadorId,
       });
-      transactionMock.usuario.findUnique.mockResolvedValue({
-        id: alumnoId,
-        role: UserRole.alumno,
+      transactionMock.usuario.findUnique
+        .mockResolvedValueOnce({ id: entrenadorId, role: UserRole.entrenador })
+        .mockResolvedValueOnce({ id: alumnoId, role: UserRole.alumnoConEntrenador });
+      transactionMock.alumno.findUnique.mockResolvedValue({
+        idUsuario: alumnoId,
+        idEntrenadorActual: entrenadorId,
       });
       transactionMock.usuarioRutina.findMany.mockResolvedValue([
         {

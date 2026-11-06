@@ -5,6 +5,7 @@ import {
   Injectable,
   NotFoundException,
   OnApplicationBootstrap,
+  OnApplicationShutdown,
 } from '@nestjs/common';
 import {
   EstadoPagoEnum,
@@ -35,7 +36,7 @@ const ESTADOS_SUSCRIPCION_ACTUAL: EstadoSuscripcionEnum[] = [
 ];
 
 @Injectable()
-export class SuscripcionesService implements OnApplicationBootstrap {
+export class SuscripcionesService implements OnApplicationBootstrap, OnApplicationShutdown {
   constructor(
     private readonly prisma: PrismaService,
     private readonly stripeService: StripeService,
@@ -44,18 +45,29 @@ export class SuscripcionesService implements OnApplicationBootstrap {
     private readonly cambiarPlanSuscripcionHandler: CambiarPlanSuscripcionHandler,
   ) {}
 
-  onApplicationBootstrap() {
+  private expirationInterval?: NodeJS.Timeout;
+
+  async onApplicationBootstrap(): Promise<void> {
     const INTERVALO_HORAS = 24;
 
-    const ejecutar = () => {
-      this.expirarSuscripcionesVencidas().catch((err) => {
+    const ejecutar = async () => {
+      try {
+        await this.expirarSuscripcionesVencidas();
+      } catch (err) {
         console.error('Error al expirar suscripciones vencidas:', err);
-      });
+      }
     };
 
-    ejecutar();
+    await ejecutar();
 
-    setInterval(ejecutar, INTERVALO_HORAS * 60 * 60 * 1000);
+    this.expirationInterval = setInterval(() => void ejecutar(), INTERVALO_HORAS * 60 * 60 * 1000);
+    this.expirationInterval.unref();
+  }
+
+  onApplicationShutdown() {
+    if (this.expirationInterval) {
+      clearInterval(this.expirationInterval);
+    }
   }
 
   async obtenerRol(usuarioId: string): Promise<UserRole> {

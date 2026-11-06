@@ -31,7 +31,7 @@ export class AuthController {
     },
   })
   @ApiResponse({ status: 400, description: 'Errores de validación del body.' })
-  @ApiResponse({ status: 401, description: 'Usuario no encontrado o contraseña incorrecta.' })
+  @ApiResponse({ status: 401, description: 'Correo o contraseña incorrectos.' })
   @ApiResponse({ status: 429, description: 'Demasiadas solicitudes (rate limit).' })
   login(@Body() loginData: LoginDto) {
     return this.authService.login(loginData);
