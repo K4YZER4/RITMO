@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Delete, Patch, Param } from '@nestjs/common';
+import { Controller, Post, Body, Delete, Patch, Param, Get, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -15,9 +15,17 @@ import { IdNumberDto } from './dto/id-number.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 @ApiTags('Ejercicios Personalizados')
 @ApiBearerAuth('access-token')
-@Controller('ejerciciosPersonalizados')
+@Controller(['ejercicios', 'ejerciciosPersonalizados'])
 export class EjerciciosController {
   constructor(private readonly ejerciciosService: EjerciciosService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Listar ejercicios estándar y personalizados disponibles' })
+  @ApiOkResponse({ description: 'Biblioteca de ejercicios disponible para el usuario.' })
+  listarEjercicios(@CurrentUser('id') usuarioId: string, @Query('buscar') buscar?: string) {
+    return this.ejerciciosService.listarEjercicios(usuarioId, buscar);
+  }
+
   @Post()
   @ApiOperation({
     summary: 'Crear ejercicio personalizado',

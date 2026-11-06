@@ -3,12 +3,62 @@ import { RutinaEjercicioDto } from './dto/rutina-ejercicio.dto';
 import { CreateRutinaDto } from './dto/create-rutina.dto';
 import { AsignarRutinaDto } from './dto/asignar-rutina.dto';
 import { PrismaService } from '../../prisma/prisma.service';
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { UserRole } from '@prisma/client';
 @Injectable()
 export class RutinasService {
   constructor(private readonly prisma: PrismaService) {}
+
+  findAll(usuarioId: string) {
+    return this.prisma.rutina.findMany({
+      where: { createdByUsuario: usuarioId },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        categoriaRutina: true,
+        _count: { select: { rutinaEjercicio: true, usuarioRutina: true } },
+      },
+    });
+  }
+
+  async findOne(id: bigint, usuarioId: string) {
+    const rutina = await this.prisma.rutina.findFirst({
+      where: {
+        id,
+        OR: [
+          { createdByUsuario: usuarioId },
+          { usuarioRutina: { some: { idUsuario: usuarioId } } },
+        ],
+      },
+      include: {
+        categoriaRutina: true,
+        rutinaSemanaDia: { include: { diaSemana: true }, orderBy: { idDiaSemana: 'asc' } },
+        rutinaEjercicio: {
+          orderBy: { orden: 'asc' },
+          include: {
+            ejercicioEstandar: true,
+            ejercicioPersonalizado: true,
+          },
+        },
+        usuarioRutina: {
+          where: { asignadaPorUsuario: usuarioId },
+          include: {
+            diaSemana: true,
+            usuario: {
+              select: { id: true, nombre: true, apellidoPaterno: true, apellidoMaterno: true },
+            },
+          },
+          orderBy: { fechaInicio: 'desc' },
+        },
+      },
+    });
+
+    if (!rutina) {
+      throw new NotFoundException('Rutina no encontrada');
+    }
+
+    return rutina;
+  }
   //
   // Create routine method
   //
