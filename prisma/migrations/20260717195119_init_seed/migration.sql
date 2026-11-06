@@ -125,11 +125,9 @@ VALUES
   ('FEMENINO');
 
 -- 15) planes de entrenador
--- El plan de prueba se asigna al registro de un entrenador nuevo.
--- Dura 7 días, no es renovable y no genera un cobro real.
--- Planes de entrenador
--- Prueba: 7 días gratuitos, sin Stripe.
--- Básico, Intermedio y Avanzado: cobro mensual recurrente por Stripe.
+-- El plan basico se asigna al registro de un entrenador nuevo.
+-- Basic: gratuito y vitalicio, muy limitado, sin Stripe.
+-- Intermedio y Avanzado: cobro mensual recurrente por Stripe.
 
 INSERT INTO app_user.plan_entrenador (
   nombre,
@@ -151,8 +149,8 @@ INSERT INTO app_user.plan_entrenador (
 )
 VALUES
   (
-    'Prueba',
-    'Acceso gratuito para conocer la plataforma durante 7 días.',
+    'Basico',
+    'Acceso gratuito limitado: hasta 3 alumnos y 3 rutinas.',
     0.00,
     'MXN',
     NULL,
@@ -160,29 +158,11 @@ VALUES
     3,
     NULL,
     NULL,
-    'dia',
-    7,
+    NULL,
+    NULL,
+    true,
     true,
     false,
-    false,
-    1,
-    true
-  ),
-  (
-    'Basico',
-    'Plan mensual básico para entrenadores independientes.',
-    100.00,
-    'MXN',
-    'price_1UCpFZ61Ol1FcZupRghHOan4',
-    10,
-    15,
-    'mes',
-    1,
-    'mes',
-    1,
-    false,
-    false,
-    true,
     NULL,
     true
   ),

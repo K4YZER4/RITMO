@@ -6,6 +6,11 @@ import {
   MinLength,
   IsDateString,
   IsNumber,
+  IsIn,
+  IsOptional,
+  IsInt,
+  Min,
+  Matches,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { AUTH_VALIDATION_ERRORS } from '../errors/auth-validation-errors';
@@ -27,6 +32,7 @@ export class RegisterAlumnoDto {
   @IsNotEmpty({ message: AUTH_VALIDATION_ERRORS.REQUIRED_SEX })
   @MinLength(2, { message: AUTH_VALIDATION_ERRORS.SEX_TOO_SHORT })
   @MaxLength(20, { message: AUTH_VALIDATION_ERRORS.SEX_TOO_LONG })
+  @IsIn(['MASCULINO', 'FEMENINO'], { message: AUTH_VALIDATION_ERRORS.INVALID_SEX_VALUE })
   sexo!: 'MASCULINO' | 'FEMENINO';
 
   /** Apellido paterno del alumno. */
@@ -63,10 +69,18 @@ export class RegisterAlumnoDto {
   @IsDateString({}, { message: AUTH_VALIDATION_ERRORS.INVALID_BIRTH_DATE })
   fecha_nacimiento!: string;
 
-  /** Número de celular del alumno. */
-  @IsNumber({}, { message: AUTH_VALIDATION_ERRORS.INVALID_PHONE })
+  /** Número de celular del alumno (con o sin prefijo, ej. +5215512345678 o 5551234567). */
+  @ApiProperty({
+    description:
+      'Número de celular del alumno (con o sin prefijo, ej. +5215512345678 o 5551234567).',
+    example: '+5215512345678',
+    maxLength: 20,
+  })
+  @IsString({ message: AUTH_VALIDATION_ERRORS.INVALID_PHONE })
   @IsNotEmpty({ message: AUTH_VALIDATION_ERRORS.REQUIRED_PHONE })
-  numero_celular!: number;
+  @MaxLength(20, { message: AUTH_VALIDATION_ERRORS.INVALID_PHONE })
+  @Matches(/^\+?\d[\d\s().-]*$/, { message: AUTH_VALIDATION_ERRORS.INVALID_PHONE_FORMAT })
+  numero_celular!: string;
 
   /** Fecha de inicio del entrenamiento en formato ISO (aaaa-mm-dd). */
   @IsString({ message: AUTH_VALIDATION_ERRORS.INVALID_TRAINING_START_DATE_TYPE })
@@ -108,4 +122,16 @@ export class RegisterAlumnoDto {
   @IsString({ message: AUTH_VALIDATION_ERRORS.INVALID_EMERGENCY_CONTACT_PHONE })
   @IsNotEmpty({ message: AUTH_VALIDATION_ERRORS.REQUIRED_EMERGENCY_CONTACT_PHONE })
   contacto_emergencia_telefono!: string;
+
+  /** ID del plan de alumno a contratar. Si no se envía, se asigna el plan por defecto (1). */
+  @ApiProperty({
+    description:
+      'ID del plan de alumno a contratar. Si no se envía, se asigna el plan gratuito por defecto.',
+    example: 1,
+    required: false,
+  })
+  @IsOptional()
+  @IsInt({ message: AUTH_VALIDATION_ERRORS.INVALID_PLAN_ID })
+  @Min(1, { message: AUTH_VALIDATION_ERRORS.PLAN_ID_TOO_SMALL })
+  id_plan?: number;
 }

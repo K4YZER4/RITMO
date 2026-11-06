@@ -113,7 +113,14 @@ export const AUTH_VALIDATION_ERRORS = {
   ),
 
   REQUIRED_PHONE: validationMessage('REQUIRED_PHONE', 'El número celular es obligatorio.'),
-  INVALID_PHONE: validationMessage('INVALID_PHONE', 'El número celular debe ser numérico.'),
+  INVALID_PHONE: validationMessage(
+    'INVALID_PHONE',
+    'El número celular debe ser texto y no exceder los 20 caracteres.',
+  ),
+  INVALID_PHONE_FORMAT: validationMessage(
+    'INVALID_PHONE_FORMAT',
+    'El número celular debe tener un formato válido (ej. +5215512345678 o 5551234567).',
+  ),
 
   REQUIRED_TRAINING_START_DATE: validationMessage(
     'REQUIRED_TRAINING_START_DATE',
@@ -197,4 +204,8 @@ export const AUTH_VALIDATION_ERRORS = {
     'INVALID_TRAINER_DATE',
     'La fecha de inicio como entrenador debe tener un formato válido.',
   ),
+  INVALID_SEX_VALUE: validationMessage('INVALID_SEX_VALUE', 'El valor del sexo no es válido.'),
+
+  INVALID_PLAN_ID: validationMessage('INVALID_PLAN_ID', 'El plan debe ser un número entero.'),
+  PLAN_ID_TOO_SMALL: validationMessage('PLAN_ID_TOO_SMALL', 'El plan debe ser mayor o igual a 1.'),
 } as const;

@@ -39,11 +39,23 @@ describe('AuthService', () => {
     usuario: {
       findUnique: jest.fn(),
     },
+    planEntrenador: {
+      findUnique: jest.fn(),
+    },
+    planAlumno: {
+      findUnique: jest.fn(),
+    },
+    tokenRevocado: {
+      findUnique: jest.fn(),
+      upsert: jest.fn(),
+      deleteMany: jest.fn(),
+    },
     $transaction: jest.fn(),
   };
 
   const jwtServiceMock = {
     sign: jest.fn(),
+    verifyAsync: jest.fn(),
   };
 
   const suscripcionesServiceMock = {
@@ -56,6 +68,15 @@ describe('AuthService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+
+    prismaMock.planEntrenador.findUnique.mockResolvedValue({ id: 1, estaActivo: true });
+
+    prismaMock.planAlumno.findUnique.mockResolvedValue({ id: 1, estaActivo: true });
+
+    suscripcionesServiceMock.activarSuscripcionInicial.mockResolvedValue({
+      suscripcion: { id: 1n },
+      creada: true,
+    });
 
     prismaMock.$transaction.mockImplementation(
       (callback: (tx: typeof transactionMock) => Promise<unknown>): Promise<unknown> =>
@@ -114,6 +135,7 @@ describe('AuthService', () => {
         id: userMock.id,
         correo: userMock.correo,
         role: userMock.role,
+        jti: expect.any(String),
       });
 
       expect(result).toEqual({
@@ -142,6 +164,73 @@ describe('AuthService', () => {
       );
 
       expect(jwtServiceMock.sign).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('logout', () => {
+    it('debe revocar el token guardando su jti en la denylist', async () => {
+      jwtServiceMock.verifyAsync.mockResolvedValue({
+        sub: usuarioId,
+        id: usuarioId,
+        correo: 'ana@test.com',
+        role: 'alumno',
+        jti: 'jti-falso',
+        exp: 2000000000,
+      });
+
+      const result = await service.logout('jwt-token-falso');
+
+      expect(jwtServiceMock.verifyAsync).toHaveBeenCalledWith('jwt-token-falso');
+      expect(prismaMock.tokenRevocado.upsert).toHaveBeenCalledWith({
+        where: { jti: 'jti-falso' },
+        update: {},
+        create: {
+          jti: 'jti-falso',
+          usuarioId,
+          expiraEn: new Date(2000000000 * 1000),
+        },
+      });
+      expect(result).toEqual({ message: 'Sesión cerrada exitosamente' });
+    });
+
+    it('debe ser idempotente y no revocar dos veces si el jti ya existe', async () => {
+      jwtServiceMock.verifyAsync.mockResolvedValue({
+        sub: usuarioId,
+        id: usuarioId,
+        correo: 'ana@test.com',
+        role: 'alumno',
+        jti: 'jti-falso',
+      });
+      prismaMock.tokenRevocado.upsert.mockResolvedValue({});
+
+      const result = await service.logout('jwt-token-falso');
+
+      expect(prismaMock.tokenRevocado.upsert).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({ message: 'Sesión cerrada exitosamente' });
+    });
+
+    it('debe no hacer nada si el token no tiene jti (legacy)', async () => {
+      jwtServiceMock.verifyAsync.mockResolvedValue({
+        sub: usuarioId,
+        id: usuarioId,
+        correo: 'ana@test.com',
+        role: 'alumno',
+      });
+
+      const result = await service.logout('jwt-viejo');
+
+      expect(prismaMock.tokenRevocado.upsert).not.toHaveBeenCalled();
+      expect(result).toEqual({ message: 'Sesión cerrada exitosamente' });
+    });
+
+    it('debe lanzar UnauthorizedException si el token es inválido o expirado', async () => {
+      jwtServiceMock.verifyAsync.mockRejectedValue(new Error('jwt expired'));
+
+      await expect(service.logout('token-roto')).rejects.toThrow(
+        new UnauthorizedException('Token inválido o expirado'),
+      );
+
+      expect(prismaMock.tokenRevocado.upsert).not.toHaveBeenCalled();
     });
   });
 
@@ -187,6 +276,52 @@ describe('AuthService', () => {
       expect(transactionMock.entrenador.create).toHaveBeenCalledWith({
         data: {
           idUsuario: usuarioId,
+          idPlan: 1,
+          slug: 'carlos-fitness',
+          fechaEntrenador: new Date(registerEntrenadorData.fecha_entrenador),
+          nombrePublico: registerEntrenadorData.nombre_publico,
+        },
+      });
+
+      expect(prismaMock.planEntrenador.findUnique).toHaveBeenCalledWith({
+        where: { id: 1 },
+        select: { id: true, estaActivo: true },
+      });
+
+      expect(result).toEqual({
+        message: 'Usuario registrado exitosamente',
+      });
+    });
+
+    it('debe validar el plan elegido y devolver datos de pago cuando requiere pago', async () => {
+      bcryptHashMock.mockResolvedValue('hash-falso');
+
+      transactionMock.usuario.create.mockResolvedValue({
+        id: usuarioId,
+      });
+
+      prismaMock.planEntrenador.findUnique.mockResolvedValue({ id: 3, estaActivo: true });
+
+      suscripcionesServiceMock.activarSuscripcionInicial.mockResolvedValue({
+        suscripcion: { id: 7n },
+        pagoId: 42n,
+        creada: true,
+      });
+
+      const result = await service.registerEntrenador({
+        ...registerEntrenadorData,
+        id_plan: 3,
+      });
+
+      expect(prismaMock.planEntrenador.findUnique).toHaveBeenCalledWith({
+        where: { id: 3 },
+        select: { id: true, estaActivo: true },
+      });
+
+      expect(transactionMock.entrenador.create).toHaveBeenCalledWith({
+        data: {
+          idUsuario: usuarioId,
+          idPlan: 3,
           slug: 'carlos-fitness',
           fechaEntrenador: new Date(registerEntrenadorData.fecha_entrenador),
           nombrePublico: registerEntrenadorData.nombre_publico,
@@ -195,7 +330,22 @@ describe('AuthService', () => {
 
       expect(result).toEqual({
         message: 'Usuario registrado exitosamente',
+        requierePago: true,
+        pagoId: '42',
+        suscripcionId: '7',
       });
+    });
+
+    it('debe rechazar el registro si el plan de entrenador es inexistente o inactivo', async () => {
+      bcryptHashMock.mockResolvedValue('hash-falso');
+
+      prismaMock.planEntrenador.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.registerEntrenador({ ...registerEntrenadorData, id_plan: 99 }),
+      ).rejects.toThrow('El plan de entrenador 99 no existe');
+
+      expect(transactionMock.usuario.create).not.toHaveBeenCalled();
     });
 
     it('debe asignar sexo FEMENINO al registrar entrenadora', async () => {
@@ -236,7 +386,7 @@ describe('AuthService', () => {
       password: 'password-secreta',
       fecha_nacimiento: '2000-04-20',
       sexo: 'FEMENINO' as const,
-      numero_celular: 5551234567,
+      numero_celular: '5551234567',
       fecha_inicio_entrenamiento: '2026-08-20',
       id_objetivo: 1,
       id_nivel_actividad: 3,
@@ -276,6 +426,7 @@ describe('AuthService', () => {
       expect(transactionMock.alumno.create).toHaveBeenCalledWith({
         data: {
           idUsuario: usuarioId,
+          idPlan: 1,
           numeroCelular: '5551234567',
           fechaInicioEntrenamiento: new Date(registerAlumnoData.fecha_inicio_entrenamiento),
           idObjetivo: registerAlumnoData.id_objetivo,
@@ -288,9 +439,67 @@ describe('AuthService', () => {
         },
       });
 
+      expect(prismaMock.planAlumno.findUnique).toHaveBeenCalledWith({
+        where: { id: 1 },
+        select: { id: true, estaActivo: true },
+      });
+
       expect(result).toEqual({
         message: 'Usuario registrado exitosamente',
       });
+    });
+
+    it('debe validar el plan elegido y devolver datos de pago cuando requiere pago', async () => {
+      bcryptHashMock.mockResolvedValue('hash-falso');
+
+      transactionMock.usuario.create.mockResolvedValue({
+        id: usuarioId,
+      });
+
+      prismaMock.planAlumno.findUnique.mockResolvedValue({ id: 2, estaActivo: true });
+
+      suscripcionesServiceMock.activarSuscripcionInicial.mockResolvedValue({
+        suscripcion: { id: 5n },
+        pagoId: 9n,
+        creada: true,
+      });
+
+      const result = await service.registerAlumno({
+        ...registerAlumnoData,
+        id_plan: 2,
+      });
+
+      expect(prismaMock.planAlumno.findUnique).toHaveBeenCalledWith({
+        where: { id: 2 },
+        select: { id: true, estaActivo: true },
+      });
+
+      expect(transactionMock.alumno.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            idPlan: 2,
+          }),
+        }),
+      );
+
+      expect(result).toEqual({
+        message: 'Usuario registrado exitosamente',
+        requierePago: true,
+        pagoId: '9',
+        suscripcionId: '5',
+      });
+    });
+
+    it('debe rechazar el registro si el plan de alumno es inexistente', async () => {
+      bcryptHashMock.mockResolvedValue('hash-falso');
+
+      prismaMock.planAlumno.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.registerAlumno({ ...registerAlumnoData, id_plan: 99 }),
+      ).rejects.toThrow('El plan de alumno 99 no existe');
+
+      expect(transactionMock.usuario.create).not.toHaveBeenCalled();
     });
   });
 });

@@ -19,6 +19,7 @@ import { StripeService } from '../stripe/stripe.service';
 import { ActivarSuscripcionInicialHandler } from './handlers/activar-suscripcion-inicial.handler';
 import { ActualizarSuscripcionPorPagoHandler } from './handlers/actualizar-suscripcion-por-pago.handler';
 import { CambiarPlanSuscripcionHandler } from './handlers/cambiar-plan-suscripcion.handler';
+import { ModoCambioPlan } from '../../common/constants/modo-cambio';
 
 type EstadoPagoResultado = {
   estado: EstadoPagoEnum;
@@ -161,8 +162,12 @@ export class SuscripcionesService implements OnApplicationBootstrap {
     return suscripcion;
   }
 
-  async cambiarPlan(usuarioId: string, idPlanNuevo: number) {
-    return this.cambiarPlanSuscripcionHandler.ejecutar(usuarioId, idPlanNuevo);
+  async cambiarPlan(usuarioId: string, idPlanNuevo: number, modoCambio: ModoCambioPlan) {
+    return this.cambiarPlanSuscripcionHandler.ejecutar(usuarioId, idPlanNuevo, modoCambio);
+  }
+
+  async aplicarCambioPlanPendiente(suscripcionId: bigint) {
+    return this.cambiarPlanSuscripcionHandler.aplicarCambioPlanDesdeProveedor(suscripcionId);
   }
 
   async cancelarSuscripcion(usuarioId: string) {

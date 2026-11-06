@@ -32,6 +32,12 @@ export class ProcesarCheckoutCompletadoHandler {
           id: true,
           suscripcionId: true,
           proveedorPagoId: true,
+          suscripcion: {
+            select: {
+              alumnoId: true,
+              entrenadorId: true,
+            },
+          },
         },
       });
 
@@ -67,6 +73,28 @@ export class ProcesarCheckoutCompletadoHandler {
           proveedorSubscriptionId: stripeSubscriptionId,
         },
       });
+
+      if (pago.suscripcion.alumnoId) {
+        await tx.alumno.update({
+          where: {
+            idUsuario: pago.suscripcion.alumnoId,
+          },
+          data: {
+            proveedorCustomerId: customerId,
+          },
+        });
+      }
+
+      if (pago.suscripcion.entrenadorId) {
+        await tx.entrenador.update({
+          where: {
+            idUsuario: pago.suscripcion.entrenadorId,
+          },
+          data: {
+            proveedorCustomerId: customerId,
+          },
+        });
+      }
 
       await tx.eventoStripe.update({
         where: {

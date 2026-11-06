@@ -13,4 +13,12 @@ export const SUSCRIPCIONES_VALIDATION_ERRORS = {
     'ID_PLAN_NUEVO_TOO_LOW',
     'El id del plan nuevo debe ser mayor a 0.',
   ),
+  REQUIRED_MODO_CAMBIO: validationMessage(
+    'REQUIRED_MODO_CAMBIO',
+    'El modo de cambio es obligatorio.',
+  ),
+  INVALID_MODO_CAMBIO: validationMessage(
+    'INVALID_MODO_CAMBIO',
+    'El modo de cambio debe ser "instantaneo" o "finalPeriodo".',
+  ),
 } as const;

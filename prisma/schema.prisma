@@ -509,6 +509,8 @@ model Entrenador {
   verificacionStatus        Boolean                     @default(false) @map("verificacion_status")
   idTema                    BigInt                      @default(1) @map("id_tema")
   nombrePublico             String?                     @map("nombre_publico") @db.VarChar(50)
+  pruebaUtilizada           Boolean?                    @default(false) @map("prueba_utilizada")
+  proveedorCustomerId       String?                     @map("proveedor_customer_id") @db.VarChar(255)
   createdAt                 DateTime                    @default(now()) @map("created_at") @db.Timestamp(0)
   updatedAt                 DateTime                    @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
   alumnoActual              Alumno[]                    @relation("alumno_entrenador_actual")
@@ -622,6 +624,8 @@ model Alumno {
   idEntrenadorActual         String?                 @map("id_entrenador_actual") @db.Uuid
   createdBy                  String?                 @map("created_by") @db.Uuid
   updatedBy                  String?                 @map("updated_by") @db.Uuid
+  pruebaUtilizada            Boolean?                @default(false) @map("prueba_utilizada")
+  proveedorCustomerId        String?                 @map("proveedor_customer_id") @db.VarChar(255)
   creadoPor                  Usuario?                @relation("usuario_alumno_creado", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_created_by_foreign")
   entrenadorActual           Entrenador?             @relation("alumno_entrenador_actual", fields: [idEntrenadorActual], references: [idUsuario], onDelete: NoAction, onUpdate: NoAction, map: "alumno_id_entrenador_actual_foreign")
   estado                     Estado                  @relation("estado_alumno", fields: [idEstado], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "alumno_id_estado_foreign")
@@ -669,26 +673,23 @@ model Sexo {
   @@schema("core")
 }
 
-
 model Pago {
-  id                 BigInt              @id @default(autoincrement())
-  suscripcionId      BigInt              @map("suscripcion_id")
-  monto              Decimal             @db.Decimal(10, 2)
-  moneda             String              @default("MXN") @db.Char(3)
-  estado             EstadoPagoEnum      @default(pendiente)
-  venceEn            DateTime?           @map("vence_en") @db.Timestamptz(6)
-  pagadoEn           DateTime?           @map("pagado_en") @db.Timestamptz(6)
-  proveedor          ProveedorPagoEnum   @default(stripe)
-  proveedorPagoId    String?             @map("proveedor_pago_id") @db.VarChar(255)
-  proveedorFacturaId String?             @map("proveedor_factura_id") @db.VarChar(255)
-  creadoEn           DateTime            @default(now()) @map("creado_en") @db.Timestamptz(6)
-  actualizadoEn      DateTime            @default(now()) @map("actualizado_en") @db.Timestamptz(6)
-
-  suscripcion        Suscripcion         @relation(fields: [suscripcionId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "pago_suscripcion_foreign")
+  id                 BigInt            @id @default(autoincrement())
+  suscripcionId      BigInt            @map("suscripcion_id")
+  monto              Decimal           @db.Decimal(10, 2)
+  moneda             String            @default("MXN") @db.Char(3)
+  estado             EstadoPagoEnum    @default(pendiente)
+  venceEn            DateTime          @map("vence_en") @db.Timestamptz(6)
+  pagadoEn           DateTime?         @map("pagado_en") @db.Timestamptz(6)
+  proveedor          ProveedorPagoEnum @default(stripe)
+  proveedorPagoId    String?           @map("proveedor_pago_id") @db.VarChar(255)
+  proveedorFacturaId String?           @map("proveedor_factura_id") @db.VarChar(255)
+  creadoEn           DateTime          @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn      DateTime          @default(now()) @map("actualizado_en") @db.Timestamptz(6)
   eventosStripe      EventoStripe[]
+  suscripcion        Suscripcion       @relation(fields: [suscripcionId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "pago_suscripcion_foreign")
 
-  @@unique([proveedor, proveedorFacturaId], map: "pago_proveedor_factura_unique_idx", where: raw("proveedor_facturaId IS NOT NULL"))
-  @@unique([proveedor, proveedorPagoId], map: "pago_proveedor_pago_unique_idx", where: raw("proveedorPagoId IS NOT NULL"))
+  @@unique([proveedor, proveedorPagoId], map: "pago_proveedor_pago_unique_idx", where: raw("((proveedor IS NOT NULL) AND (proveedor_pago_id IS NOT NULL))"))
   @@index([estado, venceEn], map: "pago_estado_vence_idx")
   @@index([suscripcionId, venceEn(sort: Desc)], map: "pago_suscripcion_vence_idx")
   @@map("pago")
@@ -696,38 +697,41 @@ model Pago {
 }
 
 model Suscripcion {
-  id                       BigInt                @id @default(autoincrement())
-  alumnoId                 String?               @unique(map: "suscripcion_alumno_vigente_unique_idx", where: raw("estado IN ('prueba', 'activa', 'morosa')")) @map("alumno_id") @db.Uuid
-  entrenadorId             String?               @unique(map: "suscripcion_entrenador_vigente_unique_idx", where: raw("estado IN ('prueba', 'activa', 'morosa')")) @map("entrenador_id") @db.Uuid
-  planAlumnoId             Int?                  @map("plan_alumno_id")
-  planEntrenadorId         Int?                  @map("plan_entrenador_id")
-  estado                   EstadoSuscripcionEnum @default(prueba)
-  periodoActualInicio      DateTime              @map("periodo_actual_inicio") @db.Timestamptz(6)
-  periodoActualFin         DateTime?             @map("periodo_actual_fin") @db.Timestamptz(6)
-  siguienteCobroEn         DateTime?             @map("siguiente_cobro_en") @db.Timestamptz(6)
-  canceladaEn              DateTime?             @map("cancelada_en") @db.Timestamptz(6)
-  cancelarAlFinalDelPeriodo Boolean              @default(false) @map("cancelar_al_final_del_periodo")
-  vitalicia                Boolean               @default(false)
-  planNombreSnapshot       String                @map("plan_nombre_snapshot")
-  precioSnapshot           Decimal               @map("precio_snapshot") @db.Decimal(10, 2)
-  monedaSnapshot           String                @default("MXN") @map("moneda_snapshot") @db.Char(3)
-  proveedorPrecioIdSnapshot String?             @map("proveedor_precio_id_snapshot") @db.VarChar(255)
-  duracionUnidadSnapshot   UnidadPeriodoEnum?    @map("duracion_unidad_snapshot")
-  duracionCantidadSnapshot Int?                  @map("duracion_cantidad_snapshot") @db.SmallInt
-  proveedor                ProveedorPagoEnum?
-  proveedorCustomerId      String?               @map("proveedor_customer_id") @db.VarChar(255)
-  proveedorSubscriptionId  String?               @map("proveedor_subscription_id") @db.VarChar(255)
-  creadoEn                 DateTime              @default(now()) @map("creado_en") @db.Timestamptz(6)
-  actualizadoEn            DateTime              @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+  id                                                                        BigInt                @id @default(autoincrement())
+  alumnoId                                                                  String?               @unique(map: "suscripcion_alumno_vigente_unique_idx", where: raw("(estado = ANY (ARRAY['prueba'::app_user.estado_suscripcion_enum, 'activa'::app_user.estado_suscripcion_enum, 'morosa'::app_user.estado_suscripcion_enum]))")) @map("alumno_id") @db.Uuid
+  entrenadorId                                                              String?               @unique(map: "suscripcion_entrenador_vigente_unique_idx", where: raw("(estado = ANY (ARRAY['prueba'::app_user.estado_suscripcion_enum, 'activa'::app_user.estado_suscripcion_enum, 'morosa'::app_user.estado_suscripcion_enum]))")) @map("entrenador_id") @db.Uuid
+  planAlumnoId                                                              Int?                  @map("plan_alumno_id")
+  planEntrenadorId                                                          Int?                  @map("plan_entrenador_id")
+  planAlumnoPendienteId                                                     Int?                  @map("plan_alumno_pendiente_id")
+  planEntrenadorPendienteId                                                 Int?                  @map("plan_entrenador_pendiente_id")
+  estado                                                                    EstadoSuscripcionEnum @default(prueba)
+  periodoActualInicio                                                       DateTime              @map("periodo_actual_inicio") @db.Timestamptz(6)
+  periodoActualFin                                                          DateTime?             @map("periodo_actual_fin") @db.Timestamptz(6)
+  siguienteCobroEn                                                          DateTime?             @map("siguiente_cobro_en") @db.Timestamptz(6)
+  canceladaEn                                                               DateTime?             @map("cancelada_en") @db.Timestamptz(6)
+  cancelarAlFinalDelPeriodo                                                 Boolean               @default(false) @map("cancelar_al_final_del_periodo")
+  vitalicia                                                                 Boolean               @default(false)
+  planNombreSnapshot                                                        String                @map("plan_nombre_snapshot")
+  precioSnapshot                                                            Decimal               @map("precio_snapshot") @db.Decimal(10, 2)
+  monedaSnapshot                                                            String                @default("MXN") @map("moneda_snapshot") @db.Char(3)
+  proveedorPrecioIdSnapshot                                                 String?               @map("proveedor_precio_id_snapshot") @db.VarChar(255)
+  duracionUnidadSnapshot                                                    UnidadPeriodoEnum?    @map("duracion_unidad_snapshot")
+  duracionCantidadSnapshot                                                  Int?                  @map("duracion_cantidad_snapshot") @db.SmallInt
+  proveedor                                                                 ProveedorPagoEnum?
+  proveedorCustomerId                                                       String?               @map("proveedor_customer_id") @db.VarChar(255)
+  proveedorSubscriptionId                                                   String?               @map("proveedor_subscription_id") @db.VarChar(255)
+  creadoEn                                                                  DateTime              @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn                                                             DateTime              @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+  eventosStripe                                                             EventoStripe[]
+  pagos                                                                     Pago[]
+  alumno                                                                    Alumno?               @relation(fields: [alumnoId], references: [idUsuario], onDelete: NoAction, onUpdate: NoAction, map: "suscripcion_alumno_foreign")
+  entrenador                                                                Entrenador?           @relation(fields: [entrenadorId], references: [idUsuario], onDelete: NoAction, onUpdate: NoAction, map: "suscripcion_entrenador_foreign")
+  planAlumno                                                                PlanAlumno?           @relation(fields: [planAlumnoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "suscripcion_plan_alumno_foreign")
+  plan_alumno_suscripcion_planAlumnoPendienteIdToplan_alumno             PlanAlumno?           @relation("suscripcion_planAlumnoPendienteIdToplan_alumno", fields: [planAlumnoPendienteId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "suscripcion_planAlumnoPendienteId_foreign")
+  planEntrenador                                                            PlanEntrenador?       @relation(fields: [planEntrenadorId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "suscripcion_plan_entrenador_foreign")
+  plan_entrenador_suscripcion_planEntrenadorPendienteIdToplan_entrenador PlanEntrenador?       @relation("suscripcion_planEntrenadorPendienteIdToplan_entrenador", fields: [planEntrenadorPendienteId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "suscripcion_planEntrenadorPendienteId_foreign")
 
-  pagos                    Pago[]
-  eventosStripe            EventoStripe[]
-  alumno                   Alumno?               @relation(fields: [alumnoId], references: [idUsuario], onDelete: NoAction, onUpdate: NoAction, map: "suscripcion_alumno_foreign")
-  entrenador               Entrenador?           @relation(fields: [entrenadorId], references: [idUsuario], onDelete: NoAction, onUpdate: NoAction, map: "suscripcion_entrenador_foreign")
-  planAlumno               PlanAlumno?           @relation(fields: [planAlumnoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "suscripcion_plan_alumno_foreign")
-  planEntrenador           PlanEntrenador?       @relation(fields: [planEntrenadorId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "suscripcion_plan_entrenador_foreign")
-
-  @@unique([proveedor, proveedorSubscriptionId], map: "suscripcion_proveedor_subscription_unique_idx", where: raw("proveedorSubscriptionId IS NOT NULL"))
+  @@unique([proveedor, proveedorSubscriptionId], map: "suscripcion_proveedor_subscription_unique_idx", where: raw("((proveedor IS NOT NULL) AND (proveedor_subscription_id IS NOT NULL))"))
   @@index([alumnoId, periodoActualInicio(sort: Desc)], map: "suscripcion_alumno_historial_idx")
   @@index([entrenadorId, periodoActualInicio(sort: Desc)], map: "suscripcion_entrenador_historial_idx")
   @@index([estado, periodoActualFin], map: "suscripcion_estado_fin_idx")
@@ -735,79 +739,94 @@ model Suscripcion {
   @@schema("app_user")
 }
 
-model PlanAlumno {
-  id                             Int                  @id @default(autoincrement())
-  nombre                         String
-  descripcion                    String?
-  precio                         Decimal              @db.Decimal(10, 2)
-  moneda                         String               @default("MXN") @db.Char(3)
-  proveedorPrecioId String? @unique(map: "plan_alumno_proveedor_price_unique_idx") @map("proveedor_precio_id") @db.VarChar(255)
-  limiteEjerciciosPersonalizados Int                  @map("limite_ejercicios_personalizados")
-  limiteRutinas                  Int                  @map("limite_rutinas")
-  intervaloCobro                 BillingIntervalEnum? @map("intervalo_cobro")
-  cantidadIntervalosCobro        Int?                 @map("cantidad_intervalos_cobro") @db.SmallInt
-  duracionUnidad                 UnidadPeriodoEnum?   @map("duracion_unidad")
-  duracionCantidad               Int?                 @map("duracion_cantidad") @db.SmallInt
-  esGratuito                     Boolean              @default(false) @map("es_gratuito")
-  esVitalicio                    Boolean              @default(false) @map("es_vitalicio")
-  cobraRecurrentemente           Boolean              @default(false) @map("cobra_recurrentemente")
-  numeroCobros                   Int?                 @map("numero_cobros") @db.SmallInt
-  estaActivo                     Boolean              @default(true) @map("esta_activo")
-  creadoEn                       DateTime             @default(now()) @map("creado_en") @db.Timestamptz(6)
-  actualizadoEn                  DateTime             @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+model TokenRevocado {
+  jti        String   @id @db.VarChar(128)
+  usuarioId  String?  @map("usuario_id") @db.Uuid
+  expiraEn   DateTime @map("expira_en") @db.Timestamptz(6)
+  revocadoEn DateTime @default(now()) @map("revocado_en") @db.Timestamptz(6)
 
-  alumnos                        Alumno[]
-  suscripciones                  Suscripcion[]
+  @@index([expiraEn], map: "token_revocado_expira_en_idx")
+  @@index([usuarioId], map: "token_revocado_usuario_id_idx")
+  @@map("token_revocado")
+  @@schema("app_user")
+}
+
+model PlanAlumno {
+  id                                                            Int                  @id @default(autoincrement())
+  nombre                                                        String
+  descripcion                                                   String?
+  precio                                                        Decimal              @db.Decimal(10, 2)
+  moneda                                                        String               @default("MXN") @db.Char(3)
+  proveedorPrecioId                                             String?              @unique(map: "plan_alumno_proveedor_precio_unique_idx", where: raw("(proveedor_precio_id IS NOT NULL)")) @map("proveedor_precio_id") @db.VarChar(255)
+  limiteEjerciciosPersonalizados                                Int                  @map("limite_ejercicios_personalizados")
+  limiteRutinas                                                 Int                  @map("limite_rutinas")
+  intervaloCobro                                                BillingIntervalEnum? @map("intervalo_cobro")
+  cantidadIntervalosCobro                                       Int?                 @map("cantidad_intervalos_cobro") @db.SmallInt
+  duracionUnidad                                                UnidadPeriodoEnum?   @map("duracion_unidad")
+  duracionCantidad                                              Int?                 @map("duracion_cantidad") @db.SmallInt
+  esGratuito                                                    Boolean              @default(false) @map("es_gratuito")
+  esVitalicio                                                   Boolean              @default(false) @map("es_vitalicio")
+  cobraRecurrentemente                                          Boolean              @default(false) @map("cobra_recurrentemente")
+  numeroCobros                                                  Int?                 @map("numero_cobros") @db.SmallInt
+  periodoPrueba                                                 Int?                 @default(0) @map("periodo_prueba") @db.SmallInt
+  unidadPeriodoPrueba                                           UnidadPeriodoEnum?   @map("unidad_periodo_prueba")
+  estaActivo                                                    Boolean              @default(true) @map("esta_activo")
+  creadoEn                                                      DateTime             @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn                                                 DateTime             @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+  alumnos                                                       Alumno[]
+  suscripciones                                                 Suscripcion[]
+  suscripcion_suscripcion_planAlumnoPendienteIdToplan_alumno Suscripcion[]        @relation("suscripcion_planAlumnoPendienteIdToplan_alumno")
 
   @@map("plan_alumno")
   @@schema("app_user")
 }
 
 model PlanEntrenador {
-  id                      Int                  @id @default(autoincrement())
-  nombre                  String
-  descripcion             String?
-  precio                  Decimal              @db.Decimal(10, 2)
-  moneda                  String               @default("MXN") @db.Char(3)
-  proveedorPrecioId String? @unique(map: "plan_entrenador_proveedor_price_unique_idx") @map("proveedor_precio_id") @db.VarChar(255)
-  limiteAlumnos           Int                  @map("limite_alumnos")
-  limiteRutinas           Int                  @map("limite_rutinas")
-  intervaloCobro          BillingIntervalEnum? @map("intervalo_cobro")
-  cantidadIntervalosCobro Int?                 @map("cantidad_intervalos_cobro") @db.SmallInt
-  duracionUnidad          UnidadPeriodoEnum?   @map("duracion_unidad")
-  duracionCantidad        Int?                 @map("duracion_cantidad") @db.SmallInt
-  esGratuito              Boolean              @default(false) @map("es_gratuito")
-  esVitalicio             Boolean              @default(false) @map("es_vitalicio")
-  cobraRecurrentemente    Boolean              @default(true) @map("cobra_recurrentemente")
-  numeroCobros            Int?                 @map("numero_cobros") @db.SmallInt
-  estaActivo              Boolean              @default(true) @map("esta_activo")
-  creadoEn                DateTime             @default(now()) @map("creado_en") @db.Timestamptz(6)
-  actualizadoEn           DateTime             @default(now()) @map("actualizado_en") @db.Timestamptz(6)
-
-  suscripciones           Suscripcion[]
-  entrenadores            Entrenador[]
+  id                                                                    Int                  @id @default(autoincrement())
+  nombre                                                                String
+  descripcion                                                           String?
+  precio                                                                Decimal              @db.Decimal(10, 2)
+  moneda                                                                String               @default("MXN") @db.Char(3)
+  proveedorPrecioId                                                     String?              @unique(map: "plan_entrenador_proveedor_precio_unique_idx", where: raw("(proveedor_precio_id IS NOT NULL)")) @map("proveedor_precio_id") @db.VarChar(255)
+  limiteAlumnos                                                         Int                  @map("limite_alumnos")
+  limiteRutinas                                                         Int                  @map("limite_rutinas")
+  intervaloCobro                                                        BillingIntervalEnum? @map("intervalo_cobro")
+  cantidadIntervalosCobro                                               Int?                 @map("cantidad_intervalos_cobro") @db.SmallInt
+  duracionUnidad                                                        UnidadPeriodoEnum?   @map("duracion_unidad")
+  duracionCantidad                                                      Int?                 @map("duracion_cantidad") @db.SmallInt
+  esGratuito                                                            Boolean              @default(false) @map("es_gratuito")
+  esVitalicio                                                           Boolean              @default(false) @map("es_vitalicio")
+  cobraRecurrentemente                                                  Boolean              @default(true) @map("cobra_recurrentemente")
+  numeroCobros                                                          Int?                 @map("numero_cobros") @db.SmallInt
+  periodoPrueba                                                         Int?                 @default(0) @map("periodo_prueba") @db.SmallInt
+  unidadPeriodoPrueba                                                   UnidadPeriodoEnum?   @map("unidad_periodo_prueba")
+  estaActivo                                                            Boolean              @default(true) @map("esta_activo")
+  creadoEn                                                              DateTime             @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn                                                         DateTime             @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+  suscripciones                                                         Suscripcion[]
+  suscripcion_suscripcion_planEntrenadorPendienteIdToplan_entrenador Suscripcion[]        @relation("suscripcion_planEntrenadorPendienteIdToplan_entrenador")
+  entrenadores                                                          Entrenador[]
 
   @@map("plan_entrenador")
   @@schema("app_user")
 }
 
 model EventoStripe {
-  id              BigInt    @id @default(autoincrement())
-  stripeEventId   String    @unique(map: "evento_stripe_event_id_unique") @map("stripe_event_id") @db.VarChar(255)
-  tipoEvento      String    @map("tipo_evento") @db.VarChar(100)
-  suscripcionId   BigInt?   @map("suscripcion_id")
-  pagoId          BigInt?   @map("pago_id")
-  procesado       Boolean   @default(false)
-  procesadoEn     DateTime? @map("procesado_en") @db.Timestamptz(6)
-  errorMensaje    String?   @map("error_mensaje")
-  payload         Json
-  recibidoEn      DateTime  @default(now()) @map("recibido_en") @db.Timestamptz(6)
-  creadoEn        DateTime  @default(now()) @map("creado_en") @db.Timestamptz(6)
+  id            BigInt       @id @default(autoincrement())
+  stripeEventId String       @unique(map: "evento_stripe_event_id_unique") @map("stripe_event_id") @db.VarChar(255)
+  tipoEvento    String       @map("tipo_evento") @db.VarChar(100)
+  suscripcionId BigInt?      @map("suscripcion_id")
+  pagoId        BigInt?      @map("pago_id")
+  procesado     Boolean      @default(false)
+  procesadoEn   DateTime?    @map("procesado_en") @db.Timestamptz(6)
+  errorMensaje  String?      @map("error_mensaje")
+  payload       Json
+  recibidoEn    DateTime     @default(now()) @map("recibido_en") @db.Timestamptz(6)
+  creadoEn      DateTime     @default(now()) @map("creado_en") @db.Timestamptz(6)
+  pago          Pago?        @relation(fields: [pagoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "evento_stripe_pago_foreign")
+  suscripcion   Suscripcion? @relation(fields: [suscripcionId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "evento_stripe_suscripcion_foreign")
 
-  suscripcion     Suscripcion? @relation(fields: [suscripcionId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "evento_stripe_suscripcion_foreign")
-  pago            Pago?         @relation(fields: [pagoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "evento_stripe_pago_foreign")
-
-  @@index([recibidoEn], map: "evento_stripe_pendiente_idx", where: raw("procesado = false"))
+  @@index([recibidoEn], map: "evento_stripe_pendiente_idx", where: raw("(procesado = false)"))
   @@index([suscripcionId], map: "evento_stripe_suscripcion_idx")
   @@index([pagoId], map: "evento_stripe_pago_idx")
   @@map("evento_stripe")
@@ -821,7 +840,6 @@ model NivelActividad {
   descripcion String?
   activo      Boolean  @default(true)
   orden       Int      @db.SmallInt
-
   alumnos     Alumno[]
 
   @@map("nivel_actividad")
@@ -835,11 +853,28 @@ model Objetivo {
   descripcion String?
   activo      Boolean  @default(true)
   orden       Int      @db.SmallInt
-
   alumnos     Alumno[]
 
   @@map("objetivo")
   @@schema("core")
+}
+
+model EventoWebhook {
+  id                  BigInt                     @id @default(autoincrement())
+  proveedor           String                     @db.VarChar(30)
+  proveedor_evento_id String                     @db.VarChar(255)
+  tipo                String                     @db.VarChar(150)
+  estado              EstadoEventoWebhookEnum @default(recibido)
+  payload             Json?
+  error               String?
+  recibido_en         DateTime                   @default(now()) @db.Timestamptz(6)
+  procesado_en        DateTime?                  @db.Timestamptz(6)
+
+  @@map("evento_webhook")
+  @@unique([proveedor, proveedor_evento_id], map: "evento_webhook_proveedor_evento_unique_idx")
+  @@index([estado, recibido_en], map: "evento_webhook_estado_recibido_idx")
+  @@index([tipo, recibido_en], map: "evento_webhook_tipo_recibido_idx")
+  @@schema("app_user")
 }
 
 enum UserRole {
@@ -855,7 +890,6 @@ enum UserRole {
 enum BillingIntervalEnum {
   mes
   año
-
   @@map("billing_interval_enum")
   @@schema("app_user")
 }
@@ -887,7 +921,6 @@ enum UnidadPeriodoEnum {
   semana
   mes
   año
-
   @@map("unidad_periodo_enum")
   @@schema("app_user")
 }
@@ -896,5 +929,14 @@ enum ProveedorPagoEnum {
   stripe
 
   @@map("proveedor_pago_enum")
+  @@schema("app_user")
+}
+
+enum EstadoEventoWebhookEnum {
+  recibido
+  procesando
+  procesado
+  fallido
+  @@map("EstadoEventoWebhookEnum")
   @@schema("app_user")
 }

@@ -1,4 +1,11 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  OnApplicationBootstrap,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegisterEntrenadorDto } from './dto/register-entrenador.dto';
 import { LoginDto } from './dto/login.dto';
@@ -10,7 +17,7 @@ import { DB_SEXO_IDS } from '../../common/constants/db-sexo';
 import { UserRole } from '@prisma/client';
 import { SuscripcionesService } from '../suscripciones/suscripciones.service';
 @Injectable()
-export class AuthService {
+export class AuthService implements OnApplicationBootstrap {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
@@ -18,6 +25,30 @@ export class AuthService {
   ) {}
 
   private readonly seedHash: number = 10;
+
+  onApplicationBootstrap() {
+    const INTERVALO_HORAS = 24;
+
+    const ejecutar = () => {
+      this.limpiarTokensRevocadosVencidos().catch((err) => {
+        console.error('Error al limpiar tokens revocados vencidos:', err);
+      });
+    };
+
+    ejecutar();
+
+    setInterval(ejecutar, INTERVALO_HORAS * 60 * 60 * 1000);
+  }
+
+  private async limpiarTokensRevocadosVencidos(): Promise<void> {
+    await this.prisma.tokenRevocado.deleteMany({
+      where: {
+        expiraEn: {
+          lt: new Date(),
+        },
+      },
+    });
+  }
   //
   // Register Entrenador method
   //
@@ -25,7 +56,11 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(registerData.password, this.seedHash);
     const idSexo = registerData.sexo === 'MASCULINO' ? DB_SEXO_IDS.MASCULINO : DB_SEXO_IDS.FEMENINO;
 
-    await this.prisma.$transaction(async (tx) => {
+    const idPlan = registerData.id_plan ?? 1;
+
+    await this.validarPlanEntrenador(idPlan);
+
+    return this.prisma.$transaction(async (tx) => {
       const user = await tx.usuario.create({
         data: {
           nombre: registerData.nombre,
@@ -42,14 +77,17 @@ export class AuthService {
       await tx.entrenador.create({
         data: {
           idUsuario: user.id,
+          idPlan,
           slug: registerData.nombre_publico.toLowerCase().replace(/\s+/g, '-'),
           fechaEntrenador: new Date(registerData.fecha_entrenador),
           nombrePublico: registerData.nombre_publico,
         },
       });
-      await this.suscripcionesService.activarSuscripcionInicial(user.id, tx);
+
+      const resultado = await this.suscripcionesService.activarSuscripcionInicial(user.id, tx);
+
+      return this.construirRespuestaRegistro(resultado);
     });
-    return { message: 'Usuario registrado exitosamente' };
   }
   //
   // Login method
@@ -67,10 +105,48 @@ export class AuthService {
       throw new UnauthorizedException('Contraseña incorrecta');
     }
 
-    const payload: JwtPayload = { sub: user.id, id: user.id, correo: user.correo, role: user.role };
+    const payload: JwtPayload = {
+      sub: user.id,
+      id: user.id,
+      correo: user.correo,
+      role: user.role,
+      jti: randomUUID(),
+    };
     const token = this.jwtService.sign(payload);
 
     return { message: 'Inicio de sesión exitoso', token };
+  }
+  //
+  // Logout method (revoca el token por jti)
+  //
+  async logout(token: string) {
+    let payload: JwtPayload & { exp?: number };
+
+    try {
+      payload = await this.jwtService.verifyAsync<JwtPayload & { exp?: number }>(token);
+    } catch {
+      throw new UnauthorizedException('Token inválido o expirado');
+    }
+
+    if (!payload.jti) {
+      return { message: 'Sesión cerrada exitosamente' };
+    }
+
+    const expiraEn = payload.exp ? new Date(payload.exp * 1000) : new Date(Date.now() + 86400000);
+
+    await this.prisma.tokenRevocado.upsert({
+      where: {
+        jti: payload.jti,
+      },
+      update: {},
+      create: {
+        jti: payload.jti,
+        usuarioId: payload.id,
+        expiraEn,
+      },
+    });
+
+    return { message: 'Sesión cerrada exitosamente' };
   }
   //
   // Register Alumno method
@@ -79,7 +155,11 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(registerData.password, this.seedHash);
     const idSexo = registerData.sexo === 'MASCULINO' ? DB_SEXO_IDS.MASCULINO : DB_SEXO_IDS.FEMENINO;
 
-    await this.prisma.$transaction(async (tx) => {
+    const idPlan = registerData.id_plan ?? 1;
+
+    await this.validarPlanAlumno(idPlan);
+
+    return this.prisma.$transaction(async (tx) => {
       const roleAlumno: UserRole = UserRole.alumno;
 
       const user = await tx.usuario.create({
@@ -95,12 +175,11 @@ export class AuthService {
         },
       });
 
-      const numeroCelularString = registerData.numero_celular.toString();
-
       await tx.alumno.create({
         data: {
           idUsuario: user.id,
-          numeroCelular: numeroCelularString,
+          idPlan,
+          numeroCelular: registerData.numero_celular,
           fechaInicioEntrenamiento: new Date(registerData.fecha_inicio_entrenamiento),
           idObjetivo: registerData.id_objetivo,
           idNivelActividad: registerData.id_nivel_actividad,
@@ -111,8 +190,67 @@ export class AuthService {
           contactoEmergenciaTelefono: registerData.contacto_emergencia_telefono,
         },
       });
-      await this.suscripcionesService.activarSuscripcionInicial(user.id, tx);
+
+      const resultado = await this.suscripcionesService.activarSuscripcionInicial(user.id, tx);
+
+      return this.construirRespuestaRegistro(resultado);
     });
-    return { message: 'Usuario registrado exitosamente' };
+  }
+
+  private async validarPlanEntrenador(idPlan: number): Promise<void> {
+    const plan = await this.prisma.planEntrenador.findUnique({
+      where: {
+        id: idPlan,
+      },
+      select: {
+        id: true,
+        estaActivo: true,
+      },
+    });
+
+    if (!plan) {
+      throw new NotFoundException(`El plan de entrenador ${idPlan} no existe`);
+    }
+
+    if (!plan.estaActivo) {
+      throw new BadRequestException(`El plan de entrenador ${idPlan} está inactivo`);
+    }
+  }
+
+  private async validarPlanAlumno(idPlan: number): Promise<void> {
+    const plan = await this.prisma.planAlumno.findUnique({
+      where: {
+        id: idPlan,
+      },
+      select: {
+        id: true,
+        estaActivo: true,
+      },
+    });
+
+    if (!plan) {
+      throw new NotFoundException(`El plan de alumno ${idPlan} no existe`);
+    }
+
+    if (!plan.estaActivo) {
+      throw new BadRequestException(`El plan de alumno ${idPlan} está inactivo`);
+    }
+  }
+
+  private construirRespuestaRegistro(resultado: { pagoId?: bigint; suscripcion: { id: bigint } }) {
+    const pagoId = resultado.pagoId;
+
+    if (!pagoId) {
+      return {
+        message: 'Usuario registrado exitosamente',
+      };
+    }
+
+    return {
+      message: 'Usuario registrado exitosamente',
+      requierePago: true,
+      pagoId: pagoId.toString(),
+      suscripcionId: resultado.suscripcion.id.toString(),
+    };
   }
 }

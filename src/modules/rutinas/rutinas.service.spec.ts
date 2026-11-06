@@ -174,8 +174,13 @@ describe('RutinasService', () => {
       };
       transactionMock.rutinaEjercicio.deleteMany.mockResolvedValue({ count: 0 });
       transactionMock.rutinaEjercicio.create.mockResolvedValue({});
+      transactionMock.rutina.findUnique.mockResolvedValue({
+        id: BigInt(5),
+        createdByUsuario: entrenadorId,
+        activa: true,
+      });
 
-      const result = await service.updateRutinaEjercicios(BigInt(5), dto);
+      const result = await service.updateRutinaEjercicios(BigInt(5), dto, entrenadorId);
 
       expect(transactionMock.rutinaEjercicio.deleteMany).toHaveBeenCalledWith({
         where: { idRutina: BigInt(5) },

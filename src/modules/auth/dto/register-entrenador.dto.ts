@@ -1,4 +1,15 @@
-import { IsNotEmpty, IsEmail, IsString, MaxLength, MinLength, IsDateString } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsEmail,
+  IsString,
+  MaxLength,
+  MinLength,
+  IsDateString,
+  IsIn,
+  IsOptional,
+  IsInt,
+  Min,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { AUTH_VALIDATION_ERRORS } from '../errors/auth-validation-errors';
 
@@ -19,6 +30,7 @@ export class RegisterEntrenadorDto {
   @IsNotEmpty({ message: AUTH_VALIDATION_ERRORS.REQUIRED_SEX })
   @MinLength(2, { message: AUTH_VALIDATION_ERRORS.SEX_TOO_SHORT })
   @MaxLength(20, { message: AUTH_VALIDATION_ERRORS.SEX_TOO_LONG })
+  @IsIn(['MASCULINO', 'FEMENINO'], { message: AUTH_VALIDATION_ERRORS.INVALID_SEX_VALUE })
   sexo!: 'MASCULINO' | 'FEMENINO';
 
   /** Apellido paterno del entrenador. */
@@ -67,4 +79,16 @@ export class RegisterEntrenadorDto {
   @IsNotEmpty({ message: AUTH_VALIDATION_ERRORS.REQUIRED_TRAINER_DATE })
   @IsDateString({}, { message: AUTH_VALIDATION_ERRORS.INVALID_TRAINER_DATE })
   fecha_entrenador!: string;
+
+  /** ID del plan de entrenador a contratar. Si no se envía, se asigna el plan por defecto (1). */
+  @ApiProperty({
+    description:
+      'ID del plan de entrenador a contratar. Si no se envía, se asigna el plan gratuito por defecto.',
+    example: 1,
+    required: false,
+  })
+  @IsOptional()
+  @IsInt({ message: AUTH_VALIDATION_ERRORS.INVALID_PLAN_ID })
+  @Min(1, { message: AUTH_VALIDATION_ERRORS.PLAN_ID_TOO_SMALL })
+  id_plan?: number;
 }

@@ -105,7 +105,7 @@ Todas las variables están **validadas** por `src/config/env.schema.ts` antes de
 | `STRIPE_WEBHOOK_SECRET` | Firma para verificar los webhooks de Stripe. | Debe iniciar con `whsec_`. |
 | `FRONTEND_URL` | URL del frontend, usada para construir las URLs de éxito/cancelación del Checkout. | Debe ser una URL válida. |
 
-> ⚠️ Pendiente de confirmar: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` y `FRONTEND_URL` están **validados en el schema** y se usan en el código, pero **no aparecen** en `.env.example`. Habría que añadirlos a `.env.example` para que la instalación local quede documentada de forma completa.
+Todas las variables de la tabla están incluidas en `.env.example` con un valor de ejemplo para facilitar la instalación local.
 
 ---
 

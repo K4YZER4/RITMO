@@ -3,6 +3,12 @@
   "rootDir": ".",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
+  "setupFiles": ["<rootDir>/setup-env.js"],
+  "testTimeout": 20000,
+  "forceExit": true,
+  "moduleNameMapper": {
+    "^uuid$": "<rootDir>/uuid-cjs-shim.js"
+  },
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   }

@@ -8,6 +8,7 @@ import { ActivarSuscripcionInicialHandler } from './handlers/activar-suscripcion
 import { ActualizarSuscripcionPorPagoHandler } from './handlers/actualizar-suscripcion-por-pago.handler';
 import { CambiarPlanSuscripcionHandler } from './handlers/cambiar-plan-suscripcion.handler';
 import { SuscripcionesService } from './suscripciones.service';
+import { MODOS_CAMBIO_PLAN } from '../../common/constants/modo-cambio';
 
 const usuarioId = 'a12e4567-e89b-12d3-a456-426614174000';
 
@@ -41,6 +42,7 @@ const actualizarSuscripcionPorPagoHandlerMock = {
 
 const cambiarPlanSuscripcionHandlerMock = {
   ejecutar: jest.fn(),
+  aplicarCambioPlanDesdeProveedor: jest.fn(),
 };
 
 describe('SuscripcionesService', () => {
@@ -266,8 +268,9 @@ describe('SuscripcionesService', () => {
   });
 
   describe('cambiarPlan', () => {
-    it('debe delegar el cambio de plan al handler', async () => {
+    it('debe delegar el cambio de plan al handler con el modo de cambio', async () => {
       const idPlanNuevo = 2;
+      const modoCambio = MODOS_CAMBIO_PLAN.FINAL_PERIODO;
 
       const resultadoEsperado = {
         id: BigInt(10),
@@ -275,12 +278,36 @@ describe('SuscripcionesService', () => {
 
       cambiarPlanSuscripcionHandlerMock.ejecutar.mockResolvedValue(resultadoEsperado);
 
-      const result = await service.cambiarPlan(usuarioId, idPlanNuevo);
+      const result = await service.cambiarPlan(usuarioId, idPlanNuevo, modoCambio);
 
       expect(cambiarPlanSuscripcionHandlerMock.ejecutar).toHaveBeenCalledWith(
         usuarioId,
         idPlanNuevo,
+        modoCambio,
       );
+
+      expect(result).toBe(resultadoEsperado);
+    });
+  });
+
+  describe('aplicarCambioPlanPendiente', () => {
+    it('debe delegar la aplicación del plan pendiente al handler', async () => {
+      const suscripcionId = BigInt(1);
+
+      const resultadoEsperado = {
+        aplicado: true,
+        suscripcionId: '1',
+      };
+
+      cambiarPlanSuscripcionHandlerMock.aplicarCambioPlanDesdeProveedor.mockResolvedValue(
+        resultadoEsperado,
+      );
+
+      const result = await service.aplicarCambioPlanPendiente(suscripcionId);
+
+      expect(
+        cambiarPlanSuscripcionHandlerMock.aplicarCambioPlanDesdeProveedor,
+      ).toHaveBeenCalledWith(suscripcionId);
 
       expect(result).toBe(resultadoEsperado);
     });

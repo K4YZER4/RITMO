@@ -17,6 +17,7 @@ Tabla resumen de **todos** los endpoints. Para detalles por endpoint (guards, DT
 | POST | `/auth/login` | Inicia sesión y devuelve un JWT | `Public` + `SinSuscripcion`, rate-limit 2/min | `LoginDto` |
 | POST | `/auth/registrar/entrenador` | Registra un entrenador y activa su suscripción inicial | `Public` + `SinSuscripcion`, rate-limit 2/min | `RegisterEntrenadorDto` |
 | POST | `/auth/registrar/alumno` | Registra un alumno y activa su suscripción inicial | `Public` + `SinSuscripcion`, rate-limit 2/min | `RegisterAlumnoDto` |
+| POST | `/auth/logout` | Revoca el JWT actual (denylist por `jti`) | `Public` + `SinSuscripcion`, rate-limit 5/min, Bearer en header | — |
 | GET | `/suscripciones/actual` | Devuelve la suscripción actual (incluye plan y último pago) | `SinSuscripcion` + `@CurrentUser('id')` | — |
 | GET | `/suscripciones/estado-pago` | Devuelve el estado del último pago (pagado/fallido/pendiente, etc.) | `SinSuscripcion` + `@CurrentUser('id')` | — |
 | PATCH | `/suscripciones/plan` | Cambia de plan (alumno o entrenador) | `SinSuscripcion` + `@CurrentUser('id')` | `CambiarPlanDto` |
