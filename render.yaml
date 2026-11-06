@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: ritmo-api
+    runtime: node
+    plan: free
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    preDeployCommand: pnpm prisma migrate deploy
+    startCommand: pnpm start:prod
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRATION_TIME
+        value: 86400
+      - key: RATE_LIMIT_TTL
+        value: 10000
+      - key: RATE_LIMIT_GLOBAL_LIMIT
+        value: 60
+      - key: FRONTEND_URL
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+
+  - type: web
+    name: ritmo-web
+    runtime: static
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm web:build
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

@@ -23,6 +23,7 @@
     "migrate:test": "node test/migrate-test.js",
     "prisma:push": "prisma db push",
     "prisma:studio": "prisma studio",
+    "seed:demo": "ts-node prisma/seed-demo.ts",
     "web:dev": "pnpm --dir frontend dev",
     "web:build": "pnpm --dir frontend build",
     "web:test": "pnpm --dir frontend test"

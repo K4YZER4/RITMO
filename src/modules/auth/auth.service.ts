@@ -17,6 +17,7 @@ import { JwtService } from '@nestjs/jwt';
 import { DB_SEXO_IDS } from '../../common/constants/db-sexo';
 import { UserRole } from '@prisma/client';
 import { SuscripcionesService } from '../suscripciones/suscripciones.service';
+import { withTransactionRetry } from '../../common/utils/transaction-retry';
 @Injectable()
 export class AuthService implements OnApplicationBootstrap, OnApplicationShutdown {
   constructor(
@@ -71,34 +72,36 @@ export class AuthService implements OnApplicationBootstrap, OnApplicationShutdow
 
     await this.validarPlanEntrenador(idPlan);
 
-    return this.prisma.$transaction(async (tx) => {
-      const user = await tx.usuario.create({
-        data: {
-          nombre: registerData.nombre,
-          apellidoPaterno: registerData.apellido_paterno,
-          apellidoMaterno: registerData.apellido_materno,
-          correo: this.normalizarCorreo(registerData.correo),
-          hashedPassword,
-          fechaNacimiento: new Date(registerData.fecha_nacimiento),
-          role: UserRole.entrenador,
-          idSexo,
-        },
-      });
+    return withTransactionRetry(() =>
+      this.prisma.$transaction(async (tx) => {
+        const user = await tx.usuario.create({
+          data: {
+            nombre: registerData.nombre,
+            apellidoPaterno: registerData.apellido_paterno,
+            apellidoMaterno: registerData.apellido_materno,
+            correo: this.normalizarCorreo(registerData.correo),
+            hashedPassword,
+            fechaNacimiento: new Date(registerData.fecha_nacimiento),
+            role: UserRole.entrenador,
+            idSexo,
+          },
+        });
 
-      await tx.entrenador.create({
-        data: {
-          idUsuario: user.id,
-          idPlan,
-          slug: registerData.nombre_publico.toLowerCase().replace(/\s+/g, '-'),
-          fechaEntrenador: new Date(registerData.fecha_entrenador),
-          nombrePublico: registerData.nombre_publico,
-        },
-      });
+        await tx.entrenador.create({
+          data: {
+            idUsuario: user.id,
+            idPlan,
+            slug: registerData.nombre_publico.toLowerCase().replace(/\s+/g, '-'),
+            fechaEntrenador: new Date(registerData.fecha_entrenador),
+            nombrePublico: registerData.nombre_publico,
+          },
+        });
 
-      const resultado = await this.suscripcionesService.activarSuscripcionInicial(user.id, tx);
+        const resultado = await this.suscripcionesService.activarSuscripcionInicial(user.id, tx);
 
-      return this.construirRespuestaRegistro(resultado);
-    });
+        return this.construirRespuestaRegistro(resultado);
+      }),
+    );
   }
   //
   // Login method
@@ -171,42 +174,44 @@ export class AuthService implements OnApplicationBootstrap, OnApplicationShutdow
 
     await this.validarPlanAlumno(idPlan);
 
-    return this.prisma.$transaction(async (tx) => {
-      const roleAlumno: UserRole = UserRole.alumno;
+    return withTransactionRetry(() =>
+      this.prisma.$transaction(async (tx) => {
+        const roleAlumno: UserRole = UserRole.alumno;
 
-      const user = await tx.usuario.create({
-        data: {
-          nombre: registerData.nombre,
-          role: roleAlumno,
-          apellidoPaterno: registerData.apellido_paterno,
-          apellidoMaterno: registerData.apellido_materno,
-          correo: this.normalizarCorreo(registerData.correo),
-          hashedPassword,
-          fechaNacimiento: new Date(registerData.fecha_nacimiento),
-          idSexo,
-        },
-      });
+        const user = await tx.usuario.create({
+          data: {
+            nombre: registerData.nombre,
+            role: roleAlumno,
+            apellidoPaterno: registerData.apellido_paterno,
+            apellidoMaterno: registerData.apellido_materno,
+            correo: this.normalizarCorreo(registerData.correo),
+            hashedPassword,
+            fechaNacimiento: new Date(registerData.fecha_nacimiento),
+            idSexo,
+          },
+        });
 
-      await tx.alumno.create({
-        data: {
-          idUsuario: user.id,
-          idPlan,
-          numeroCelular: registerData.numero_celular,
-          fechaInicioEntrenamiento: new Date(registerData.fecha_inicio_entrenamiento),
-          idObjetivo: registerData.id_objetivo,
-          idNivelActividad: registerData.id_nivel_actividad,
-          observacionesMedicas: registerData.observaciones_medicas,
-          lesionesActuales: registerData.lesiones_actuales,
-          lesionesPasadas: registerData.lesiones_pasadas,
-          contactoEmergenciaNombre: registerData.contacto_emergencia_nombre,
-          contactoEmergenciaTelefono: registerData.contacto_emergencia_telefono,
-        },
-      });
+        await tx.alumno.create({
+          data: {
+            idUsuario: user.id,
+            idPlan,
+            numeroCelular: registerData.numero_celular,
+            fechaInicioEntrenamiento: new Date(registerData.fecha_inicio_entrenamiento),
+            idObjetivo: registerData.id_objetivo,
+            idNivelActividad: registerData.id_nivel_actividad,
+            observacionesMedicas: registerData.observaciones_medicas,
+            lesionesActuales: registerData.lesiones_actuales,
+            lesionesPasadas: registerData.lesiones_pasadas,
+            contactoEmergenciaNombre: registerData.contacto_emergencia_nombre,
+            contactoEmergenciaTelefono: registerData.contacto_emergencia_telefono,
+          },
+        });
 
-      const resultado = await this.suscripcionesService.activarSuscripcionInicial(user.id, tx);
+        const resultado = await this.suscripcionesService.activarSuscripcionInicial(user.id, tx);
 
-      return this.construirRespuestaRegistro(resultado);
-    });
+        return this.construirRespuestaRegistro(resultado);
+      }),
+    );
   }
 
   private async validarPlanEntrenador(idPlan: number): Promise<void> {
