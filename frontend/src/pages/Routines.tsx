@@ -375,20 +375,14 @@ export function Routines() {
                 onChange={setDay}
               />
             </label>
-            <label>
-              Fecha de inicio
-              <DateField
-                label=""
-                value={start}
-                min={new Date().toISOString().slice(0, 10)}
-                onChange={setStart}
-                required
-              />
-            </label>
-            <label>
-              Fecha final opcional
-              <DateField label="" value={end} min={start} onChange={setEnd} />
-            </label>
+            <DateField
+              label="Fecha de inicio"
+              value={start}
+              min={new Date().toISOString().slice(0, 10)}
+              onChange={setStart}
+              required
+            />
+            <DateField label="Fecha final opcional" value={end} min={start} onChange={setEnd} />
             {assign.error && <div className="error">{assign.error.message}</div>}
             <div className="modal-actions">
               <button
