@@ -1,7 +1,7 @@
 ###############
 # STAGE 1: BUILD
 ###############
-FROM node:20-alpine AS build
+FROM node:24-alpine AS build
 
 RUN corepack enable && pnpm --version
 
@@ -43,7 +43,7 @@ RUN pnpm prune --prod
 ###############
 # STAGE 3: RUNTIME
 ###############
-FROM node:20-alpine AS runtime
+FROM node:24-alpine AS runtime
 
 ENV NODE_ENV=production
 ENV PORT=3000

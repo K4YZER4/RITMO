@@ -1,6 +1,27 @@
-# RITMO — Backend (NestJS)
+# RITMO — Plataforma full-stack de entrenamiento
 
-Backend de la plataforma **RITMO**, una aplicación de entrenamiento que conecta a **entrenadores** con **alumnos** mediante rutinas y ejercicios, con sistema de **suscripciones** y **pagos** integrados con **Stripe**.
+**RITMO** conecta a entrenadores y alumnos mediante rutinas, sesiones, mediciones y progreso visible. Es una aplicación responsive e instalable como PWA, construida como proyecto de portafolio con **React**, **NestJS**, **Prisma**, **PostgreSQL** y **Stripe**.
+
+> Estado: demo de portafolio. No procesa datos personales ni pagos reales.
+
+## Demo rápida
+
+```text
+Entrenador: demo.entrenador@ritmo.app
+Alumno:    demo.alumno@ritmo.app
+Password:  RitmoDemo2026!
+```
+
+Los usuarios se crean con `pnpm seed:demo`. Consulta [el guion de demo](docs/DEMO.md) y [la guía de Render](docs/DESPLIEGUE-RENDER.md).
+
+### Aplicaciones
+
+| Aplicación | Directorio  | Comando          |
+| ---------- | ----------- | ---------------- |
+| API NestJS | `src/`      | `pnpm start:dev` |
+| PWA React  | `frontend/` | `pnpm web:dev`   |
+
+El flujo demostrable es: **entrenador crea rutina → asigna alumno → alumno registra sets → RITMO calcula PR y progreso**.
 
 ---
 
@@ -19,25 +40,25 @@ RITMO es una plataforma de entrenamiento físico que permite:
 
 ## Stack
 
-| Capa | Tecnología |
-|------|-----------|
-| Framework | NestJS 11 |
-| Lenguaje | TypeScript 5.7 |
-| ORM | Prisma 7 (`@prisma/client` con `@prisma/adapter-pg` / Prisma Accelerate) |
-| Base de datos | PostgreSQL (multi-schema: `alumno`, `app_user`, `core`, `entrenador`, `ubi`) |
-| Host de DB | Neón (remoto; ver `DIRECT_URL`) |
-| Pagos | Stripe API v22 |
-| Validación | `class-validator` + `class-transformer` |
-| Configuración de entorno | `zod` (`config/env.schema.ts`) |
-| Hashing / tokens | `bcrypt`, `uuid` |
-| Tests | Jest + `ts-jest` |
-| Lint / formato | ESLint 9 + Prettier |
+| Capa                     | Tecnología                                                                   |
+| ------------------------ | ---------------------------------------------------------------------------- |
+| Framework                | NestJS 11                                                                    |
+| Lenguaje                 | TypeScript 5.7                                                               |
+| ORM                      | Prisma 7 (`@prisma/client` con `@prisma/adapter-pg` / Prisma Accelerate)     |
+| Base de datos            | PostgreSQL (multi-schema: `alumno`, `app_user`, `core`, `entrenador`, `ubi`) |
+| Host de DB               | Neón (remoto; ver `DIRECT_URL`)                                              |
+| Pagos                    | Stripe API v22                                                               |
+| Validación               | `class-validator` + `class-transformer`                                      |
+| Configuración de entorno | `zod` (`config/env.schema.ts`)                                               |
+| Hashing / tokens         | `bcrypt`, `uuid`                                                             |
+| Tests                    | Jest + `ts-jest`                                                             |
+| Lint / formato           | ESLint 9 + Prettier                                                          |
 
 ---
 
 ## Requisitos
 
-- **Node.js** 18 o superior (recomendado 20+).
+- **Node.js** 22.13 o superior (recomendado 24 LTS).
 - **pnpm** (gestor de paquetes usado por el proyecto).
 - Una base de datos **PostgreSQL** accesible (el proyecto se usa típicamente con **Neón**).
 - Cuenta de **Stripe** (claves `test`/`live` y secreto de webhook).
@@ -91,19 +112,19 @@ RITMO es una plataforma de entrenamiento físico que permite:
 
 Todas las variables están **validadas** por `src/config/env.schema.ts` antes de arrancar. Si falta una o no cumple el formato, la app no inicia.
 
-| Variable | Descripción | Formato / validación |
-|----------|-------------|----------------------|
-| `NODE_ENV` | Entorno de ejecución. | `development` \| `test` \| `production`. Default: `development`. |
-| `PORT` | Puerto HTTP donde escucha NestJS. | Entero 1–65535. Default: `3000`. |
-| `DATABASE_URL` | URL de conexión a PostgreSQL usada por Prisma en runtime. | String no vacía. |
-| `DIRECT_URL` | URL directa usada por Prisma para migraciones y operaciones que no pasan por el pooler (en Neón, host directo). | String no vacía. |
-| `JWT_SECRET` | Secreto para firmar y verificar los JWT. | Mínimo **32 caracteres**. |
-| `JWT_EXPIRATION_TIME` | Vigencia del JWT en **segundos**. | Entero positivo. 86400 = 24 h. |
-| `RATE_LIMIT_TTL` | Ventana de tiempo del rate limit en **milisegundos**. | Entero positivo. 10000 = 10 s. |
-| `RATE_LIMIT_GLOBAL_LIMIT` | Máximo de peticiones por IP dentro de `RATE_LIMIT_TTL`. | Entero positivo. |
-| `STRIPE_SECRET_KEY` | Clave secreta de Stripe. | Debe iniciar con `sk_test_` o `sk_live_`. |
-| `STRIPE_WEBHOOK_SECRET` | Firma para verificar los webhooks de Stripe. | Debe iniciar con `whsec_`. |
-| `FRONTEND_URL` | URL del frontend, usada para construir las URLs de éxito/cancelación del Checkout. | Debe ser una URL válida. |
+| Variable                  | Descripción                                                                                                     | Formato / validación                                             |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `NODE_ENV`                | Entorno de ejecución.                                                                                           | `development` \| `test` \| `production`. Default: `development`. |
+| `PORT`                    | Puerto HTTP donde escucha NestJS.                                                                               | Entero 1–65535. Default: `3000`.                                 |
+| `DATABASE_URL`            | URL de conexión a PostgreSQL usada por Prisma en runtime.                                                       | String no vacía.                                                 |
+| `DIRECT_URL`              | URL directa usada por Prisma para migraciones y operaciones que no pasan por el pooler (en Neón, host directo). | String no vacía.                                                 |
+| `JWT_SECRET`              | Secreto para firmar y verificar los JWT.                                                                        | Mínimo **32 caracteres**.                                        |
+| `JWT_EXPIRATION_TIME`     | Vigencia del JWT en **segundos**.                                                                               | Entero positivo. 86400 = 24 h.                                   |
+| `RATE_LIMIT_TTL`          | Ventana de tiempo del rate limit en **milisegundos**.                                                           | Entero positivo. 10000 = 10 s.                                   |
+| `RATE_LIMIT_GLOBAL_LIMIT` | Máximo de peticiones por IP dentro de `RATE_LIMIT_TTL`.                                                         | Entero positivo.                                                 |
+| `STRIPE_SECRET_KEY`       | Clave secreta de Stripe.                                                                                        | Debe iniciar con `sk_test_` o `sk_live_`.                        |
+| `STRIPE_WEBHOOK_SECRET`   | Firma para verificar los webhooks de Stripe.                                                                    | Debe iniciar con `whsec_`.                                       |
+| `FRONTEND_URL`            | URL del frontend, usada para construir las URLs de éxito/cancelación del Checkout.                              | Debe ser una URL válida.                                         |
 
 Todas las variables de la tabla están incluidas en `.env.example` con un valor de ejemplo para facilitar la instalación local.
 
@@ -111,24 +132,24 @@ Todas las variables de la tabla están incluidas en `.env.example` con un valor 
 
 ## Scripts disponibles
 
-| Script | Comando |
-|--------|---------|
-| `start` | `nest start` |
-| `start:dev` | `nest start --watch` (hot reload) |
-| `start:debug` | `nest start --debug --watch` |
-| `start:prod` | `node dist/main` |
-| `build` | `nest build` (compila a `dist/`) |
-| `format` | `prettier --write "src/**/*.ts" "test/**/*.ts"` |
-| `lint` | `eslint "{src,apps,libs,test}/**/*.ts" --fix` |
-| `test` | `jest` |
-| `test:watch` | `jest --watch` |
-| `test:cov` | `jest --coverage` |
-| `test:debug` | `jest --runInBand` con inspector |
-| `test:e2e` | `jest --config ./test/jest-e2e.json` |
-| `prisma:generate` | `prisma generate` |
-| `prisma:migrate` | `prisma migrate dev` |
-| `prisma:push` | `prisma db push` |
-| `prisma:studio` | `prisma studio` |
+| Script            | Comando                                         |
+| ----------------- | ----------------------------------------------- |
+| `start`           | `nest start`                                    |
+| `start:dev`       | `nest start --watch` (hot reload)               |
+| `start:debug`     | `nest start --debug --watch`                    |
+| `start:prod`      | `node dist/main`                                |
+| `build`           | `nest build` (compila a `dist/`)                |
+| `format`          | `prettier --write "src/**/*.ts" "test/**/*.ts"` |
+| `lint`            | `eslint "{src,apps,libs,test}/**/*.ts" --fix`   |
+| `test`            | `jest`                                          |
+| `test:watch`      | `jest --watch`                                  |
+| `test:cov`        | `jest --coverage`                               |
+| `test:debug`      | `jest --runInBand` con inspector                |
+| `test:e2e`        | `jest --config ./test/jest-e2e.json`            |
+| `prisma:generate` | `prisma generate`                               |
+| `prisma:migrate`  | `prisma migrate dev`                            |
+| `prisma:push`     | `prisma db push`                                |
+| `prisma:studio`   | `prisma studio`                                 |
 
 ---
 

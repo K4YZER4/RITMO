@@ -6,6 +6,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { UserRole } from '@prisma/client';
+import { withTransactionRetry } from '../../common/utils/transaction-retry';
 @Injectable()
 export class RutinasService {
   constructor(private readonly prisma: PrismaService) {}
@@ -182,108 +183,111 @@ export class RutinasService {
 
     const fechaFinComparacion = fechaFin ?? new Date('9999-12-31');
 
-    await this.prisma.$transaction(
-      async (tx) => {
-        const rutina = await tx.rutina.findUnique({
-          where: { id: id_rutina },
-        });
-        if (!rutina || rutina.createdByUsuario !== usuarioId) {
-          throw new ForbiddenException('No tienes permiso para asignar esta rutina');
-        }
-
-        const solicitante = await tx.usuario.findUnique({
-          where: { id: usuarioId },
-          select: { role: true },
-        });
-        if (!solicitante || solicitante.role !== UserRole.entrenador) {
-          throw new ForbiddenException('Solo un entrenador puede asignar rutinas');
-        }
-
-        const alumnoUsuario = await tx.usuario.findUnique({
-          where: { id: asignarRutinaDto.id_alumno },
-          select: { role: true },
-        });
-        if (
-          !alumnoUsuario ||
-          (alumnoUsuario.role !== UserRole.alumno &&
-            alumnoUsuario.role !== UserRole.alumnoConEntrenador)
-        ) {
-          throw new ForbiddenException('El usuario destino no es un alumno válido');
-        }
-
-        const alumno = await tx.alumno.findUnique({
-          where: { idUsuario: asignarRutinaDto.id_alumno },
-          select: { idEntrenadorActual: true },
-        });
-        if (!alumno || alumno.idEntrenadorActual !== usuarioId) {
-          throw new ForbiddenException('El alumno no está vinculado a este entrenador');
-        }
-
-        const conflictos = await tx.usuarioRutina.findMany({
-          where: {
-            idUsuario: asignarRutinaDto.id_alumno,
-            idDiaSemana: asignarRutinaDto.numero_dia,
-            fechaInicio: {
-              lte: fechaFinComparacion,
-            },
-            OR: [{ fechaFin: null }, { fechaFin: { gte: fechaInicio } }],
-          },
-          orderBy: {
-            fechaInicio: 'asc',
-          },
-        });
-
-        for (const conflicto of conflictos) {
-          const conflictoInicio = conflicto.fechaInicio;
-          const conflictoFin = conflicto.fechaFin;
-
-          const nuevaEmpiezaDespuesDelConflicto =
-            conflictoFin !== null && fechaInicio > conflictoFin;
-
-          if (nuevaEmpiezaDespuesDelConflicto) {
-            continue;
+    await withTransactionRetry(() =>
+      this.prisma.$transaction(
+        async (tx) => {
+          const rutina = await tx.rutina.findUnique({
+            where: { id: id_rutina },
+          });
+          if (!rutina || rutina.createdByUsuario !== usuarioId) {
+            throw new ForbiddenException('No tienes permiso para asignar esta rutina');
           }
 
-          const conflictoEsRecortable =
-            conflictoInicio < fechaInicio && (conflictoFin === null || conflictoFin >= fechaInicio);
+          const solicitante = await tx.usuario.findUnique({
+            where: { id: usuarioId },
+            select: { role: true },
+          });
+          if (!solicitante || solicitante.role !== UserRole.entrenador) {
+            throw new ForbiddenException('Solo un entrenador puede asignar rutinas');
+          }
 
-          if (conflictoEsRecortable) {
-            const nuevaFechaFinConflicto = new Date(fechaInicio);
-            nuevaFechaFinConflicto.setDate(nuevaFechaFinConflicto.getDate() - 1);
+          const alumnoUsuario = await tx.usuario.findUnique({
+            where: { id: asignarRutinaDto.id_alumno },
+            select: { role: true },
+          });
+          if (
+            !alumnoUsuario ||
+            (alumnoUsuario.role !== UserRole.alumno &&
+              alumnoUsuario.role !== UserRole.alumnoConEntrenador)
+          ) {
+            throw new ForbiddenException('El usuario destino no es un alumno válido');
+          }
 
-            if (conflictoFin !== null && nuevaFechaFinConflicto > conflictoFin) {
+          const alumno = await tx.alumno.findUnique({
+            where: { idUsuario: asignarRutinaDto.id_alumno },
+            select: { idEntrenadorActual: true },
+          });
+          if (!alumno || alumno.idEntrenadorActual !== usuarioId) {
+            throw new ForbiddenException('El alumno no está vinculado a este entrenador');
+          }
+
+          const conflictos = await tx.usuarioRutina.findMany({
+            where: {
+              idUsuario: asignarRutinaDto.id_alumno,
+              idDiaSemana: asignarRutinaDto.numero_dia,
+              fechaInicio: {
+                lte: fechaFinComparacion,
+              },
+              OR: [{ fechaFin: null }, { fechaFin: { gte: fechaInicio } }],
+            },
+            orderBy: {
+              fechaInicio: 'asc',
+            },
+          });
+
+          for (const conflicto of conflictos) {
+            const conflictoInicio = conflicto.fechaInicio;
+            const conflictoFin = conflicto.fechaFin;
+
+            const nuevaEmpiezaDespuesDelConflicto =
+              conflictoFin !== null && fechaInicio > conflictoFin;
+
+            if (nuevaEmpiezaDespuesDelConflicto) {
               continue;
             }
 
-            await tx.usuarioRutina.update({
-              where: { id: conflicto.id },
-              data: {
-                fechaFin: nuevaFechaFinConflicto,
-              },
-            });
+            const conflictoEsRecortable =
+              conflictoInicio < fechaInicio &&
+              (conflictoFin === null || conflictoFin >= fechaInicio);
 
-            continue;
+            if (conflictoEsRecortable) {
+              const nuevaFechaFinConflicto = new Date(fechaInicio);
+              nuevaFechaFinConflicto.setDate(nuevaFechaFinConflicto.getDate() - 1);
+
+              if (conflictoFin !== null && nuevaFechaFinConflicto > conflictoFin) {
+                continue;
+              }
+
+              await tx.usuarioRutina.update({
+                where: { id: conflicto.id },
+                data: {
+                  fechaFin: nuevaFechaFinConflicto,
+                },
+              });
+
+              continue;
+            }
+
+            throw new BadRequestException(
+              'La rutina se traslapa con otra asignación ya registrada para ese día',
+            );
           }
 
-          throw new BadRequestException(
-            'La rutina se traslapa con otra asignación ya registrada para ese día',
-          );
-        }
-
-        await tx.usuarioRutina.create({
-          data: {
-            idRutina: id_rutina,
-            idUsuario: asignarRutinaDto.id_alumno,
-            idDiaSemana: asignarRutinaDto.numero_dia,
-            fechaInicio,
-            fechaFin,
-            asignadaPorUsuario: usuarioId,
-          },
-        });
-      },
-      {
-        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-      },
+          await tx.usuarioRutina.create({
+            data: {
+              idRutina: id_rutina,
+              idUsuario: asignarRutinaDto.id_alumno,
+              idDiaSemana: asignarRutinaDto.numero_dia,
+              fechaInicio,
+              fechaFin,
+              asignadaPorUsuario: usuarioId,
+            },
+          });
+        },
+        {
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        },
+      ),
     );
 
     return { success: true, message: 'Rutina asignada al alumno exitosamente' };
