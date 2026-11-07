@@ -74,6 +74,23 @@
   color: var(--muted);
   font-size: 0.78rem;
 }
+.date-field > span {
+  position: relative;
+  display: block;
+}
+.date-field input {
+  width: 100%;
+  padding-right: 3rem;
+  color-scheme: dark;
+}
+.date-field svg {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--lime);
+}
 * {
   box-sizing: border-box;
 }

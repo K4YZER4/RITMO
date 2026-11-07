@@ -31,7 +31,9 @@ const transactionMock = {
     findFirst: jest.fn(),
   },
   rutinaEjercicio: {
+    findMany: jest.fn(),
     deleteMany: jest.fn(),
+    update: jest.fn(),
     create: jest.fn(),
   },
   usuarioRutina: {
@@ -196,6 +198,7 @@ describe('RutinasService', () => {
         ],
       };
       transactionMock.rutinaEjercicio.deleteMany.mockResolvedValue({ count: 0 });
+      transactionMock.rutinaEjercicio.findMany.mockResolvedValue([]);
       transactionMock.rutinaEjercicio.create.mockResolvedValue({});
       transactionMock.rutina.findUnique.mockResolvedValue({
         id: BigInt(5),
@@ -206,7 +209,7 @@ describe('RutinasService', () => {
       const result = await service.updateRutinaEjercicios(BigInt(5), dto, entrenadorId);
 
       expect(transactionMock.rutinaEjercicio.deleteMany).toHaveBeenCalledWith({
-        where: { idRutina: BigInt(5) },
+        where: { idRutina: BigInt(5), id: { notIn: [] } },
       });
       expect(transactionMock.rutinaEjercicio.create).toHaveBeenCalledWith({
         data: {
