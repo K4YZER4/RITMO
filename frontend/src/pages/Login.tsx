@@ -61,6 +61,9 @@ export function Login() {
             Demo alumno
           </button>
         </div>
+        <p className="auth-footer">
+          ¿Aún no tienes cuenta? <Link to="/registro">Crear cuenta</Link>
+        </p>
       </form>
     </div>
   );

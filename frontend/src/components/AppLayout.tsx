@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Activity, Dumbbell, House, LogOut, TrendingUp, UserRound, Users } from 'lucide-react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { get } from '../lib/api';
+import { get, post } from '../lib/api';
 import type { Profile } from '../lib/types';
 
 export function AppLayout() {
@@ -21,9 +21,10 @@ export function AppLayout() {
       : [{ to: '/app/progreso', label: 'Progreso', icon: TrendingUp }]),
     { to: '/app/perfil', label: 'Perfil', icon: UserRound },
   ];
-  const logout = () => {
+  const logout = async () => {
+    await post('/auth/logout').catch(() => undefined);
     localStorage.removeItem('ritmo_token');
-    void navigate('/login');
+    await navigate('/login');
   };
   return (
     <div className="app-shell">
@@ -39,7 +40,7 @@ export function AppLayout() {
             </NavLink>
           ))}
         </nav>
-        <button className="logout" onClick={logout}>
+        <button className="logout" onClick={() => void logout()}>
           <LogOut size={18} />
           Salir
         </button>

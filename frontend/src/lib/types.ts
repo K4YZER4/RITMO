@@ -13,14 +13,28 @@ export type Routine = {
   descripcion?: string;
   activa: boolean;
   _count?: { rutinaEjercicio: number; usuarioRutina: number };
+  categoriaRutina?: { id: number; nombre: string };
   rutinaEjercicio?: Array<{
     id: string;
     orden: number;
     series: number;
     repeticiones: number;
-    ejercicioEstandar?: { nombre: string };
-    ejercicioPersonalizado?: { nombre: string };
+    ejercicioEstandar?: { id: string; nombre: string };
+    ejercicioPersonalizado?: { id: string; nombre: string };
+    pesoObjetivo?: string;
+    notaEntrenador?: string;
   }>;
+};
+export type Catalogs = {
+  categoriasRutina: Array<{ id: number; nombre: string; descripcion?: string }>;
+  musculos: Array<{ id: string; nombre: string }>;
+  equipos: Array<{ id: string; nombre: string }>;
+  objetivos: Array<{ id: number; nombre: string }>;
+  nivelesActividad: Array<{ id: number; nombre: string }>;
+};
+export type ExerciseLibrary = {
+  estandar: Array<{ id: string; nombre: string; descripcion?: string }>;
+  personalizados: Array<{ id: string; nombre: string; descripcion?: string }>;
 };
 export type Student = {
   idUsuario: string;

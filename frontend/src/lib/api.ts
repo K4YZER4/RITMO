@@ -24,9 +24,16 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
     },
   });
   const data = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+  if (response.status === 401) {
+    localStorage.removeItem('ritmo_token');
+    if (window.location.pathname !== '/login') window.location.assign('/login');
+  }
   if (!response.ok) {
-    const message =
-      typeof data.message === 'string' ? data.message : 'No se pudo completar la solicitud';
+    const message = Array.isArray(data.message)
+      ? data.message.join(', ')
+      : typeof data.message === 'string'
+        ? data.message
+        : 'No se pudo completar la solicitud';
     throw new ApiError(message, response.status);
   }
   return data as T;
