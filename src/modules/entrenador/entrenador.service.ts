@@ -81,6 +81,20 @@ export class EntrenadorService {
               include: { rutina: true, diaSemana: true },
               orderBy: { fechaInicio: 'desc' },
             },
+            sesionEntrenamiento: {
+              orderBy: { fechaSesion: 'desc' },
+              take: 20,
+              include: {
+                estado: true,
+                rutina: { select: { id: true, nombre: true } },
+                _count: { select: { sesionEjercicio: true } },
+              },
+            },
+            alumnoEjercicioPr: {
+              orderBy: { fechaPr: 'desc' },
+              take: 10,
+              include: { ejercicioEstandar: true, ejercicioPersonalizado: true },
+            },
           },
         },
         objetivo: true,
@@ -93,6 +107,40 @@ export class EntrenadorService {
     }
 
     return alumno;
+  }
+
+  async obtenerProgresoAlumno(entrenadorId: string, alumnoId: string) {
+    await this.validarEntrenador(entrenadorId);
+    const alumno = await this.prisma.alumno.findFirst({
+      where: { idUsuario: alumnoId, idEntrenadorActual: entrenadorId },
+      select: { idUsuario: true },
+    });
+    if (!alumno) throw new NotFoundException('Alumno vinculado no encontrado');
+
+    const desde = new Date();
+    desde.setUTCDate(desde.getUTCDate() - 30);
+    const sesiones = await this.prisma.sesionEntrenamiento.findMany({
+      where: { idUsuario: alumnoId, idEstado: 2, fechaSesion: { gte: desde } },
+      include: {
+        sesionEjercicio: { include: { sesionEjercicioSet: { where: { completado: true } } } },
+      },
+    });
+    const volumen = sesiones.reduce(
+      (total, sesion) =>
+        total +
+        sesion.sesionEjercicio.reduce(
+          (exerciseTotal, exercise) =>
+            exerciseTotal +
+            exercise.sesionEjercicioSet.reduce(
+              (setTotal, set) =>
+                setTotal + Number(set.pesoReal ?? 0) * Number(set.repeticionesRealizadas ?? 0),
+              0,
+            ),
+          0,
+        ),
+      0,
+    );
+    return { sesionesUltimos30Dias: sesiones.length, volumenUltimos30Dias: volumen };
   }
 
   private async validarEntrenador(usuarioId: string): Promise<void> {

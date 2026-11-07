@@ -14,6 +14,8 @@ export function Workout() {
     queryFn: () => get<Session>(`/sesiones/${id}`),
   });
   const [values, setValues] = useState<Record<string, { peso: string; reps: string }>>({});
+  const [finishError, setFinishError] = useState('');
+  const [finishing, setFinishing] = useState(false);
   const save = useMutation({
     mutationFn: ({ setId, peso, reps }: { setId: string; peso: number; reps: number }) =>
       patch(`/sesiones/${id}/sets/${setId}`, { peso, repeticiones: reps, completado: true }),
@@ -25,8 +27,16 @@ export function Workout() {
     .filter((x) => x.completado).length;
   const total = s.sesionEjercicio.flatMap((e) => e.sesionEjercicioSet).length;
   const finishWorkout = async () => {
-    await post(`/sesiones/${id}/finalizar`, {});
-    await nav('/app/progreso');
+    setFinishing(true);
+    setFinishError('');
+    try {
+      await post(`/sesiones/${id}/finalizar`, {});
+      await nav('/app/progreso');
+    } catch (error) {
+      setFinishError(error instanceof Error ? error.message : 'No se pudo finalizar la sesión');
+    } finally {
+      setFinishing(false);
+    }
   };
   return (
     <div className="workout">
@@ -87,9 +97,18 @@ export function Workout() {
                   />
                   <button
                     disabled={set.completado || save.isPending}
-                    onClick={() =>
-                      save.mutate({ setId: set.id, peso: Number(v.peso), reps: Number(v.reps) })
-                    }
+                    onClick={() => {
+                      if (
+                        !v.peso ||
+                        !v.reps ||
+                        Number.isNaN(Number(v.peso)) ||
+                        Number.isNaN(Number(v.reps)) ||
+                        Number(v.peso) < 0 ||
+                        Number(v.reps) < 0
+                      )
+                        return;
+                      save.mutate({ setId: set.id, peso: Number(v.peso), reps: Number(v.reps) });
+                    }}
                   >
                     <Check />
                   </button>
@@ -99,12 +118,14 @@ export function Workout() {
           </div>
         </Card>
       ))}
+      {save.error && <div className="error">{save.error.message}</div>}
+      {finishError && <div className="error">{finishError}</div>}
       <button
         className="button primary full finish"
-        disabled={!completed}
+        disabled={!completed || finishing}
         onClick={() => void finishWorkout()}
       >
-        Finalizar entrenamiento
+        {finishing ? 'Finalizando…' : 'Finalizar entrenamiento'}
       </button>
     </div>
   );

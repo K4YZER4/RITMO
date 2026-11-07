@@ -31,4 +31,13 @@ export class EntrenadorController {
   ) {
     return this.entrenadorService.obtenerAlumno(usuarioId, alumnoId);
   }
+
+  @Get('alumnos/:id/progreso')
+  @ApiOperation({ summary: 'Obtener el progreso de un alumno vinculado' })
+  obtenerProgresoAlumno(
+    @CurrentUser('id') usuarioId: string,
+    @Param('id', ParseUUIDPipe) alumnoId: string,
+  ) {
+    return this.entrenadorService.obtenerProgresoAlumno(usuarioId, alumnoId);
+  }
 }

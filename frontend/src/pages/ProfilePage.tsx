@@ -1,9 +1,15 @@
-import { useQuery } from '@tanstack/react-query';
-import { Mail, ShieldCheck, UserRound } from 'lucide-react';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { Copy, Mail, ShieldCheck, UserRound } from 'lucide-react';
 import { Card, Loading, Page } from '../components/Ui';
-import { get } from '../lib/api';
+import { get, post } from '../lib/api';
 import type { Profile } from '../lib/types';
 export function ProfilePage() {
+  const token = useMutation({
+    mutationFn: () =>
+      post<{ data: { codigo: string; secreto: string; expira_en: string } }>(
+        '/alumno-entrenador/token',
+      ),
+  });
   const { data: p, isLoading } = useQuery({
     queryKey: ['profile'],
     queryFn: () => get<Profile>('/perfil'),
@@ -36,6 +42,37 @@ export function ProfilePage() {
           <p>{p.entrenador?.plan.nombre || p.alumno?.objetivo?.nombre || 'Cuenta activa'}</p>
         </Card>
       </div>
+      {p.role === 'alumno' && (
+        <Card>
+          <h3>Vincular entrenador</h3>
+          <p>Genera un token y compártelo únicamente con tu entrenador.</p>
+          <button
+            className="button primary"
+            onClick={() => token.mutate()}
+            disabled={token.isPending}
+          >
+            Generar token
+          </button>
+          {token.data?.data && (
+            <div className="token-box">
+              <b>{token.data.data.codigo}</b>
+              <span>{token.data.data.secreto}</span>
+              <small>Expira: {new Date(token.data.data.expira_en).toLocaleString('es-MX')}</small>
+              <button
+                className="button ghost"
+                onClick={() =>
+                  void navigator.clipboard?.writeText(
+                    `${token.data?.data.codigo} ${token.data?.data.secreto}`,
+                  )
+                }
+              >
+                <Copy /> Copiar
+              </button>
+            </div>
+          )}
+          {token.error && <div className="error">{token.error.message}</div>}
+        </Card>
+      )}
     </Page>
   );
 }

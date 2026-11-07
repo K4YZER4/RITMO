@@ -493,6 +493,97 @@ p {
   justify-content: center;
   gap: 5px;
 }
+.card-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+.modal.wide {
+  max-width: 760px;
+}
+.modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+.exercise-builder {
+  display: grid;
+  grid-template-columns: 1fr 80px 80px 80px 36px;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.exercise-builder input {
+  min-width: 0;
+}
+.exercise-builder button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+.notice {
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--lime);
+  border-radius: 10px;
+  margin-bottom: 1rem;
+}
+.token-box {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #ffffff08;
+  border-radius: 10px;
+}
+.token-box b {
+  color: var(--lime);
+  font-size: 1.4rem;
+  letter-spacing: 0.12em;
+}
+.role-switch {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.role-switch button {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 0.65rem 1rem;
+}
+.role-switch button.active {
+  background: var(--lime);
+  color: #10140e;
+  border-color: var(--lime);
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.auth-footer {
+  text-align: center;
+}
+.auth-footer a {
+  color: var(--lime);
+  font-weight: 700;
+}
+@media (max-width: 640px) {
+  .form-grid,
+  .exercise-builder {
+    grid-template-columns: 1fr;
+  }
+  .exercise-builder input,
+  .exercise-builder button {
+    width: 100%;
+  }
+}
 .loading i {
   width: 7px;
   height: 28px;
