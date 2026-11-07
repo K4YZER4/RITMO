@@ -45,6 +45,19 @@ async function main() {
         descripcion: 'Empuje horizontal para pecho, hombro y tríceps.',
       },
     }));
+  const ejerciciosBiblioteca = [
+    ['Sentadilla con barra', 'Patrón dominante de rodilla para cuádriceps y glúteos.'],
+    ['Peso muerto rumano', 'Bisagra de cadera para cadena posterior.'],
+    ['Remo con barra', 'Tirón horizontal para espalda y bíceps.'],
+    ['Press militar', 'Empuje vertical para hombros y tríceps.'],
+    ['Zancadas', 'Trabajo unilateral de piernas y estabilidad.'],
+    ['Dominadas', 'Tirón vertical para espalda y brazos.'],
+    ['Plancha abdominal', 'Estabilidad y control del core.'],
+  ];
+  for (const [nombre, descripcion] of ejerciciosBiblioteca) {
+    const existente = await prisma.ejercicioEstandar.findFirst({ where: { nombre } });
+    if (!existente) await prisma.ejercicioEstandar.create({ data: { nombre, descripcion } });
+  }
 
   const rutina = await prisma.rutina.upsert({
     where: {
@@ -53,11 +66,16 @@ async function main() {
         nombre: 'Fuerza · Tren superior',
       },
     },
-    update: { descripcion: 'Sesión demo enfocada en fuerza y técnica.', activa: true },
+    update: {
+      descripcion: 'Sesión demo enfocada en fuerza y técnica.',
+      activa: true,
+      idCategoriaRutina: 2,
+    },
     create: {
       createdByUsuario: entrenador.id,
       nombre: 'Fuerza · Tren superior',
       descripcion: 'Sesión demo enfocada en fuerza y técnica.',
+      idCategoriaRutina: 2,
     },
   });
   const ejercicioExistente = await prisma.rutinaEjercicio.findFirst({

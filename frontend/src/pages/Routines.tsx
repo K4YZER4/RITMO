@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Dumbbell, Plus, Save, UserPlus, X } from 'lucide-react';
 import { FormEvent, useEffect, useState } from 'react';
 import { Card, Empty, Loading, Page } from '../components/Ui';
+import { SelectMenu } from '../components/SelectMenu';
 import { get, post, patch } from '../lib/api';
 import type { Catalogs, ExerciseLibrary, Routine, Student } from '../lib/types';
 
@@ -203,14 +204,16 @@ export function Routines() {
             </label>
             <label>
               Categoría
-              <select value={category} onChange={(e) => setCategory(e.target.value)} required>
-                <option value="">Selecciona una categoría</option>
-                {catalogs?.categoriasRutina.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.nombre}
-                  </option>
-                ))}
-              </select>
+              <SelectMenu
+                value={category}
+                placeholder="Selecciona una categoría"
+                options={(catalogs?.categoriasRutina || []).map((item) => ({
+                  value: String(item.id),
+                  label: item.nombre.replaceAll('_', ' '),
+                  description: item.descripcion,
+                }))}
+                onChange={setCategory}
+              />
             </label>
             {create.error && <div className="error">{create.error.message}</div>}
             <div className="modal-actions">
@@ -234,29 +237,30 @@ export function Routines() {
             <h2>{selected.nombre}</h2>
             <label>
               Ejercicio
-              <select
-                onChange={(e) => {
-                  const [kind, id] = e.target.value.split(':');
+              <SelectMenu
+                value=""
+                placeholder="Añadir ejercicio"
+                options={[
+                  ...(exercises?.estandar || []).map((item) => ({
+                    value: `standard:${item.id}`,
+                    label: item.nombre,
+                    description: item.descripcion,
+                  })),
+                  ...(exercises?.personalizados || []).map((item) => ({
+                    value: `custom:${item.id}`,
+                    label: item.nombre,
+                    description: 'Ejercicio personalizado',
+                  })),
+                ]}
+                onChange={(value) => {
+                  const [kind, id] = value.split(':');
                   if (id)
                     setDraft([
                       ...draft,
                       { id, kind: kind as DraftExercise['kind'], series: 3, reps: 10, weight: '' },
                     ]);
-                  e.currentTarget.value = '';
                 }}
-              >
-                <option value="">Añadir ejercicio</option>
-                {exercises?.estandar.map((item) => (
-                  <option key={`standard:${item.id}`} value={`standard:${item.id}`}>
-                    {item.nombre}
-                  </option>
-                ))}
-                {exercises?.personalizados.map((item) => (
-                  <option key={`custom:${item.id}`} value={`custom:${item.id}`}>
-                    {item.nombre} · personalizado
-                  </option>
-                ))}
-              </select>
+              />
             </label>
             {draft.map((item, index) => (
               <div className="exercise-builder" key={`${item.kind}-${item.id}-${index}`}>
