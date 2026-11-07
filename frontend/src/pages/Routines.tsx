@@ -3,6 +3,7 @@ import { Dumbbell, Plus, Save, UserPlus, X } from 'lucide-react';
 import { FormEvent, useEffect, useState } from 'react';
 import { Card, Empty, Loading, Page } from '../components/Ui';
 import { SelectMenu } from '../components/SelectMenu';
+import { DateField } from '../components/DateField';
 import { get, post, patch } from '../lib/api';
 import type { Catalogs, ExerciseLibrary, Routine, Student } from '../lib/types';
 
@@ -346,39 +347,47 @@ export function Routines() {
             <h2>{selected.nombre}</h2>
             <label>
               Alumno
-              <select value={studentId} onChange={(e) => setStudentId(e.target.value)} required>
-                <option value="">Selecciona un alumno</option>
-                {students?.map((student) => (
-                  <option key={student.idUsuario} value={student.idUsuario}>
-                    {student.usuario.nombre} {student.usuario.apellidoPaterno}
-                  </option>
-                ))}
-              </select>
+              <SelectMenu
+                value={studentId}
+                placeholder="Selecciona un alumno"
+                options={(students || []).map((student) => ({
+                  value: student.idUsuario,
+                  label: `${student.usuario.nombre} ${student.usuario.apellidoPaterno}`,
+                  description: student.usuario.correo,
+                }))}
+                onChange={setStudentId}
+              />
             </label>
             <label>
               Día
-              <select value={day} onChange={(e) => setDay(e.target.value)}>
-                {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map(
-                  (name, index) => (
-                    <option key={name} value={index + 1}>
-                      {name}
-                    </option>
-                  ),
-                )}
-              </select>
+              <SelectMenu
+                value={day}
+                options={[
+                  'Lunes',
+                  'Martes',
+                  'Miércoles',
+                  'Jueves',
+                  'Viernes',
+                  'Sábado',
+                  'Domingo',
+                ].map((name, index) => ({ value: String(index + 1), label: name }))}
+                placeholder="Selecciona un día"
+                onChange={setDay}
+              />
             </label>
             <label>
               Fecha de inicio
-              <input
-                type="date"
+              <DateField
+                label=""
                 value={start}
-                onChange={(e) => setStart(e.target.value)}
+                min={new Date().toISOString().slice(0, 10)}
+                onChange={setStart}
                 required
               />
             </label>
             <label>
               Fecha final opcional
-              <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
+              <DateField label="" value={end} min={start} onChange={setEnd} />
             </label>
             {assign.error && <div className="error">{assign.error.message}</div>}
             <div className="modal-actions">

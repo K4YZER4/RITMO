@@ -147,25 +147,56 @@ export class RutinasService {
       if (rutina.activa === false) {
         throw new ForbiddenException('No puedes actualizar los ejercicios de una rutina inactiva');
       }
+      const actuales = await tx.rutinaEjercicio.findMany({
+        where: { idRutina: id_rutina },
+        include: { _count: { select: { sesionEjercicio: true } } },
+      });
+      const key = (ejercicio: {
+        id_ejercicio_estandar?: bigint;
+        id_ejercicio_personalizado?: bigint;
+      }) =>
+        ejercicio.id_ejercicio_estandar !== undefined
+          ? `standard:${ejercicio.id_ejercicio_estandar.toString()}`
+          : `custom:${ejercicio.id_ejercicio_personalizado?.toString()}`;
+      const incomingKeys = new Set(rutinaEjercicioDto.ejercicios.map(key));
+      const preservedIds = actuales
+        .filter(
+          (item) =>
+            item._count.sesionEjercicio > 0 ||
+            incomingKeys.has(
+              key({
+                id_ejercicio_estandar: item.idEjercicioEstandar ?? undefined,
+                id_ejercicio_personalizado: item.idEjercicioPersonalizado ?? undefined,
+              }),
+            ),
+        )
+        .map((item) => item.id);
       await tx.rutinaEjercicio.deleteMany({
         where: {
           idRutina: id_rutina,
+          id: { notIn: preservedIds },
         },
       });
       for (const ejercicio of rutinaEjercicioDto.ejercicios) {
-        await tx.rutinaEjercicio.create({
-          data: {
-            idRutina: id_rutina,
-            idEjercicioEstandar: ejercicio.id_ejercicio_estandar,
-            idEjercicioPersonalizado: ejercicio.id_ejercicio_personalizado,
-            orden: ejercicio.orden,
-            series: ejercicio.series,
-            repeticiones: ejercicio.repeticiones,
-            pesoObjetivo: ejercicio.peso_objetivo,
-            notaEntrenador: ejercicio.nota_entrenador,
-            linkApoyo: ejercicio.link_apoyo,
-          },
-        });
+        const existing = actuales.find(
+          (item) =>
+            key({
+              id_ejercicio_estandar: item.idEjercicioEstandar ?? undefined,
+              id_ejercicio_personalizado: item.idEjercicioPersonalizado ?? undefined,
+            }) === key(ejercicio),
+        );
+        const data = {
+          idEjercicioEstandar: ejercicio.id_ejercicio_estandar,
+          idEjercicioPersonalizado: ejercicio.id_ejercicio_personalizado,
+          orden: ejercicio.orden,
+          series: ejercicio.series,
+          repeticiones: ejercicio.repeticiones,
+          pesoObjetivo: ejercicio.peso_objetivo,
+          notaEntrenador: ejercicio.nota_entrenador,
+          linkApoyo: ejercicio.link_apoyo,
+        };
+        if (existing) await tx.rutinaEjercicio.update({ where: { id: existing.id }, data });
+        else await tx.rutinaEjercicio.create({ data: { idRutina: id_rutina, ...data } });
       }
     });
     return { success: true, message: 'Ejercicios de la rutina actualizados exitosamente' };
