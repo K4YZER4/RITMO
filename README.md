@@ -58,7 +58,7 @@ RITMO es una plataforma de entrenamiento físico que permite:
 
 ## Requisitos
 
-- **Node.js** 18 o superior (recomendado 20+).
+- **Node.js** 22.13 o superior (recomendado 24 LTS).
 - **pnpm** (gestor de paquetes usado por el proyecto).
 - Una base de datos **PostgreSQL** accesible (el proyecto se usa típicamente con **Neón**).
 - Cuenta de **Stripe** (claves `test`/`live` y secreto de webhook).
