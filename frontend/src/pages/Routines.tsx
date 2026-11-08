@@ -13,6 +13,8 @@ type DraftExercise = {
   series: number;
   reps: number;
   weight: string;
+  note: string;
+  link: string;
 };
 
 export function Routines() {
@@ -84,6 +86,8 @@ export function Routines() {
           series: item.series,
           repeticiones: item.reps,
           ...(item.weight ? { peso_objetivo: Number(item.weight) } : {}),
+          ...(item.note ? { nota_entrenador: item.note } : {}),
+          ...(item.link ? { link_apoyo: item.link } : {}),
         })),
       });
     },
@@ -112,6 +116,8 @@ export function Routines() {
           series: item.series,
           reps: item.repeticiones,
           weight: item.pesoObjetivo ?? '',
+          note: item.notaEntrenador ?? '',
+          link: item.linkApoyo ?? '',
         })),
       );
     }
@@ -127,6 +133,8 @@ export function Routines() {
         series: item.series,
         reps: item.repeticiones,
         weight: item.pesoObjetivo ?? '',
+        note: item.notaEntrenador ?? '',
+        link: item.linkApoyo ?? '',
       })),
     );
   }
@@ -258,7 +266,15 @@ export function Routines() {
                   if (id)
                     setDraft([
                       ...draft,
-                      { id, kind: kind as DraftExercise['kind'], series: 3, reps: 10, weight: '' },
+                      {
+                        id,
+                        kind: kind as DraftExercise['kind'],
+                        series: 3,
+                        reps: 10,
+                        weight: '',
+                        note: '',
+                        link: '',
+                      },
                     ]);
                 }}
               />
@@ -310,6 +326,26 @@ export function Routines() {
                     )
                   }
                   placeholder="Kg"
+                />
+                <input
+                  value={item.note}
+                  onChange={(e) =>
+                    setDraft(
+                      draft.map((x, i) => (i === index ? { ...x, note: e.target.value } : x)),
+                    )
+                  }
+                  placeholder="Nota del entrenador"
+                  maxLength={1000}
+                />
+                <input
+                  type="url"
+                  value={item.link}
+                  onChange={(e) =>
+                    setDraft(
+                      draft.map((x, i) => (i === index ? { ...x, link: e.target.value } : x)),
+                    )
+                  }
+                  placeholder="Link de apoyo (https://...)"
                 />
                 <button onClick={() => setDraft(draft.filter((_, i) => i !== index))}>
                   <X />

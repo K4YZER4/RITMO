@@ -115,6 +115,20 @@
   border-radius: 999px;
   font-size: 0.8rem;
 }
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  margin-left: auto;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.45rem;
+}
+.icon-button:hover {
+  color: #ff8b8b;
+  border-color: #ff8b8b;
+}
 * {
   box-sizing: border-box;
 }

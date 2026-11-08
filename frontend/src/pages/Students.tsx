@@ -1,9 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Search, UserPlus } from 'lucide-react';
+import { Search, UserPlus, UserMinus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { Card, Empty, Loading, Page, fullName } from '../components/Ui';
-import { get, post } from '../lib/api';
+import { get, post, put } from '../lib/api';
 import type { Student } from '../lib/types';
 export function Students() {
   const qc = useQueryClient();
@@ -12,6 +12,8 @@ export function Students() {
   const [codigo, setCodigo] = useState('');
   const [secreto, setSecreto] = useState('');
   const [message, setMessage] = useState('');
+  const [unlinkStudent, setUnlinkStudent] = useState<Student | null>(null);
+  const [trainerPassword, setTrainerPassword] = useState('');
   const { data, isLoading } = useQuery({
     queryKey: ['students'],
     queryFn: () => get<Student[]>('/entrenador/alumnos'),
@@ -32,6 +34,21 @@ export function Students() {
       await qc.invalidateQueries({ queryKey: ['students'] });
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'No se pudo vincular al alumno');
+    }
+  }
+  async function unlink() {
+    if (!unlinkStudent) return;
+    try {
+      const result = await put<{ message: string }>(
+        `/alumno-entrenador/cancelar/alumno/${unlinkStudent.idUsuario}`,
+        { contraseña_entrenador: trainerPassword },
+      );
+      setMessage(result.message);
+      setUnlinkStudent(null);
+      setTrainerPassword('');
+      await qc.invalidateQueries({ queryKey: ['students'] });
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'No se pudo desvincular al alumno');
     }
   }
   return (
@@ -69,6 +86,13 @@ export function Students() {
               <b>{s.usuario.usuarioMedicion[0]?.pesoKg || '—'}</b>
               <small>kg actual</small>
             </div>
+            <button
+              className="icon-button"
+              title="Desvincular alumno"
+              onClick={() => setUnlinkStudent(s)}
+            >
+              <UserMinus size={18} />
+            </button>
           </div>
         ))}
         {!list?.length && <Empty>No encontramos alumnos vinculados.</Empty>}
@@ -104,6 +128,38 @@ export function Students() {
                 Cancelar
               </button>
               <button className="button primary">Vincular</button>
+            </div>
+          </form>
+        </div>
+      )}
+      {unlinkStudent && (
+        <div className="modal-backdrop" onClick={() => setUnlinkStudent(null)}>
+          <form
+            className="modal"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void unlink();
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <span className="eyebrow">DESVINCULAR ALUMNO</span>
+            <h2>{fullName(unlinkStudent.usuario)}</h2>
+            <p>Esta acción cerrará la vinculación actual y requiere confirmar tu contraseña.</p>
+            <label>
+              Contraseña del entrenador
+              <input
+                type="password"
+                value={trainerPassword}
+                onChange={(event) => setTrainerPassword(event.target.value)}
+                required
+              />
+            </label>
+            {message && <div className="error">{message}</div>}
+            <div className="modal-actions">
+              <button type="button" className="button ghost" onClick={() => setUnlinkStudent(null)}>
+                Cancelar
+              </button>
+              <button className="button primary">Confirmar</button>
             </div>
           </form>
         </div>

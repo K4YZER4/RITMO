@@ -29,6 +29,7 @@ export type Routine = {
     ejercicioPersonalizado?: { id: string; nombre: string };
     pesoObjetivo?: string;
     notaEntrenador?: string;
+    linkApoyo?: string;
   }>;
 };
 export type Catalogs = {
