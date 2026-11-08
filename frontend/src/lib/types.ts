@@ -4,7 +4,13 @@ export type Profile = {
   nombre: string;
   apellidoPaterno: string;
   correo: string;
-  alumno?: { objetivo?: { nombre: string }; entrenadorActual?: { nombrePublico: string } };
+  alumno?: {
+    objetivo?: { nombre: string };
+    entrenadorActual?: {
+      nombrePublico: string;
+      usuario?: { nombre: string; apellidoPaterno: string };
+    };
+  };
   entrenador?: { nombrePublico: string; plan: { nombre: string } };
 };
 export type Routine = {

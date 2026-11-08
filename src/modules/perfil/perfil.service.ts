@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../../prisma/prisma.service';
+import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
 
 @Injectable()
 export class PerfilService {
@@ -70,5 +71,31 @@ export class PerfilService {
     }
 
     return usuario;
+  }
+
+  async actualizarPerfil(usuarioId: string, dto: ActualizarPerfilDto) {
+    await this.prisma.$transaction(async (tx) => {
+      const usuario = await tx.usuario.findUnique({
+        where: { id: usuarioId },
+        select: { role: true },
+      });
+      if (!usuario) throw new NotFoundException('Usuario no encontrado');
+      const { nombre_publico } = dto;
+      const datosUsuario = {
+        ...(dto.nombre !== undefined ? { nombre: dto.nombre } : {}),
+        ...(dto.apellido_paterno !== undefined ? { apellidoPaterno: dto.apellido_paterno } : {}),
+        ...(dto.apellido_materno !== undefined ? { apellidoMaterno: dto.apellido_materno } : {}),
+      };
+      if (Object.keys(datosUsuario).length) {
+        await tx.usuario.update({ where: { id: usuarioId }, data: datosUsuario });
+      }
+      if (nombre_publico !== undefined && usuario.role === 'entrenador') {
+        await tx.entrenador.update({
+          where: { idUsuario: usuarioId },
+          data: { nombrePublico: nombre_publico },
+        });
+      }
+    });
+    return this.obtenerPerfil(usuarioId);
   }
 }

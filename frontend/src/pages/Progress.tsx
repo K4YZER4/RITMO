@@ -1,8 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Activity, Trophy, Weight } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { Card, Empty, Loading, Page } from '../components/Ui';
 import { get, post } from '../lib/api';
 import { FormEvent, useState } from 'react';
+import { SelectMenu } from '../components/SelectMenu';
+import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import type { Catalogs } from '../lib/types';
 type ProgressData = {
   sesionesUltimos30Dias: number;
   volumenUltimos30Dias: number;
@@ -19,6 +23,12 @@ export function Progress() {
   const qc = useQueryClient();
   const [weight, setWeight] = useState('');
   const [bodyFat, setBodyFat] = useState('');
+  const [exerciseOpen, setExerciseOpen] = useState(false);
+  const [exerciseName, setExerciseName] = useState('');
+  const [exerciseDescription, setExerciseDescription] = useState('');
+  const [muscles, setMuscles] = useState<string[]>([]);
+  const [equipment, setEquipment] = useState<string[]>([]);
+  const catalogs = useQuery({ queryKey: ['catalogs'], queryFn: () => get<Catalogs>('/catalogos') });
   const measurements = useQuery({
     queryKey: ['measurements'],
     queryFn: () =>
@@ -47,6 +57,23 @@ export function Progress() {
       void qc.invalidateQueries({ queryKey: ['progress'] });
     },
   });
+  const saveExercise = useMutation({
+    mutationFn: () =>
+      post('/ejerciciosPersonalizados', {
+        nombre: exerciseName,
+        descripcion: exerciseDescription,
+        musculos: muscles.map(Number),
+        equipos: equipment.map(Number),
+      }),
+    onSuccess: () => {
+      setExerciseOpen(false);
+      setExerciseName('');
+      setExerciseDescription('');
+      setMuscles([]);
+      setEquipment([]);
+      void qc.invalidateQueries({ queryKey: ['exercises'] });
+    },
+  });
   const { data, isLoading } = useQuery({
     queryKey: ['progress'],
     queryFn: () => get<ProgressData>('/progreso/resumen'),
@@ -71,6 +98,30 @@ export function Progress() {
           <span>récords personales</span>
         </Card>
       </div>
+      <Card className="chart-card">
+        <h2>Evolución de peso</h2>
+        <div className="chart">
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart data={[...(measurements.data || [])].reverse()}>
+              <XAxis
+                dataKey="fechaMedicion"
+                tickFormatter={(value: string | number) =>
+                  new Date(value).toLocaleDateString('es-MX', { month: 'short', day: 'numeric' })
+                }
+              />
+              <YAxis domain={['auto', 'auto']} />
+              <Tooltip />
+              <Line
+                type="monotone"
+                dataKey="pesoKg"
+                stroke="#b7f34a"
+                strokeWidth={3}
+                dot={{ fill: '#b7f34a', r: 4 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
       <div className="split">
         <Card>
           <h2>Récords recientes</h2>
@@ -146,7 +197,12 @@ export function Progress() {
         </Card>
       </div>
       <Card>
-        <h2>Historial de entrenamientos</h2>
+        <div className="card-head">
+          <h2>Historial de entrenamientos</h2>
+          <button className="button primary" onClick={() => setExerciseOpen(true)}>
+            <Plus /> Crear ejercicio
+          </button>
+        </div>
         {sessions.data?.map((session) => (
           <div className="list-row" key={session.id}>
             <b>{session.rutina.nombre}</b>
@@ -156,6 +212,93 @@ export function Progress() {
         ))}
         {!sessions.data?.length && <Empty>Aún no hay sesiones registradas.</Empty>}
       </Card>
+      {exerciseOpen && (
+        <div className="modal-backdrop" onClick={() => setExerciseOpen(false)}>
+          <form
+            className="modal"
+            onSubmit={(event) => {
+              event.preventDefault();
+              saveExercise.mutate();
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button type="button" className="modal-close" onClick={() => setExerciseOpen(false)}>
+              <X />
+            </button>
+            <span className="eyebrow">BIBLIOTECA PERSONAL</span>
+            <h2>Nuevo ejercicio</h2>
+            <label>
+              Nombre
+              <input
+                value={exerciseName}
+                onChange={(event) => setExerciseName(event.target.value)}
+                required
+              />
+            </label>
+            <label>
+              Descripción
+              <textarea
+                value={exerciseDescription}
+                onChange={(event) => setExerciseDescription(event.target.value)}
+                required
+              />
+            </label>
+            <label>
+              Músculos
+              <SelectMenu
+                value=""
+                placeholder="Añadir músculo"
+                options={(catalogs.data?.musculos || [])
+                  .filter((item) => !muscles.includes(item.id))
+                  .map((item) => ({ value: item.id, label: item.nombre }))}
+                onChange={(value) => setMuscles([...muscles, value])}
+              />
+            </label>
+            <div className="chips">
+              {muscles.map((id) => (
+                <button
+                  type="button"
+                  key={id}
+                  className="chip"
+                  onClick={() => setMuscles(muscles.filter((item) => item !== id))}
+                >
+                  {catalogs.data?.musculos.find((item) => item.id === id)?.nombre} <X size={14} />
+                </button>
+              ))}
+            </div>
+            <label>
+              Equipo opcional
+              <SelectMenu
+                value=""
+                placeholder="Añadir equipo"
+                options={(catalogs.data?.equipos || [])
+                  .filter((item) => !equipment.includes(item.id))
+                  .map((item) => ({ value: item.id, label: item.nombre }))}
+                onChange={(value) => setEquipment([...equipment, value])}
+              />
+            </label>
+            <div className="chips">
+              {equipment.map((id) => (
+                <button
+                  type="button"
+                  key={id}
+                  className="chip"
+                  onClick={() => setEquipment(equipment.filter((item) => item !== id))}
+                >
+                  {catalogs.data?.equipos.find((item) => item.id === id)?.nombre} <X size={14} />
+                </button>
+              ))}
+            </div>
+            {saveExercise.error && <div className="error">{saveExercise.error.message}</div>}
+            <button
+              className="button primary full"
+              disabled={!muscles.length || saveExercise.isPending}
+            >
+              Guardar ejercicio
+            </button>
+          </form>
+        </div>
+      )}
     </Page>
   );
 }
