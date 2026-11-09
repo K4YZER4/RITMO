@@ -3,6 +3,8 @@ packages:
 
 overrides:
   multer: ^2.5.0
+  rollup: npm:@rollup/wasm-node@4.68.0
+  'vite>rollup': npm:@rollup/wasm-node@4.68.0
 
 allowBuilds:
   '@prisma/engines': true
