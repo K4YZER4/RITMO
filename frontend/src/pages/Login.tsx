@@ -2,8 +2,10 @@ import { Activity, ArrowLeft } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { post } from '../lib/api';
+import { useQueryClient } from '@tanstack/react-query';
 export function Login() {
   const nav = useNavigate();
+  const qc = useQueryClient();
   const [email, setEmail] = useState('demo.entrenador@ritmo.app');
   const [password, setPassword] = useState('RitmoDemo2026!');
   const [error, setError] = useState('');
@@ -14,6 +16,7 @@ export function Login() {
     setError('');
     try {
       const r = await post<{ token: string }>('/auth/login', { correo: email, password });
+      qc.clear();
       localStorage.setItem('ritmo_token', r.token);
       await nav('/app');
     } catch (e) {

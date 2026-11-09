@@ -149,6 +149,10 @@
   background: #b7f34a16;
   border-radius: 12px;
 }
+.confirm-icon.warning {
+  color: #ffcc70;
+  background: #ffcc7016;
+}
 .profile-hero {
   display: flex;
   align-items: center;
