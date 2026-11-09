@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, CalendarDays, Dumbbell, Trophy, Users } from 'lucide-react';
+import { ArrowRight, CalendarDays, Dumbbell, Flame, Trophy, Users } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { get, post } from '../lib/api';
 import type { Assignment, Profile, Student } from '../lib/types';
@@ -25,6 +25,20 @@ export function Dashboard() {
   const { data: today } = useQuery({
     queryKey: ['today'],
     queryFn: () => get<Assignment[]>('/entrenamientos/hoy'),
+    enabled: !!p && !trainer,
+  });
+  const { data: week } = useQuery({
+    queryKey: ['week'],
+    queryFn: () =>
+      get<Array<Assignment & { diaSemana?: { nombre: string } }>>('/entrenamientos/semana'),
+    enabled: !!p && !trainer,
+  });
+  const { data: progress } = useQuery({
+    queryKey: ['progress'],
+    queryFn: () =>
+      get<{ sesionesUltimos30Dias: number; volumenUltimos30Dias: number; prs: Array<unknown> }>(
+        '/progreso/resumen',
+      ),
     enabled: !!p && !trainer,
   });
   const startWorkout = async () => {
@@ -85,30 +99,79 @@ export function Dashboard() {
         </div>
       </Page>
     );
+  const dayNames = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
+  const currentDay = new Date().getDay();
   return (
-    <Page eyebrow="TU ENTRENAMIENTO" title={`Hoy es un buen día, ${p?.nombre}`}>
-      <Card className="today-card">
-        <CalendarDays />
+    <Page eyebrow="TU RITMO" title={`Hola, ${p?.nombre} 👋`}>
+      <section className="student-hero">
         <div>
-          <span className="eyebrow">PLAN DE HOY</span>
+          <span className="eyebrow">ESTA SEMANA</span>
+          <h2>Pequeños pasos. Gran progreso.</h2>
+          <p>Tu entrenamiento de hoy está listo cuando tú lo estés.</p>
+        </div>
+        <Flame />
+      </section>
+      <div className="week-strip">
+        {dayNames.map((name, index) => {
+          const day = index === 0 ? 7 : index;
+          const assignment = week?.find(
+            (item) =>
+              item.id && (item as Assignment & { idDiaSemana?: number }).idDiaSemana === day,
+          );
+          return (
+            <div className={`week-day ${day === currentDay ? 'today' : ''}`} key={name}>
+              <small>{name}</small>
+              <b>{day === currentDay ? 'HOY' : assignment ? '•' : '—'}</b>
+            </div>
+          );
+        })}
+      </div>
+      <Card className="today-card student-today">
+        <div className="today-icon">
+          <CalendarDays />
+        </div>
+        <div>
+          <span className="eyebrow">ENTRENAMIENTO DE HOY</span>
           <h2>{today?.[0]?.rutina.nombre || 'Día de recuperación'}</h2>
           <p>{today?.[0]?.rutina.descripcion || 'No tienes una rutina asignada para hoy.'}</p>
         </div>
         {today?.[0] && (
           <button className="button primary" onClick={() => void startWorkout()}>
-            Comenzar <ArrowRight />
+            Empezar entrenamiento <ArrowRight />
           </button>
         )}
       </Card>
       {!today?.length && <Empty>Tu próximo entrenamiento aparecerá aquí.</Empty>}
       <div className="stats">
         <Card>
+          <ActivityIcon />
+          <b>{progress?.sesionesUltimos30Dias ?? 0}</b>
+          <span>sesiones este mes</span>
+        </Card>
+        <Card>
+          <Dumbbell />
+          <b>{Math.round(progress?.volumenUltimos30Dias ?? 0).toLocaleString()}</b>
+          <span>kg de volumen</span>
+        </Card>
+        <Card>
           <Trophy />
-          <b>Tu progreso</b>
-          <span>Revisa récords y volumen</span>
-          <Link to="/app/progreso">Ver progreso</Link>
+          <b>{progress?.prs?.length ?? 0}</b>
+          <span>récords personales</span>
         </Card>
       </div>
+      <Card className="student-cta">
+        <div>
+          <span className="eyebrow">ÚLTIMOS AVANCES</span>
+          <h2>Tu progreso se construye sesión a sesión.</h2>
+        </div>
+        <Link className="button ghost" to="/app/progreso">
+          Ver progreso <ArrowRight />
+        </Link>
+      </Card>
     </Page>
   );
+}
+
+function ActivityIcon() {
+  return <Flame />;
 }

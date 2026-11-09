@@ -4,9 +4,10 @@ import { Card, Loading, Page } from '../components/Ui';
 import { get, patch, post, put } from '../lib/api';
 import type { Profile } from '../lib/types';
 import { useState } from 'react';
+import { ConfirmPasswordModal } from '../components/ConfirmPasswordModal';
 export function ProfilePage() {
   const [editing, setEditing] = useState(false);
-  const [password, setPassword] = useState('');
+  const [confirmUnlink, setConfirmUnlink] = useState(false);
   const [form, setForm] = useState({
     nombre: '',
     apellido_paterno: '',
@@ -37,10 +38,10 @@ export function ProfilePage() {
     },
   });
   const unlink = useMutation({
-    mutationFn: () =>
-      put('/alumno-entrenador/cancelar/mi-entrenador', { contraseña_alumno: password }),
+    mutationFn: (value: string) =>
+      put('/alumno-entrenador/cancelar/mi-entrenador', { contraseña_alumno: value }),
     onSuccess: async () => {
-      setPassword('');
+      setConfirmUnlink(false);
       await qc.invalidateQueries({ queryKey: ['profile'] });
     },
   });
@@ -123,27 +124,21 @@ export function ProfilePage() {
             <Unlink /> Entrenador actual
           </h3>
           <p>{p.alumno.entrenadorActual.nombrePublico}</p>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              unlink.mutate();
-            }}
-          >
-            <label>
-              Confirma tu contraseña
-              <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-              />
-            </label>
-            {unlink.error && <div className="error">{unlink.error.message}</div>}
-            <button className="button ghost" disabled={unlink.isPending}>
-              Desvincular entrenador
-            </button>
-          </form>
+          <button className="button danger" onClick={() => setConfirmUnlink(true)}>
+            <Unlink /> Desvincular entrenador
+          </button>
         </Card>
+      )}
+      {confirmUnlink && (
+        <ConfirmPasswordModal
+          title="¿Desvincular entrenador?"
+          description="Se cerrará la vinculación actual, pero tus sesiones y progreso se conservarán."
+          submitLabel="Desvincular"
+          busy={unlink.isPending}
+          error={unlink.error instanceof Error ? unlink.error.message : undefined}
+          onClose={() => setConfirmUnlink(false)}
+          onConfirm={(value) => unlink.mutate(value)}
+        />
       )}
       {editing && (
         <div className="modal-backdrop" onClick={() => setEditing(false)}>
