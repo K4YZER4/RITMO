@@ -149,6 +149,129 @@
   background: #b7f34a16;
   border-radius: 12px;
 }
+.profile-hero {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  background: linear-gradient(110deg, #151d14, #111513);
+  border: 1px solid #b7f34a38;
+  border-radius: 18px;
+}
+.profile-hero-copy {
+  flex: 1;
+}
+.profile-hero-copy h2 {
+  margin: 0.35rem 0;
+  font-size: clamp(1.5rem, 4vw, 2.35rem);
+}
+.profile-hero-copy p {
+  margin: 0 0 0.6rem;
+}
+.profile-initials {
+  width: 76px;
+  height: 76px;
+  flex: 0 0 76px;
+  font: 700 1.7rem 'Space Grotesk';
+  background: #b7f34a22;
+  border: 1px solid #b7f34a66;
+}
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.profile-info-card {
+  min-height: 190px;
+}
+.profile-card-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 1.2rem;
+  color: var(--lime);
+  background: #b7f34a16;
+  border-radius: 12px;
+}
+.profile-info-card h2 {
+  margin: 0.45rem 0;
+}
+.coach-profile-card,
+.link-profile-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.coach-profile-card > div:nth-child(2),
+.link-profile-card > div:nth-child(2) {
+  flex: 1;
+}
+.coach-profile-card h2,
+.link-profile-card h2 {
+  margin: 0.35rem 0;
+}
+.coach-profile-card p,
+.link-profile-card p {
+  margin: 0;
+}
+.coach-mark {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  color: var(--lime);
+  background: #b7f34a16;
+  border-radius: 15px;
+}
+.token-card {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.token-values {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.token-values strong {
+  color: var(--lime);
+  font: 700 1.6rem 'Space Grotesk';
+  letter-spacing: 0.12em;
+}
+.token-values span {
+  color: #fff;
+  padding: 0.65rem 0.8rem;
+  background: #ffffff08;
+  border-radius: 8px;
+  word-break: break-all;
+}
+@media (max-width: 640px) {
+  .profile-hero,
+  .coach-profile-card,
+  .link-profile-card {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .profile-hero .button,
+  .coach-profile-card .button,
+  .link-profile-card .button {
+    width: 100%;
+  }
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+  .profile-initials {
+    width: 58px;
+    height: 58px;
+    flex-basis: 58px;
+    font-size: 1.25rem;
+  }
+}
 .student-hero {
   display: flex;
   align-items: center;

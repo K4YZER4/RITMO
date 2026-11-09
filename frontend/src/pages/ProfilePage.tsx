@@ -1,10 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Copy, Edit3, Mail, ShieldCheck, UserRound, Unlink } from 'lucide-react';
+import {
+  Activity,
+  Award,
+  Copy,
+  Edit3,
+  HeartPulse,
+  Mail,
+  ShieldCheck,
+  Target,
+  Unlink,
+} from 'lucide-react';
+import { useState } from 'react';
+import { ConfirmPasswordModal } from '../components/ConfirmPasswordModal';
 import { Card, Loading, Page } from '../components/Ui';
 import { get, patch, post, put } from '../lib/api';
 import type { Profile } from '../lib/types';
-import { useState } from 'react';
-import { ConfirmPasswordModal } from '../components/ConfirmPasswordModal';
+
 export function ProfilePage() {
   const [editing, setEditing] = useState(false);
   const [confirmUnlink, setConfirmUnlink] = useState(false);
@@ -46,62 +57,95 @@ export function ProfilePage() {
     },
   });
   if (isLoading || !p) return <Loading />;
+  const isStudent = p.role !== 'entrenador';
+  const initials = `${p.nombre[0] || ''}${p.apellidoPaterno[0] || ''}`.toUpperCase();
+  const startEditing = () => {
+    setForm({
+      nombre: p.nombre,
+      apellido_paterno: p.apellidoPaterno,
+      apellido_materno: '',
+      nombre_publico: p.entrenador?.nombrePublico || '',
+    });
+    setEditing(true);
+  };
   return (
-    <Page eyebrow="CUENTA" title="Tu perfil">
-      <Card className="profile-card">
-        <div className="profile-avatar">
-          <UserRound />
-        </div>
-        <div>
+    <Page eyebrow="CUENTA" title={isStudent ? 'Mi espacio' : 'Tu perfil'}>
+      <section className={`profile-hero ${isStudent ? 'student-profile-hero' : ''}`}>
+        <div className="profile-avatar profile-initials">{initials}</div>
+        <div className="profile-hero-copy">
+          <span className="eyebrow">{isStudent ? 'PERFIL DE ALUMNO' : 'PERFIL DE ENTRENADOR'}</span>
           <h2>
             {p.nombre} {p.apellidoPaterno}
           </h2>
-          <span className="status">{p.role}</span>
-          <button
-            className="button ghost"
-            onClick={() => {
-              setForm({
-                nombre: p.nombre,
-                apellido_paterno: p.apellidoPaterno,
-                apellido_materno: '',
-                nombre_publico: p.entrenador?.nombrePublico || '',
-              });
-              setEditing(true);
-            }}
-          >
-            <Edit3 /> Editar perfil
-          </button>
-        </div>
-      </Card>
-      <div className="split">
-        <Card>
-          <h3>
-            <Mail /> Contacto
-          </h3>
           <p>{p.correo}</p>
-        </Card>
-        <Card>
-          <h3>
-            <ShieldCheck /> Plan y acceso
-          </h3>
-          <p>{p.entrenador?.plan.nombre || p.alumno?.objetivo?.nombre || 'Cuenta activa'}</p>
-        </Card>
-      </div>
-      {p.role === 'alumno' && (
-        <Card>
-          <h3>Vincular entrenador</h3>
-          <p>Genera un token y compártelo únicamente con tu entrenador.</p>
-          <button
-            className="button primary"
-            onClick={() => token.mutate()}
-            disabled={token.isPending}
-          >
-            Generar token
-          </button>
+          <span className="status">
+            {isStudent ? 'Alumno activo' : p.entrenador?.nombrePublico || 'Entrenador activo'}
+          </span>
+        </div>
+        <button className="button ghost" onClick={startEditing}>
+          <Edit3 /> Editar perfil
+        </button>
+      </section>
+      {isStudent ? (
+        <>
+          <div className="profile-grid">
+            <Card className="profile-info-card">
+              <div className="profile-card-icon">
+                <Target />
+              </div>
+              <span className="eyebrow">OBJETIVO ACTUAL</span>
+              <h2>{p.alumno?.objetivo?.nombre || 'Construir constancia'}</h2>
+              <p>Tu plan se adapta a tu ritmo y a tus avances.</p>
+            </Card>
+            <Card className="profile-info-card">
+              <div className="profile-card-icon">
+                <HeartPulse />
+              </div>
+              <span className="eyebrow">ESTADO DE CUENTA</span>
+              <h2>Cuenta activa</h2>
+              <p>Tu información y progreso están protegidos.</p>
+            </Card>
+          </div>
+          {p.alumno?.entrenadorActual ? (
+            <Card className="coach-profile-card">
+              <div className="coach-mark">
+                <Award />
+              </div>
+              <div>
+                <span className="eyebrow">TU ENTRENADOR</span>
+                <h2>{p.alumno.entrenadorActual.nombrePublico}</h2>
+                <p>Tu plan y seguimiento están conectados.</p>
+              </div>
+              <button className="button danger" onClick={() => setConfirmUnlink(true)}>
+                <Unlink /> Desvincular
+              </button>
+            </Card>
+          ) : (
+            <Card className="link-profile-card">
+              <div className="coach-mark">
+                <Activity />
+              </div>
+              <div>
+                <span className="eyebrow">¿TIENES ENTRENADOR?</span>
+                <h2>Conecta tu progreso</h2>
+                <p>Genera un código seguro y compártelo con tu entrenador.</p>
+              </div>
+              <button
+                className="button primary"
+                onClick={() => token.mutate()}
+                disabled={token.isPending}
+              >
+                Generar código
+              </button>
+            </Card>
+          )}
           {token.data?.data && (
-            <div className="token-box">
-              <b>{token.data.data.codigo}</b>
-              <span>{token.data.data.secreto}</span>
+            <Card className="token-card">
+              <span className="eyebrow">CÓDIGO DE VINCULACIÓN</span>
+              <div className="token-values">
+                <strong>{token.data.data.codigo}</strong>
+                <span>{token.data.data.secreto}</span>
+              </div>
               <small>Expira: {new Date(token.data.data.expira_en).toLocaleString('es-MX')}</small>
               <button
                 className="button ghost"
@@ -111,23 +155,31 @@ export function ProfilePage() {
                   )
                 }
               >
-                <Copy /> Copiar
+                <Copy /> Copiar código
               </button>
-            </div>
+            </Card>
           )}
           {token.error && <div className="error">{token.error.message}</div>}
-        </Card>
-      )}
-      {p.alumno?.entrenadorActual && (
-        <Card>
-          <h3>
-            <Unlink /> Entrenador actual
-          </h3>
-          <p>{p.alumno.entrenadorActual.nombrePublico}</p>
-          <button className="button danger" onClick={() => setConfirmUnlink(true)}>
-            <Unlink /> Desvincular entrenador
-          </button>
-        </Card>
+        </>
+      ) : (
+        <div className="profile-grid">
+          <Card className="profile-info-card">
+            <div className="profile-card-icon">
+              <Mail />
+            </div>
+            <span className="eyebrow">CONTACTO</span>
+            <h2>{p.correo}</h2>
+            <p>Canal principal de comunicación.</p>
+          </Card>
+          <Card className="profile-info-card">
+            <div className="profile-card-icon">
+              <ShieldCheck />
+            </div>
+            <span className="eyebrow">PLAN Y ACCESO</span>
+            <h2>{p.entrenador?.plan.nombre || 'Cuenta activa'}</h2>
+            <p>Gestiona rutinas y alumnos desde tu panel.</p>
+          </Card>
+        </div>
       )}
       {confirmUnlink && (
         <ConfirmPasswordModal
