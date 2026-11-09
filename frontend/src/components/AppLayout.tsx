@@ -1,11 +1,15 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Activity, Dumbbell, House, LogOut, TrendingUp, UserRound, Users } from 'lucide-react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { get, post } from '../lib/api';
 import type { Profile } from '../lib/types';
+import { ConfirmActionModal } from './ConfirmActionModal';
 
 export function AppLayout() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [confirmLogout, setConfirmLogout] = useState(false);
   const { data: profile } = useQuery({
     queryKey: ['profile'],
     queryFn: () => get<Profile>('/perfil'),
@@ -21,10 +25,12 @@ export function AppLayout() {
       : [{ to: '/app/progreso', label: 'Progreso', icon: TrendingUp }]),
     { to: '/app/perfil', label: 'Perfil', icon: UserRound },
   ];
-  const logout = async () => {
-    await post('/auth/logout').catch(() => undefined);
+  const logout = () => {
+    void post('/auth/logout').catch(() => undefined);
     localStorage.removeItem('ritmo_token');
-    await navigate('/login');
+    qc.clear();
+    setConfirmLogout(false);
+    void navigate('/login', { replace: true });
   };
   return (
     <div className="app-shell">
@@ -40,7 +46,7 @@ export function AppLayout() {
             </NavLink>
           ))}
         </nav>
-        <button className="logout" onClick={() => void logout()}>
+        <button className="logout" onClick={() => setConfirmLogout(true)}>
           <LogOut size={18} />
           Salir
         </button>
@@ -62,6 +68,15 @@ export function AppLayout() {
           </NavLink>
         ))}
       </nav>
+      {confirmLogout && (
+        <ConfirmActionModal
+          title="¿Cerrar sesión?"
+          description="Tu sesión actual se cerrará y podrás entrar con otra cuenta sin conservar datos anteriores."
+          confirmLabel="Cerrar sesión"
+          onClose={() => setConfirmLogout(false)}
+          onConfirm={logout}
+        />
+      )}
     </div>
   );
 }
