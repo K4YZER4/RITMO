@@ -129,6 +129,13 @@
   color: #ff8b8b;
   border-color: #ff8b8b;
 }
+.button.danger {
+  color: #ffb3b3;
+  border-color: #6b3131;
+}
+.button.danger:hover {
+  background: #421e1e;
+}
 * {
   box-sizing: border-box;
 }

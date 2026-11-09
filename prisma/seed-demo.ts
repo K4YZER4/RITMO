@@ -37,6 +37,14 @@ async function main() {
     crearAlumno('demo.atleta@ritmo.app', 'Diego', 'Ritmo', entrenador.id, hashedPassword),
   ]);
 
+  await prisma.rutina.updateMany({
+    where: {
+      createdByUsuario: entrenador.id,
+      OR: [{ nombre: 'Prueba' }, { nombre: { startsWith: 'QA Frontend' } }],
+    },
+    data: { activa: false },
+  });
+
   const ejercicio =
     (await prisma.ejercicioEstandar.findFirst({ where: { nombre: 'Press de banca' } })) ??
     (await prisma.ejercicioEstandar.create({

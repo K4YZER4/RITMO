@@ -107,6 +107,10 @@ export function Routines() {
       setSelected(null);
     },
   });
+  const archive = useMutation({
+    mutationFn: (routineId: string) => patch(`/rutinas/${routineId}/archivar`, {}),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['routines'] }),
+  });
   useEffect(() => {
     if (routineDetail?.rutinaEjercicio) {
       setDraft(
@@ -182,6 +186,21 @@ export function Routines() {
               >
                 <UserPlus /> Asignar
               </button>
+              {routine.activa && (
+                <button
+                  className="button danger"
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        `¿Archivar ${routine.nombre}? Sus sesiones históricas se conservarán.`,
+                      )
+                    )
+                      archive.mutate(routine.id);
+                  }}
+                >
+                  Archivar
+                </button>
+              )}
             </div>
           </Card>
         ))}

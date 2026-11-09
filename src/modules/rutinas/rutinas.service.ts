@@ -13,7 +13,7 @@ export class RutinasService {
 
   findAll(usuarioId: string) {
     return this.prisma.rutina.findMany({
-      where: { createdByUsuario: usuarioId },
+      where: { createdByUsuario: usuarioId, activa: true },
       orderBy: { updatedAt: 'desc' },
       include: {
         categoriaRutina: true,
@@ -200,6 +200,22 @@ export class RutinasService {
       }
     });
     return { success: true, message: 'Ejercicios de la rutina actualizados exitosamente' };
+  }
+
+  async archivar(idRutina: bigint, usuarioId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const rutina = await tx.rutina.findUnique({ where: { id: idRutina } });
+      if (!rutina || rutina.createdByUsuario !== usuarioId) {
+        throw new ForbiddenException('No tienes permiso para archivar esta rutina');
+      }
+      if (!rutina.activa) return { success: true, message: 'La rutina ya estaba archivada' };
+      await tx.rutina.update({ where: { id: idRutina }, data: { activa: false } });
+      await tx.usuarioRutina.updateMany({
+        where: { idRutina, activa: true },
+        data: { activa: false, fechaFin: new Date() },
+      });
+      return { success: true, message: 'Rutina archivada correctamente' };
+    });
   }
   //
   // Assign routine to student method

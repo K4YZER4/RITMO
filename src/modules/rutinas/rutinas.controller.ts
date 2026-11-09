@@ -72,6 +72,14 @@ export class RutinasController {
     return this.rutinasService.updateRutinaEjercicios(id, rutinaEjercicioDto, usuarioId);
   }
 
+  @Patch(':id/archivar')
+  @ApiOperation({ summary: 'Archivar una rutina sin borrar su historial' })
+  @ApiParam({ name: 'id', type: String, description: 'ID de la rutina.' })
+  @ApiOkResponse({ description: 'Rutina archivada y asignaciones activas deshabilitadas.' })
+  archivar(@Param('id', ParseBigIntPipe) id: bigint, @CurrentUser('id') usuarioId: string) {
+    return this.rutinasService.archivar(id, usuarioId);
+  }
+
   @Post(':id/asignaciones')
   @ApiOperation({
     summary: 'Asignar rutina a un alumno',
