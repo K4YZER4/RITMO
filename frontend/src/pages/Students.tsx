@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Card, Empty, Loading, Page, fullName } from '../components/Ui';
 import { get, post, put } from '../lib/api';
 import type { Student } from '../lib/types';
+import { ConfirmPasswordModal } from '../components/ConfirmPasswordModal';
 export function Students() {
   const qc = useQueryClient();
   const [q, setQ] = useState('');
@@ -13,7 +14,6 @@ export function Students() {
   const [secreto, setSecreto] = useState('');
   const [message, setMessage] = useState('');
   const [unlinkStudent, setUnlinkStudent] = useState<Student | null>(null);
-  const [trainerPassword, setTrainerPassword] = useState('');
   const { data, isLoading } = useQuery({
     queryKey: ['students'],
     queryFn: () => get<Student[]>('/entrenador/alumnos'),
@@ -36,16 +36,15 @@ export function Students() {
       setMessage(error instanceof Error ? error.message : 'No se pudo vincular al alumno');
     }
   }
-  async function unlink() {
+  async function unlink(password: string) {
     if (!unlinkStudent) return;
     try {
       const result = await put<{ message: string }>(
         `/alumno-entrenador/cancelar/alumno/${unlinkStudent.idUsuario}`,
-        { contraseña_entrenador: trainerPassword },
+        { contraseña_entrenador: password },
       );
       setMessage(result.message);
       setUnlinkStudent(null);
-      setTrainerPassword('');
       await qc.invalidateQueries({ queryKey: ['students'] });
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'No se pudo desvincular al alumno');
@@ -133,36 +132,14 @@ export function Students() {
         </div>
       )}
       {unlinkStudent && (
-        <div className="modal-backdrop" onClick={() => setUnlinkStudent(null)}>
-          <form
-            className="modal"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void unlink();
-            }}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <span className="eyebrow">DESVINCULAR ALUMNO</span>
-            <h2>{fullName(unlinkStudent.usuario)}</h2>
-            <p>Esta acción cerrará la vinculación actual y requiere confirmar tu contraseña.</p>
-            <label>
-              Contraseña del entrenador
-              <input
-                type="password"
-                value={trainerPassword}
-                onChange={(event) => setTrainerPassword(event.target.value)}
-                required
-              />
-            </label>
-            {message && <div className="error">{message}</div>}
-            <div className="modal-actions">
-              <button type="button" className="button ghost" onClick={() => setUnlinkStudent(null)}>
-                Cancelar
-              </button>
-              <button className="button primary">Confirmar</button>
-            </div>
-          </form>
-        </div>
+        <ConfirmPasswordModal
+          title={`¿Desvincular a ${fullName(unlinkStudent.usuario)}?`}
+          description="El alumno dejará de aparecer en tu cartera, pero su historial permanecerá guardado."
+          submitLabel="Desvincular alumno"
+          onClose={() => setUnlinkStudent(null)}
+          onConfirm={(password) => void unlink(password)}
+          error={message || undefined}
+        />
       )}
     </Page>
   );
