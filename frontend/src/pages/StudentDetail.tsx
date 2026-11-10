@@ -1,8 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, CalendarDays, Trophy, Weight } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
+import { useState } from 'react';
 import { Card, Empty, Loading, Page, fullName } from '../components/Ui';
 import { get } from '../lib/api';
+import { RoutineExerciseEditor } from '../components/RoutineExerciseEditor';
+import type { Routine } from '../lib/types';
 
 type StudentDetailData = {
   usuario: {
@@ -15,7 +18,11 @@ type StudentDetailData = {
       pesoKg?: string;
       grasaCorporalPct?: string;
     }>;
-    usuarioRutina: Array<{ id: string; rutina: { nombre: string }; diaSemana: { nombre: string } }>;
+    usuarioRutina: Array<{
+      id: string;
+      rutina: Routine;
+      diaSemana: { nombre: string };
+    }>;
     sesionEntrenamiento: Array<{
       id: string;
       fechaSesion: string;
@@ -48,6 +55,7 @@ export function StudentDetail() {
       ),
     enabled: Boolean(id),
   });
+  const [editingRoutine, setEditingRoutine] = useState<Routine | null>(null);
   if (isLoading) return <Loading />;
   if (isError || !data) return <Empty>No se pudo cargar el detalle del alumno.</Empty>;
   const latest = data.usuario.usuarioMedicion[0];
@@ -89,8 +97,16 @@ export function StudentDetail() {
           <h2>Rutinas activas</h2>
           {data.usuario.usuarioRutina.map((assignment) => (
             <div className="list-row" key={assignment.id}>
-              <b>{assignment.rutina.nombre}</b>
-              <small>{assignment.diaSemana.nombre}</small>
+              <div>
+                <b>{assignment.rutina.nombre}</b>
+                <small>{assignment.diaSemana.nombre}</small>
+              </div>
+              <button
+                className="button ghost compact"
+                onClick={() => setEditingRoutine(assignment.rutina)}
+              >
+                Editar rutina
+              </button>
             </div>
           ))}
           {!data.usuario.usuarioRutina.length && <Empty>Sin rutinas activas.</Empty>}
@@ -122,6 +138,13 @@ export function StudentDetail() {
           <Empty>El alumno todavía no tiene sesiones.</Empty>
         )}
       </Card>
+      {editingRoutine && (
+        <RoutineExerciseEditor
+          routine={editingRoutine}
+          onClose={() => setEditingRoutine(null)}
+          onSaved={() => setEditingRoutine(null)}
+        />
+      )}
     </Page>
   );
 }

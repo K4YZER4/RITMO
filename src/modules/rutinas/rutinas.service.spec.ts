@@ -16,6 +16,7 @@ const transactionMock = {
   rutina: {
     create: jest.fn(),
     findUnique: jest.fn(),
+    findMany: jest.fn(),
     count: jest.fn(),
   },
   entrenador: {
@@ -59,6 +60,7 @@ const prismaMock = {
   rutina: {
     create: jest.fn(),
     findUnique: jest.fn(),
+    findMany: jest.fn(),
     count: jest.fn(),
   },
   alumno: {
@@ -208,6 +210,23 @@ describe('RutinasService', () => {
         where: { createdByUsuario: entrenadorId, activa: true },
       });
       expect(prismaMock.rutina.create).toHaveBeenCalled();
+    });
+  });
+
+  describe('findArchived', () => {
+    it('lista únicamente las rutinas archivadas del usuario', async () => {
+      prismaMock.rutina.findMany.mockResolvedValue([]);
+
+      await service.findArchived(entrenadorId);
+
+      expect(prismaMock.rutina.findMany).toHaveBeenCalledWith({
+        where: { createdByUsuario: entrenadorId, activa: false },
+        orderBy: { updatedAt: 'desc' },
+        include: {
+          categoriaRutina: true,
+          _count: { select: { rutinaEjercicio: true, usuarioRutina: true } },
+        },
+      });
     });
   });
 
