@@ -87,7 +87,7 @@ export class RutinasService {
         throw new BadRequestException('Plan del entrenador no encontrado o inactivo');
       }
       const cantidadRutinas = await this.prisma.rutina.count({
-        where: { createdByUsuario: usuarioId },
+        where: { createdByUsuario: usuarioId, activa: true },
       });
       if (cantidadRutinas >= planEntrenador.limiteRutinas) {
         throw new BadRequestException(
@@ -109,7 +109,7 @@ export class RutinasService {
         throw new BadRequestException('Plan del alumno no encontrado o inactivo');
       }
       const cantidadRutinas = await this.prisma.rutina.count({
-        where: { createdByUsuario: usuarioId },
+        where: { createdByUsuario: usuarioId, activa: true },
       });
       if (cantidadRutinas >= planAlumno.limiteRutinas) {
         throw new BadRequestException(
