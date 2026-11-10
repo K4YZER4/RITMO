@@ -1,11 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, CalendarDays, Trophy, Weight } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Card, Empty, Loading, Page, fullName } from '../components/Ui';
 import { get } from '../lib/api';
 import type { ExerciseLibrary } from '../lib/types';
-import { RoutineExerciseEditor } from '../components/RoutineExerciseEditor';
+import { WeeklyRoutinePlanner } from '../components/WeeklyRoutinePlanner';
 import type { Routine } from '../lib/types';
 
 type StudentDetailData = {
@@ -21,6 +21,9 @@ type StudentDetailData = {
     }>;
     usuarioRutina: Array<{
       id: string;
+      idDiaSemana: number;
+      fechaInicio: string;
+      fechaFin?: string | null;
       rutina: Routine;
       diaSemana: { nombre: string };
     }>;
@@ -64,7 +67,10 @@ export function StudentDetail() {
       ),
     enabled: Boolean(id),
   });
-  const [editingRoutine, setEditingRoutine] = useState<Routine | null>(null);
+  const routines = useQuery({
+    queryKey: ['routines'],
+    queryFn: () => get<Routine[]>('/rutinas'),
+  });
   if (isLoading) return <Loading />;
   if (isError || !data) return <Empty>No se pudo cargar el detalle del alumno.</Empty>;
   const latest = data.usuario.usuarioMedicion[0];
@@ -102,24 +108,11 @@ export function StudentDetail() {
         </Card>
       </div>
       <div className="split">
-        <Card>
-          <h2>Rutinas activas</h2>
-          {data.usuario.usuarioRutina.map((assignment) => (
-            <div className="list-row" key={assignment.id}>
-              <div>
-                <b>{assignment.rutina.nombre}</b>
-                <small>{assignment.diaSemana.nombre}</small>
-              </div>
-              <button
-                className="button ghost compact"
-                onClick={() => setEditingRoutine(assignment.rutina)}
-              >
-                Editar rutina
-              </button>
-            </div>
-          ))}
-          {!data.usuario.usuarioRutina.length && <Empty>Sin rutinas activas.</Empty>}
-        </Card>
+        <WeeklyRoutinePlanner
+          studentId={id || ''}
+          assignments={data.usuario.usuarioRutina}
+          routines={routines.data || []}
+        />
         <Card>
           <h2>Récords personales</h2>
           {data.usuario.alumnoEjercicioPr.map((pr) => (
@@ -147,13 +140,6 @@ export function StudentDetail() {
           <Empty>El alumno todavía no tiene sesiones.</Empty>
         )}
       </Card>
-      {editingRoutine && (
-        <RoutineExerciseEditor
-          routine={editingRoutine}
-          onClose={() => setEditingRoutine(null)}
-          onSaved={() => setEditingRoutine(null)}
-        />
-      )}
     </Page>
   );
 }
