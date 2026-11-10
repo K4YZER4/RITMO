@@ -122,6 +122,9 @@ describe('RutinasService', () => {
           idCategoriaRutina: dto.id_categoria_rutina,
         },
       });
+      expect(prismaMock.rutina.count).toHaveBeenCalledWith({
+        where: { createdByUsuario: entrenadorId, activa: true },
+      });
       expect(result).toEqual({ success: true, message: 'Rutina creada exitosamente' });
     });
 
@@ -154,6 +157,9 @@ describe('RutinasService', () => {
 
       await service.create(dto, alumnoId);
 
+      expect(prismaMock.rutina.count).toHaveBeenCalledWith({
+        where: { createdByUsuario: alumnoId, activa: true },
+      });
       expect(prismaMock.rutina.create).toHaveBeenCalledWith({
         data: expect.objectContaining({ createdByUsuario: alumnoId }),
       });
@@ -178,6 +184,30 @@ describe('RutinasService', () => {
       await expect(service.create(dto, entrenadorId)).rejects.toThrow(
         new BadRequestException('Has alcanzado el límite de rutinas permitidas por tu plan (10)'),
       );
+    });
+
+    it('debe ignorar las rutinas archivadas al validar el límite', async () => {
+      prismaMock.usuario.findUnique.mockResolvedValue({
+        id: entrenadorId,
+        role: UserRole.entrenador,
+      });
+      prismaMock.entrenador.findUnique.mockResolvedValue({
+        idUsuario: entrenadorId,
+        idPlan: 1,
+      });
+      prismaMock.planEntrenador.findFirst.mockResolvedValue({
+        id: 1,
+        estaActivo: true,
+        limiteRutinas: 3,
+      });
+      prismaMock.rutina.count.mockResolvedValue(1);
+
+      await service.create(dto, entrenadorId);
+
+      expect(prismaMock.rutina.count).toHaveBeenCalledWith({
+        where: { createdByUsuario: entrenadorId, activa: true },
+      });
+      expect(prismaMock.rutina.create).toHaveBeenCalled();
     });
   });
 

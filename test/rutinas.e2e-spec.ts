@@ -163,6 +163,22 @@ describe('Rutinas (e2e)', () => {
     expect(respuesta.body.message).toContain('traslapa');
   });
 
+  it('permite crear una rutina nueva después de archivar otra', async () => {
+    const { token } = await registrarYLoguearEntrenador(app);
+    const primera = await crearRutina(app, token, { nombre: `Rutina archivada ${Date.now()}` });
+    await crearRutina(app, token, { nombre: `Rutina activa 2 ${Date.now()}` });
+    await crearRutina(app, token, { nombre: `Rutina activa 3 ${Date.now()}` });
+
+    await request(app.getHttpServer())
+      .patch(`/rutinas/${primera.idRutina}/archivar`)
+      .set(auth(token))
+      .send({})
+      .expect(200);
+
+    const cuarta = await crearRutina(app, token, { nombre: `Rutina nueva ${Date.now()}` });
+    expect(cuarta.respuesta.body.success).toBe(true);
+  });
+
   it('rechaza crear rutina sin autenticación (401)', async () => {
     await request(app.getHttpServer())
       .post('/rutinas')
