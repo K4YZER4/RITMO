@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Patch, Param, Get } from '@nestjs/common';
+import { Controller, Post, Body, Patch, Param, Get, Delete } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -12,6 +12,7 @@ import { RutinasService } from './rutinas.service';
 import { CreateRutinaDto } from './dto/create-rutina.dto';
 import { RutinaEjercicioDto } from './dto/rutina-ejercicio.dto';
 import { AsignarRutinaDto } from './dto/asignar-rutina.dto';
+import { ActualizarAsignacionDto } from './dto/actualizar-asignacion.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ParseBigIntPipe } from '../../common/pipes/parse-big-int.pipe';
 @ApiTags('Rutinas')
@@ -112,5 +113,21 @@ export class RutinasController {
     @CurrentUser('id') usuarioId: string,
   ) {
     return this.rutinasService.asignarRutinaAAlumno(id, body, usuarioId);
+  }
+
+  @Patch('asignaciones/:id')
+  @ApiOperation({ summary: 'Cambiar una asignación semanal de rutina' })
+  actualizarAsignacion(
+    @Param('id', ParseBigIntPipe) id: bigint,
+    @Body() body: ActualizarAsignacionDto,
+    @CurrentUser('id') usuarioId: string,
+  ) {
+    return this.rutinasService.actualizarAsignacion(id, body, usuarioId);
+  }
+
+  @Delete('asignaciones/:id')
+  @ApiOperation({ summary: 'Quitar una rutina asignada sin borrar su historial' })
+  quitarAsignacion(@Param('id', ParseBigIntPipe) id: bigint, @CurrentUser('id') usuarioId: string) {
+    return this.rutinasService.quitarAsignacion(id, usuarioId);
   }
 }

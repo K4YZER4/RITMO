@@ -179,6 +179,48 @@ describe('Rutinas (e2e)', () => {
     expect(cuarta.respuesta.body.success).toBe(true);
   });
 
+  it('permite cambiar y quitar una asignación semanal sin borrar el historial', async () => {
+    const primera = await crearRutina(app, entrenadorToken, {
+      nombre: `Asignación original ${Date.now()}`,
+    });
+    const segunda = await crearRutina(app, entrenadorToken, {
+      nombre: `Asignación nueva ${Date.now()}`,
+    });
+
+    await request(app.getHttpServer())
+      .post(`/rutinas/${primera.idRutina}/asignaciones`)
+      .set(auth(entrenadorToken))
+      .send(asignarRutinaPayload(idAlumno, { numero_dia: 7 }))
+      .expect(201);
+
+    const prisma = app.get(PrismaService);
+    const asignacion = await prisma.usuarioRutina.findFirstOrThrow({
+      where: { idRutina: primera.idRutina, idUsuario: idAlumno, activa: true },
+    });
+
+    await request(app.getHttpServer())
+      .patch(`/rutinas/asignaciones/${asignacion.id}`)
+      .set(auth(entrenadorToken))
+      .send({
+        id_rutina: segunda.idRutina.toString(),
+        numero_dia: 6,
+        fecha_inicio: new Date().toISOString().slice(0, 10),
+      })
+      .expect(200);
+
+    const nuevaAsignacion = await prisma.usuarioRutina.findFirstOrThrow({
+      where: { idRutina: segunda.idRutina, idUsuario: idAlumno, activa: true },
+    });
+
+    await request(app.getHttpServer())
+      .delete(`/rutinas/asignaciones/${nuevaAsignacion.id}`)
+      .set(auth(entrenadorToken))
+      .expect(200);
+
+    const historial = await prisma.usuarioRutina.findUnique({ where: { id: asignacion.id } });
+    expect(historial?.activa).toBe(false);
+  });
+
   it('rechaza crear rutina sin autenticación (401)', async () => {
     await request(app.getHttpServer())
       .post('/rutinas')

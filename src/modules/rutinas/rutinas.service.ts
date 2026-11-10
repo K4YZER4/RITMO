@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { RutinaEjercicioDto } from './dto/rutina-ejercicio.dto';
 import { CreateRutinaDto } from './dto/create-rutina.dto';
 import { AsignarRutinaDto } from './dto/asignar-rutina.dto';
+import { ActualizarAsignacionDto } from './dto/actualizar-asignacion.dto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
@@ -282,6 +283,7 @@ export class RutinasService {
           const conflictos = await tx.usuarioRutina.findMany({
             where: {
               idUsuario: asignarRutinaDto.id_alumno,
+              activa: true,
               idDiaSemana: asignarRutinaDto.numero_dia,
               fechaInicio: {
                 lte: fechaFinComparacion,
@@ -349,5 +351,101 @@ export class RutinasService {
     );
 
     return { success: true, message: 'Rutina asignada al alumno exitosamente' };
+  }
+
+  async actualizarAsignacion(
+    idAsignacion: bigint,
+    dto: ActualizarAsignacionDto,
+    entrenadorId: string,
+  ) {
+    const fechaInicio = new Date(dto.fecha_inicio);
+    const fechaFin = dto.fecha_fin ? new Date(dto.fecha_fin) : null;
+    const nuevaRutinaId = BigInt(dto.id_rutina);
+
+    return withTransactionRetry(() =>
+      this.prisma.$transaction(
+        async (tx) => {
+          const asignacion = await tx.usuarioRutina.findUnique({
+            where: { id: idAsignacion },
+            include: { rutina: true, usuario: { include: { alumno: true } } },
+          });
+          if (
+            !asignacion ||
+            !asignacion.activa ||
+            asignacion.rutina.createdByUsuario !== entrenadorId ||
+            asignacion.usuario.alumno?.idEntrenadorActual !== entrenadorId
+          ) {
+            throw new ForbiddenException('No tienes permiso para modificar esta asignación');
+          }
+
+          const rutina = await tx.rutina.findUnique({ where: { id: nuevaRutinaId } });
+          if (!rutina || !rutina.activa || rutina.createdByUsuario !== entrenadorId) {
+            throw new BadRequestException('La rutina seleccionada no está disponible');
+          }
+
+          const conflicto = await tx.usuarioRutina.findFirst({
+            where: {
+              id: { not: idAsignacion },
+              idUsuario: asignacion.idUsuario,
+              activa: true,
+              idDiaSemana: dto.numero_dia,
+              fechaInicio: { lte: fechaFin ?? new Date('9999-12-31') },
+              OR: [{ fechaFin: null }, { fechaFin: { gte: fechaInicio } }],
+            },
+          });
+          if (conflicto) {
+            throw new BadRequestException('El alumno ya tiene una rutina asignada ese día');
+          }
+
+          await tx.usuarioRutina.update({
+            where: { id: idAsignacion },
+            data: {
+              activa: false,
+              fechaFin: new Date(),
+              motivoCambio: 'Reemplazada por el entrenador',
+              updatedBy: entrenadorId,
+            },
+          });
+          await tx.usuarioRutina.create({
+            data: {
+              idRutina: nuevaRutinaId,
+              idUsuario: asignacion.idUsuario,
+              idDiaSemana: dto.numero_dia,
+              fechaInicio,
+              fechaFin,
+              asignadaPorUsuario: entrenadorId,
+              createdBy: entrenadorId,
+              updatedBy: entrenadorId,
+            },
+          });
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      ),
+    ).then(() => ({ success: true, message: 'Asignación actualizada correctamente' }));
+  }
+
+  async quitarAsignacion(idAsignacion: bigint, entrenadorId: string) {
+    const asignacion = await this.prisma.usuarioRutina.findUnique({
+      where: { id: idAsignacion },
+      include: { rutina: true, usuario: { include: { alumno: true } } },
+    });
+    if (
+      !asignacion ||
+      !asignacion.activa ||
+      asignacion.rutina.createdByUsuario !== entrenadorId ||
+      asignacion.usuario.alumno?.idEntrenadorActual !== entrenadorId
+    ) {
+      throw new ForbiddenException('No tienes permiso para quitar esta asignación');
+    }
+    await this.prisma.usuarioRutina.update({
+      where: { id: idAsignacion },
+      data: {
+        activa: false,
+        fechaFin: new Date(),
+        motivoCambio: 'Quitada por el entrenador',
+        updatedBy: entrenadorId,
+      },
+    });
+    return { success: true, message: 'Rutina retirada del día correctamente' };
   }
 }

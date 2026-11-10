@@ -1031,6 +1031,102 @@ p {
   padding-top: 15px;
   color: var(--muted);
 }
+.weekly-planner-card {
+  grid-column: 1 / -1;
+}
+.weekly-planner-card .card-head h2 {
+  margin: 5px 0 0;
+}
+.weekly-planner-card .card-head > svg {
+  color: var(--lime);
+}
+.weekly-planner {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(120px, 1fr));
+  gap: 8px;
+  margin-top: 20px;
+}
+.week-day {
+  min-height: 190px;
+  padding: 12px;
+  background: #0c110e;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.week-day-warning {
+  border-color: #ff9e5d99;
+}
+.week-day-name {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.week-day-name strong {
+  font-size: 0.85rem;
+}
+.week-day-name small,
+.rest-day {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.week-day-content {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+  padding-top: 12px;
+}
+.week-routine {
+  display: grid;
+  gap: 8px;
+  padding: 9px;
+  background: #182119;
+  border-left: 2px solid var(--lime);
+  border-radius: 8px;
+}
+.week-routine > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+.week-routine b {
+  font-size: 0.78rem;
+}
+.week-routine small {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+.week-routine-actions {
+  display: flex;
+  gap: 5px;
+}
+.week-routine-actions button {
+  display: grid;
+  place-items: center;
+  padding: 5px;
+  color: var(--muted);
+  background: #ffffff08;
+  border: 0;
+  border-radius: 6px;
+}
+.week-routine-actions button:hover {
+  color: var(--lime);
+}
+.week-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 7px 4px;
+  color: var(--lime);
+  background: transparent;
+  border: 1px dashed #b7f34a55;
+  border-radius: 7px;
+  font-size: 0.68rem;
+}
+.warning-copy {
+  color: #ffb174 !important;
+  font-size: 0.68rem;
+}
 .exercise-picker {
   position: relative;
 }
@@ -1435,5 +1531,11 @@ p {
   }
   .workout-head h1 {
     font-size: 2rem;
+  }
+  .weekly-planner {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .weekly-planner-card {
+    overflow: hidden;
   }
 }
