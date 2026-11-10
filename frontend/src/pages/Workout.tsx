@@ -19,8 +19,8 @@ export function Workout() {
   const save = useMutation({
     mutationFn: ({ setId, peso, reps }: { setId: string; peso: number; reps: number }) =>
       patch(`/sesiones/${id}/sets/${setId}`, { peso, repeticiones: reps, completado: true }),
-    onMutate: async ({ setId, peso, reps }) => {
-      await qc.cancelQueries({ queryKey: ['session', id] });
+    onMutate: ({ setId, peso, reps }) => {
+      void qc.cancelQueries({ queryKey: ['session', id] });
       const previous = qc.getQueryData<Session>(['session', id]);
       qc.setQueryData<Session>(['session', id], (current) =>
         current
@@ -129,7 +129,9 @@ export function Workout() {
                     }
                   />
                   <button
-                    disabled={set.completado || save.isPending}
+                    disabled={
+                      set.completado || (save.isPending && save.variables?.setId === set.id)
+                    }
                     onClick={() => {
                       if (
                         !v.peso ||
