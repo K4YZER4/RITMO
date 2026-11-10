@@ -34,6 +34,10 @@ export function Routines() {
     queryKey: ['routines'],
     queryFn: () => get<Routine[]>('/rutinas'),
   });
+  const { data: archived } = useQuery({
+    queryKey: ['archived-routines'],
+    queryFn: () => get<Routine[]>('/rutinas/archivadas'),
+  });
   const { data: catalogs } = useQuery({
     queryKey: ['catalogs'],
     queryFn: () => get<Catalogs>('/catalogos'),
@@ -206,6 +210,37 @@ export function Routines() {
         ))}
       </div>
       {!data?.length && <Empty>Crea tu primera rutina para comenzar.</Empty>}
+      {archived?.length ? (
+        <section className="archived-routines">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">HISTORIAL</span>
+              <h2>Rutinas archivadas</h2>
+            </div>
+            <span className="muted">Se conservan para proteger sesiones y progreso.</span>
+          </div>
+          <div className="routine-grid archived-grid">
+            {archived.map((routine) => (
+              <Card key={routine.id} className="archived-routine-card">
+                <div className="routine-icon muted-icon">
+                  <Dumbbell />
+                </div>
+                <span className="status muted-status">ARCHIVADA</span>
+                <h2>{routine.nombre}</h2>
+                <p>{routine.descripcion || 'Sin descripción'}</p>
+                <div className="routine-stats">
+                  <span>
+                    <b>{routine._count?.rutinaEjercicio || 0}</b> ejercicios
+                  </span>
+                  <span>
+                    <b>{routine._count?.usuarioRutina || 0}</b> asignaciones históricas
+                  </span>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </section>
+      ) : null}
       {open && (
         <div className="modal-backdrop" onClick={() => setOpen(false)}>
           <form className="modal" onSubmit={submit} onClick={(e) => e.stopPropagation()}>

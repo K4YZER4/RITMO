@@ -22,6 +22,17 @@ export class RutinasService {
     });
   }
 
+  findArchived(usuarioId: string) {
+    return this.prisma.rutina.findMany({
+      where: { createdByUsuario: usuarioId, activa: false },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        categoriaRutina: true,
+        _count: { select: { rutinaEjercicio: true, usuarioRutina: true } },
+      },
+    });
+  }
+
   async findOne(id: bigint, usuarioId: string) {
     const rutina = await this.prisma.rutina.findFirst({
       where: {

@@ -27,6 +27,13 @@ export class RutinasController {
     return this.rutinasService.findAll(usuarioId);
   }
 
+  @Get('archivadas')
+  @ApiOperation({ summary: 'Listar rutinas archivadas creadas por el usuario' })
+  @ApiOkResponse({ description: 'Rutinas archivadas del usuario autenticado.' })
+  findArchived(@CurrentUser('id') usuarioId: string) {
+    return this.rutinasService.findArchived(usuarioId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Obtener el detalle de una rutina' })
   @ApiParam({ name: 'id', type: String, description: 'ID de la rutina.' })
