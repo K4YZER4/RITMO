@@ -6,6 +6,7 @@ import { SelectMenu } from '../components/SelectMenu';
 import { DateField } from '../components/DateField';
 import { get, post, patch } from '../lib/api';
 import type { Catalogs, ExerciseLibrary, Routine, Student } from '../lib/types';
+import { CreateExerciseModal } from '../components/CreateExerciseModal';
 
 type DraftExercise = {
   id: string;
@@ -30,6 +31,7 @@ export function Routines() {
   const [day, setDay] = useState('1');
   const [start, setStart] = useState(new Date().toISOString().slice(0, 10));
   const [end, setEnd] = useState('');
+  const [createExerciseOpen, setCreateExerciseOpen] = useState(false);
   const { data, isLoading, isError } = useQuery({
     queryKey: ['routines'],
     queryFn: () => get<Routine[]>('/rutinas'),
@@ -45,6 +47,8 @@ export function Routines() {
   const { data: exercises } = useQuery({
     queryKey: ['exercises'],
     queryFn: () => get<ExerciseLibrary>('/ejercicios'),
+    staleTime: 5 * 60 * 1000,
+    placeholderData: () => qc.getQueryData<ExerciseLibrary>(['exercises']),
   });
   const { data: routineDetail } = useQuery({
     queryKey: ['routine', selected?.id],
@@ -333,6 +337,13 @@ export function Routines() {
                 }}
               />
             </label>
+            <button
+              type="button"
+              className="button dark full"
+              onClick={() => setCreateExerciseOpen(true)}
+            >
+              <Plus /> Crear ejercicio personalizado
+            </button>
             {draft.map((item, index) => (
               <div className="exercise-builder" key={`${item.kind}-${item.id}-${index}`}>
                 <b>
@@ -492,6 +503,7 @@ export function Routines() {
           </form>
         </div>
       )}
+      {createExerciseOpen && <CreateExerciseModal onClose={() => setCreateExerciseOpen(false)} />}
     </Page>
   );
 }

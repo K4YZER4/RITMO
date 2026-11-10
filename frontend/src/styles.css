@@ -1040,6 +1040,9 @@ p {
   z-index: 20;
   padding: 20px;
 }
+.nested-modal {
+  z-index: 30;
+}
 .modal {
   width: min(500px, 100%);
   background: #131714;

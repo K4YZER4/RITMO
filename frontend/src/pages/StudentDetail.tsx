@@ -1,9 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, CalendarDays, Trophy, Weight } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, Empty, Loading, Page, fullName } from '../components/Ui';
 import { get } from '../lib/api';
+import type { ExerciseLibrary } from '../lib/types';
 import { RoutineExerciseEditor } from '../components/RoutineExerciseEditor';
 import type { Routine } from '../lib/types';
 
@@ -42,6 +43,14 @@ type StudentDetailData = {
 
 export function StudentDetail() {
   const { id } = useParams();
+  const qc = useQueryClient();
+  useEffect(() => {
+    void qc.prefetchQuery({
+      queryKey: ['exercises'],
+      queryFn: () => get<ExerciseLibrary>('/ejercicios'),
+      staleTime: 5 * 60 * 1000,
+    });
+  }, [qc]);
   const { data, isLoading, isError } = useQuery({
     queryKey: ['student', id],
     queryFn: () => get<StudentDetailData>(`/entrenador/alumnos/${id}`),

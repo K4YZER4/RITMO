@@ -17,6 +17,8 @@ export function Exercises() {
   const exercises = useQuery({
     queryKey: ['exercises'],
     queryFn: () => get<ExerciseLibrary>('/ejercicios'),
+    staleTime: 5 * 60 * 1000,
+    placeholderData: () => qc.getQueryData<ExerciseLibrary>(['exercises']),
   });
   const create = useMutation({
     mutationFn: () =>
