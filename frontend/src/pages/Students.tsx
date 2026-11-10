@@ -13,6 +13,9 @@ export function Students() {
   const [codigo, setCodigo] = useState('');
   const [secreto, setSecreto] = useState('');
   const [message, setMessage] = useState('');
+  const [linkError, setLinkError] = useState('');
+  const [unlinkError, setUnlinkError] = useState('');
+  const [linking, setLinking] = useState(false);
   const [unlinkStudent, setUnlinkStudent] = useState<Student | null>(null);
   const { data, isLoading } = useQuery({
     queryKey: ['students'],
@@ -21,11 +24,12 @@ export function Students() {
   if (isLoading) return <Loading />;
   const list = data?.filter((s) => fullName(s.usuario).toLowerCase().includes(q.toLowerCase()));
   async function consumeToken() {
-    setMessage('');
+    setLinkError('');
+    setLinking(true);
     try {
       const result = await post<{ message: string }>('/alumno-entrenador/token/consumir', {
-        codigo,
-        secreto,
+        codigo: codigo.trim().toUpperCase(),
+        secreto: secreto.trim(),
       });
       setMessage(result.message);
       setOpen(false);
@@ -33,11 +37,14 @@ export function Students() {
       setSecreto('');
       await qc.invalidateQueries({ queryKey: ['students'] });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'No se pudo vincular al alumno');
+      setLinkError(error instanceof Error ? error.message : 'No se pudo vincular al alumno');
+    } finally {
+      setLinking(false);
     }
   }
   async function unlink(password: string) {
     if (!unlinkStudent) return;
+    setUnlinkError('');
     try {
       const result = await put<{ message: string }>(
         `/alumno-entrenador/cancelar/alumno/${unlinkStudent.idUsuario}`,
@@ -47,7 +54,7 @@ export function Students() {
       setUnlinkStudent(null);
       await qc.invalidateQueries({ queryKey: ['students'] });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'No se pudo desvincular al alumno');
+      setUnlinkError(error instanceof Error ? error.message : 'No se pudo desvincular al alumno');
     }
   }
   return (
@@ -55,7 +62,13 @@ export function Students() {
       eyebrow="GESTIÓN"
       title="Tus alumnos"
       action={
-        <button className="button primary" onClick={() => setOpen(true)}>
+        <button
+          className="button primary"
+          onClick={() => {
+            setLinkError('');
+            setOpen(true);
+          }}
+        >
           <UserPlus /> Vincular alumno
         </button>
       }
@@ -111,22 +124,35 @@ export function Students() {
             <p>El alumno debe compartirte el código y el secreto generados desde su perfil.</p>
             <label>
               Código
-              <input value={codigo} onChange={(event) => setCodigo(event.target.value)} required />
+              <input
+                value={codigo}
+                onChange={(event) => setCodigo(event.target.value.toUpperCase().replace(/\s/g, ''))}
+                required
+              />
             </label>
             <label>
               Secreto
               <input
                 value={secreto}
-                onChange={(event) => setSecreto(event.target.value)}
+                onChange={(event) => setSecreto(event.target.value.replace(/\s/g, ''))}
                 required
               />
             </label>
-            {message && <div className="error">{message}</div>}
+            {linkError && <div className="error">{linkError}</div>}
             <div className="modal-actions">
-              <button type="button" className="button ghost" onClick={() => setOpen(false)}>
+              <button
+                type="button"
+                className="button ghost"
+                onClick={() => {
+                  setLinkError('');
+                  setOpen(false);
+                }}
+              >
                 Cancelar
               </button>
-              <button className="button primary">Vincular</button>
+              <button className="button primary" disabled={linking}>
+                {linking ? 'Vinculando…' : 'Vincular'}
+              </button>
             </div>
           </form>
         </div>
@@ -136,9 +162,12 @@ export function Students() {
           title={`¿Desvincular a ${fullName(unlinkStudent.usuario)}?`}
           description="El alumno dejará de aparecer en tu cartera, pero su historial permanecerá guardado."
           submitLabel="Desvincular alumno"
-          onClose={() => setUnlinkStudent(null)}
+          onClose={() => {
+            setUnlinkError('');
+            setUnlinkStudent(null);
+          }}
           onConfirm={(password) => void unlink(password)}
-          error={message || undefined}
+          error={unlinkError || undefined}
         />
       )}
     </Page>

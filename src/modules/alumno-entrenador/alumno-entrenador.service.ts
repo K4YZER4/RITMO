@@ -1,10 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UserRole } from '@prisma/client';
 import { CancelarAlumnoDto } from './dto/cancelar-alumno.dto';
 import * as bcrypt from 'bcrypt';
 import { Prisma } from '@prisma/client';
-import { NotFoundException, UnauthorizedException } from '@nestjs/common/exceptions';
 import { ConsumirTokenDto } from './dto/consumir-token.dto';
 import { CancelarMiEntrenadorDto } from './dto/cancelar-mi-entrenador.dto';
 import * as crypto from 'crypto';
@@ -21,20 +26,20 @@ export class AlumnoEntrenadorService {
         where: { id: alumnoId },
       });
       if (!alumnoUsuario || alumnoUsuario.role !== UserRole.alumnoConEntrenador) {
-        throw new UnauthorizedException('Alumno no encontrado');
+        throw new NotFoundException('Alumno no encontrado');
       }
       const contraseñaAutorizada = await bcrypt.compare(
         cancelarData.contraseña_alumno,
         alumnoUsuario.hashedPassword,
       );
       if (!contraseñaAutorizada) {
-        throw new UnauthorizedException('Contraseña incorrecta');
+        throw new BadRequestException('Contraseña incorrecta');
       }
       const alumno = await tx.alumno.findUnique({
         where: { idUsuario: alumnoId },
       });
       if (!alumno || !alumno.idEntrenadorActual) {
-        throw new UnauthorizedException('El alumno no tiene un entrenador asignado');
+        throw new BadRequestException('El alumno no tiene un entrenador asignado');
       }
       await this.finalizarVinculacion(tx, alumnoId, alumnoId, 'Cancelado por el alumno');
       return { success: true, message: 'Alumno desvinculado de su entrenador exitosamente' };
@@ -49,32 +54,32 @@ export class AlumnoEntrenadorService {
         where: { id: entrenadorId },
       });
       if (!usuarioEntrenador || usuarioEntrenador.role !== UserRole.entrenador) {
-        throw new UnauthorizedException('El usuario no es un entrenador válido');
+        throw new ForbiddenException('El usuario no es un entrenador válido');
       }
       const entrenador = await tx.entrenador.findUnique({
         where: { idUsuario: entrenadorId },
       });
       if (!entrenador) {
-        throw new UnauthorizedException('Entrenador no encontrado');
+        throw new NotFoundException('Entrenador no encontrado');
       }
       const contraseñaAutorizada = await bcrypt.compare(
         cancelarData.contraseña_entrenador,
         usuarioEntrenador.hashedPassword,
       );
       if (!contraseñaAutorizada) {
-        throw new UnauthorizedException('Contraseña incorrecta');
+        throw new BadRequestException('Contraseña incorrecta');
       }
       const alumnoUsuario = await tx.usuario.findUnique({
         where: { id: idAlumno },
       });
       if (!alumnoUsuario || alumnoUsuario.role !== UserRole.alumnoConEntrenador) {
-        throw new UnauthorizedException('Alumno no encontrado');
+        throw new NotFoundException('Alumno no encontrado');
       }
       const alumno = await tx.alumno.findUnique({
         where: { idUsuario: idAlumno },
       });
       if (!alumno || alumno.idEntrenadorActual !== entrenadorId) {
-        throw new UnauthorizedException('El entrenador no tiene asignado a este alumno');
+        throw new ForbiddenException('El entrenador no tiene asignado a este alumno');
       }
       await this.finalizarVinculacion(tx, idAlumno, entrenadorId, 'Cancelado por el entrenador');
       return { success: true, message: 'Alumno cancelado exitosamente' };
@@ -135,7 +140,7 @@ export class AlumnoEntrenadorService {
       },
     });
     if (!entrenador) {
-      throw new UnauthorizedException('Entrenador no encontrado');
+      throw new NotFoundException('Entrenador no encontrado');
     }
     const plan = await tx.planEntrenador.findUnique({
       where: {
@@ -143,12 +148,10 @@ export class AlumnoEntrenadorService {
       },
     });
     if (!plan) {
-      throw new UnauthorizedException('Plan del entrenador no encontrado');
+      throw new NotFoundException('Plan del entrenador no encontrado');
     }
     if (numeroAlumno >= plan.limiteAlumnos) {
-      throw new UnauthorizedException(
-        'El entrenador ha alcanzado el límite de alumnos para su plan',
-      );
+      throw new ForbiddenException('El entrenador ha alcanzado el límite de alumnos para su plan');
     }
   }
   //
@@ -164,7 +167,7 @@ export class AlumnoEntrenadorService {
         },
       });
       if (!usuarioAlumno || usuarioAlumno.role !== UserRole.alumno) {
-        throw new UnauthorizedException('El usuario no es un alumno válido');
+        throw new ForbiddenException('El usuario no es un alumno válido');
       }
       const alumno = await tx.alumno.findUnique({
         where: {
@@ -227,7 +230,7 @@ export class AlumnoEntrenadorService {
         },
       });
       if (!usuarioEntrenador || usuarioEntrenador.role !== UserRole.entrenador) {
-        throw new UnauthorizedException('El usuario no es un entrenador válido');
+        throw new ForbiddenException('El usuario no es un entrenador válido');
       }
       const entrenador = await tx.entrenador.findUnique({
         where: {
@@ -235,7 +238,7 @@ export class AlumnoEntrenadorService {
         },
       });
       if (!entrenador) {
-        throw new UnauthorizedException('Entrenador no encontrado');
+        throw new NotFoundException('Entrenador no encontrado');
       }
       await this.validatePLanYAlumnosLimites(usuarioId, tx);
       const token = await tx.tokenVinculacionAlumno.findFirst({
@@ -247,10 +250,10 @@ export class AlumnoEntrenadorService {
         },
       });
       if (!token) {
-        throw new UnauthorizedException('Token no válido o ya ha sido utilizado');
+        throw new BadRequestException('Token no válido o ya ha sido utilizado');
       }
       if (token.expiraEn && token.expiraEn < new Date()) {
-        throw new UnauthorizedException('El token ha expirado');
+        throw new BadRequestException('El token ha expirado');
       }
       const alumno = await tx.alumno.findUnique({
         where: {
@@ -264,7 +267,7 @@ export class AlumnoEntrenadorService {
         throw new NotFoundException('Alumno no encontrado');
       }
       if (alumno.usuario.role !== UserRole.alumno || alumno.idEntrenadorActual !== null) {
-        throw new UnauthorizedException('El alumno ya tiene un entrenador asignado');
+        throw new ConflictException('El alumno ya tiene un entrenador asignado');
       }
       await tx.tokenVinculacionAlumno.update({
         where: {
