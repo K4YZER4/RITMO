@@ -3,11 +3,13 @@ import { ArrowRight, CalendarDays, Dumbbell, Flame, Trophy, Users } from 'lucide
 import { Link, useNavigate } from 'react-router-dom';
 import { get, post } from '../lib/api';
 import { useState } from 'react';
+import { activeWorkoutSessionId } from '../lib/workoutDraft';
 import type { Assignment, Profile, Student } from '../lib/types';
 import { Card, Empty, Loading, Page, fullName } from '../components/Ui';
 export function Dashboard() {
   const nav = useNavigate();
   const [starting, setStarting] = useState(false);
+  const localActiveSessionId = activeWorkoutSessionId();
   const { data: p, isLoading } = useQuery({
     queryKey: ['profile'],
     queryFn: () => get<Profile>('/perfil'),
@@ -44,6 +46,13 @@ export function Dashboard() {
     enabled: !!p && !trainer,
   });
   const startWorkout = async () => {
+    const activeSessionId = today?.[0]?.sesionEntrenamiento.find(
+      (session) => session.idEstado === 1,
+    )?.id;
+    if (activeSessionId || localActiveSessionId) {
+      void nav(`/app/entrenar/${activeSessionId || localActiveSessionId}`);
+      return;
+    }
     if (!today?.[0]) return;
     setStarting(true);
     try {
@@ -108,6 +117,10 @@ export function Dashboard() {
     );
   const dayNames = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
   const currentDay = new Date().getDay();
+  const activeSessionId = today?.[0]?.sesionEntrenamiento.find(
+    (session) => session.idEstado === 1,
+  )?.id;
+  const hasActiveWorkout = Boolean(activeSessionId || localActiveSessionId);
   return (
     <Page eyebrow="TU RITMO" title={`Hola, ${p?.nombre} 👋`}>
       <section className="student-hero">
@@ -148,7 +161,12 @@ export function Dashboard() {
             disabled={starting}
             onClick={() => void startWorkout()}
           >
-            {starting ? 'Preparando…' : 'Empezar entrenamiento'} <ArrowRight />
+            {starting
+              ? 'Preparando…'
+              : hasActiveWorkout
+                ? 'Continuar entrenamiento'
+                : 'Empezar entrenamiento'}{' '}
+            <ArrowRight />
           </button>
         )}
       </Card>

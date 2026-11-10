@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { get, post } from '../lib/api';
 import type { Profile } from '../lib/types';
 import { ConfirmActionModal } from './ConfirmActionModal';
+import { clearWorkoutDrafts } from '../lib/workoutDraft';
 
 export function AppLayout() {
   const navigate = useNavigate();
@@ -40,6 +41,7 @@ export function AppLayout() {
   const logout = () => {
     void post('/auth/logout').catch(() => undefined);
     localStorage.removeItem('ritmo_token');
+    clearWorkoutDrafts();
     qc.clear();
     setConfirmLogout(false);
     void navigate('/login', { replace: true });
