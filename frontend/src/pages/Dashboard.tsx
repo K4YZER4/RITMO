@@ -2,10 +2,12 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, CalendarDays, Dumbbell, Flame, Trophy, Users } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { get, post } from '../lib/api';
+import { useState } from 'react';
 import type { Assignment, Profile, Student } from '../lib/types';
 import { Card, Empty, Loading, Page, fullName } from '../components/Ui';
 export function Dashboard() {
   const nav = useNavigate();
+  const [starting, setStarting] = useState(false);
   const { data: p, isLoading } = useQuery({
     queryKey: ['profile'],
     queryFn: () => get<Profile>('/perfil'),
@@ -43,10 +45,15 @@ export function Dashboard() {
   });
   const startWorkout = async () => {
     if (!today?.[0]) return;
-    const session = await post<{ id: string }>('/sesiones', {
-      usuario_rutina_id: today[0].id,
-    });
-    await nav(`/app/entrenar/${session.id}`);
+    setStarting(true);
+    try {
+      const session = await post<{ id: string }>('/sesiones', {
+        usuario_rutina_id: today[0].id,
+      });
+      void nav(`/app/entrenar/${session.id}`);
+    } finally {
+      setStarting(false);
+    }
   };
   if (isLoading) return <Loading />;
   if (trainer)
@@ -136,8 +143,12 @@ export function Dashboard() {
           <p>{today?.[0]?.rutina.descripcion || 'No tienes una rutina asignada para hoy.'}</p>
         </div>
         {today?.[0] && (
-          <button className="button primary" onClick={() => void startWorkout()}>
-            Empezar entrenamiento <ArrowRight />
+          <button
+            className="button primary"
+            disabled={starting}
+            onClick={() => void startWorkout()}
+          >
+            {starting ? 'Preparando…' : 'Empezar entrenamiento'} <ArrowRight />
           </button>
         )}
       </Card>

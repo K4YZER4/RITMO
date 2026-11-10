@@ -19,7 +19,35 @@ export function Workout() {
   const save = useMutation({
     mutationFn: ({ setId, peso, reps }: { setId: string; peso: number; reps: number }) =>
       patch(`/sesiones/${id}/sets/${setId}`, { peso, repeticiones: reps, completado: true }),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['session', id] }),
+    onMutate: async ({ setId, peso, reps }) => {
+      await qc.cancelQueries({ queryKey: ['session', id] });
+      const previous = qc.getQueryData<Session>(['session', id]);
+      qc.setQueryData<Session>(['session', id], (current) =>
+        current
+          ? {
+              ...current,
+              sesionEjercicio: current.sesionEjercicio.map((exercise) => ({
+                ...exercise,
+                sesionEjercicioSet: exercise.sesionEjercicioSet.map((set) =>
+                  set.id === setId
+                    ? {
+                        ...set,
+                        pesoReal: String(peso),
+                        repeticionesRealizadas: reps,
+                        completado: true,
+                      }
+                    : set,
+                ),
+              })),
+            }
+          : current,
+      );
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) qc.setQueryData(['session', id], context.previous);
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ['session', id] }),
   });
   if (isLoading || !s) return <Loading />;
   const completed = s.sesionEjercicio
@@ -31,7 +59,12 @@ export function Workout() {
     setFinishError('');
     try {
       await post(`/sesiones/${id}/finalizar`, {});
-      await nav('/app/progreso');
+      qc.removeQueries({ queryKey: ['session', id] });
+      void qc.invalidateQueries({ queryKey: ['today'] });
+      void qc.invalidateQueries({ queryKey: ['week'] });
+      void qc.invalidateQueries({ queryKey: ['progress'] });
+      void qc.invalidateQueries({ queryKey: ['sessions'] });
+      void nav('/app/progreso', { replace: true });
     } catch (error) {
       setFinishError(error instanceof Error ? error.message : 'No se pudo finalizar la sesión');
     } finally {
