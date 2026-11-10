@@ -21,6 +21,20 @@ export class EjerciciosService {
         include: {
           ejercicioEstandarMusculo: { include: { musculo: true } },
           ejercicioEstandarEquipo: { include: { equipo: true } },
+          rutinaEjercicio: {
+            where: { rutina: { createdByUsuario: usuarioId } },
+            select: {
+              id: true,
+              idRutina: true,
+              orden: true,
+              series: true,
+              repeticiones: true,
+              pesoObjetivo: true,
+              notaEntrenador: true,
+              linkApoyo: true,
+              rutina: { select: { id: true, nombre: true, activa: true } },
+            },
+          },
         },
       }),
       this.prisma.ejercicioPersonalizado.findMany({
@@ -33,6 +47,19 @@ export class EjerciciosService {
         include: {
           ejercicioPersonalizadoMusculo: { include: { musculo: true } },
           ejercicioPersonalizadoEquipo: { include: { equipo: true } },
+          rutinaEjercicio: {
+            select: {
+              id: true,
+              idRutina: true,
+              orden: true,
+              series: true,
+              repeticiones: true,
+              pesoObjetivo: true,
+              notaEntrenador: true,
+              linkApoyo: true,
+              rutina: { select: { id: true, nombre: true, activa: true } },
+            },
+          },
         },
       }),
     ]);

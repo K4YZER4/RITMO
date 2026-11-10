@@ -38,7 +38,11 @@ const transactionClientMock = transactionMock as unknown as Prisma.TransactionCl
 
 const prismaMock = {
   $transaction: jest.fn(),
+  ejercicioEstandar: {
+    findMany: jest.fn(),
+  },
   ejercicioPersonalizado: {
+    findMany: jest.fn(),
     findUnique: jest.fn(),
     update: jest.fn(),
   },
@@ -66,6 +70,30 @@ describe('EjerciciosService', () => {
     }).compile();
 
     service = module.get<EjerciciosService>(EjerciciosService);
+  });
+
+  describe('listarEjercicios', () => {
+    it('incluye las rutinas que usan cada ejercicio para cachear el constructor', async () => {
+      prismaMock.ejercicioEstandar.findMany.mockResolvedValue([]);
+      prismaMock.ejercicioPersonalizado.findMany.mockResolvedValue([]);
+
+      await service.listarEjercicios(usuarioId);
+
+      expect(prismaMock.ejercicioEstandar.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          include: expect.objectContaining({
+            rutinaEjercicio: expect.objectContaining({
+              where: { rutina: { createdByUsuario: usuarioId } },
+            }),
+          }),
+        }),
+      );
+      expect(prismaMock.ejercicioPersonalizado.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          include: expect.objectContaining({ rutinaEjercicio: expect.any(Object) }),
+        }),
+      );
+    });
   });
 
   describe('createEjercicioPersonalizado', () => {

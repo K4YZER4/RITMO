@@ -1,5 +1,14 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Activity, Dumbbell, House, LogOut, TrendingUp, UserRound, Users } from 'lucide-react';
+import {
+  Activity,
+  Dumbbell,
+  House,
+  LogOut,
+  PersonStanding,
+  TrendingUp,
+  UserRound,
+  Users,
+} from 'lucide-react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { get, post } from '../lib/api';
@@ -21,6 +30,7 @@ export function AppLayout() {
       ? [
           { to: '/app/alumnos', label: 'Alumnos', icon: Users },
           { to: '/app/rutinas', label: 'Rutinas', icon: Dumbbell },
+          { to: '/app/ejercicios', label: 'Ejercicios', icon: PersonStanding },
         ]
       : profile
         ? [{ to: '/app/progreso', label: 'Progreso', icon: TrendingUp }]

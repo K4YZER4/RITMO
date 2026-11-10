@@ -40,8 +40,24 @@ export type Catalogs = {
   nivelesActividad: Array<{ id: number; nombre: string }>;
 };
 export type ExerciseLibrary = {
-  estandar: Array<{ id: string; nombre: string; descripcion?: string }>;
-  personalizados: Array<{ id: string; nombre: string; descripcion?: string }>;
+  estandar: Array<ExerciseLibraryItem>;
+  personalizados: Array<ExerciseLibraryItem>;
+};
+export type ExerciseLibraryItem = {
+  id: string;
+  nombre: string;
+  descripcion?: string;
+  rutinaEjercicio?: Array<{
+    id: string;
+    idRutina: string;
+    orden: number;
+    series: number;
+    repeticiones: number;
+    pesoObjetivo?: string;
+    notaEntrenador?: string;
+    linkApoyo?: string;
+    rutina: { id: string; nombre: string; activa: boolean };
+  }>;
 };
 export type Student = {
   idUsuario: string;
