@@ -4,6 +4,10 @@ const API_URL =
     ? configuredApiUrl
     : 'http://localhost:3000';
 
+export function isRetryableApiError(error: unknown) {
+  return error instanceof TypeError || (error instanceof ApiError && error.status >= 500);
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,

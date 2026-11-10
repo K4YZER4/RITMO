@@ -1325,6 +1325,16 @@ p {
 .workout-head h1 {
   font-size: 2.5rem;
 }
+.workout-sync-status {
+  margin: 14px 0;
+  padding: 11px 14px;
+  color: #d9f7ad;
+  background: #b7f34a12;
+  border: 1px solid #b7f34a44;
+  border-radius: 9px;
+  font-size: 0.82rem;
+  text-align: center;
+}
 .progress-bar {
   height: 5px;
   background: #222a24;
