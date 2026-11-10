@@ -3,6 +3,7 @@ import { Plus, Save, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { get, patch, post } from '../lib/api';
 import { SelectMenu } from './SelectMenu';
+import { ExercisePicker } from './ExercisePicker';
 import type { Catalogs, ExerciseLibrary, Routine } from '../lib/types';
 
 type DraftExercise = {
@@ -126,24 +127,11 @@ export function RoutineExerciseEditor({
         <p>Actualiza ejercicios, series, repeticiones y notas sin salir del perfil del alumno.</p>
         <label>
           Ejercicio
-          <SelectMenu
-            value=""
-            placeholder="Añadir ejercicio"
-            options={[
-              ...(exercises?.estandar || []).map((item) => ({
-                value: `standard:${item.id}`,
-                label: item.nombre,
-                description: item.descripcion,
-              })),
-              ...(exercises?.personalizados || []).map((item) => ({
-                value: `custom:${item.id}`,
-                label: item.nombre,
-                description: 'Ejercicio personalizado',
-              })),
-            ]}
+          <ExercisePicker
+            exercises={exercises}
             onChange={(value) => {
               const [kind, id] = value.split(':');
-              if (id) {
+              if (id)
                 setDraft((current) => [
                   ...current,
                   {
@@ -156,7 +144,6 @@ export function RoutineExerciseEditor({
                     link: '',
                   },
                 ]);
-              }
             }}
           />
         </label>

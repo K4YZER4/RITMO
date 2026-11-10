@@ -7,6 +7,7 @@ import { DateField } from '../components/DateField';
 import { get, post, patch } from '../lib/api';
 import type { Catalogs, ExerciseLibrary, Routine, Student } from '../lib/types';
 import { CreateExerciseModal } from '../components/CreateExerciseModal';
+import { ExercisePicker } from '../components/ExercisePicker';
 
 type DraftExercise = {
   id: string;
@@ -304,21 +305,8 @@ export function Routines() {
             <h2>{selected.nombre}</h2>
             <label>
               Ejercicio
-              <SelectMenu
-                value=""
-                placeholder="Añadir ejercicio"
-                options={[
-                  ...(exercises?.estandar || []).map((item) => ({
-                    value: `standard:${item.id}`,
-                    label: item.nombre,
-                    description: item.descripcion,
-                  })),
-                  ...(exercises?.personalizados || []).map((item) => ({
-                    value: `custom:${item.id}`,
-                    label: item.nombre,
-                    description: 'Ejercicio personalizado',
-                  })),
-                ]}
+              <ExercisePicker
+                exercises={exercises}
                 onChange={(value) => {
                   const [kind, id] = value.split(':');
                   if (id)

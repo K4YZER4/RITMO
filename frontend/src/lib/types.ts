@@ -47,6 +47,10 @@ export type ExerciseLibraryItem = {
   id: string;
   nombre: string;
   descripcion?: string;
+  ejercicioEstandarMusculo?: Array<{ musculo: { id: string; nombre: string } }>;
+  ejercicioEstandarEquipo?: Array<{ equipo: { id: string; nombre: string } }>;
+  ejercicioPersonalizadoMusculo?: Array<{ musculo: { id: string; nombre: string } }>;
+  ejercicioPersonalizadoEquipo?: Array<{ equipo: { id: string; nombre: string } }>;
   rutinaEjercicio?: Array<{
     id: string;
     idRutina: string;
