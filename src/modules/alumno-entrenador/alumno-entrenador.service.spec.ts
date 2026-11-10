@@ -1,4 +1,10 @@
-import { NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import type { Prisma } from '@prisma/client';
 import { UserRole } from '@prisma/client';
@@ -140,18 +146,18 @@ describe('AlumnoEntrenadorService', () => {
       });
     });
 
-    it('debe lanzar UnauthorizedException si no existe el entrenador', async () => {
+    it('debe lanzar NotFoundException si no existe el entrenador', async () => {
       transactionMock.alumno.count.mockResolvedValue(0);
       transactionMock.entrenador.findUnique.mockResolvedValue(null);
 
       await expect(
         service.validatePLanYAlumnosLimites(entrenadorId, transactionClientMock),
-      ).rejects.toThrow(new UnauthorizedException('Entrenador no encontrado'));
+      ).rejects.toThrow(new NotFoundException('Entrenador no encontrado'));
 
       expect(transactionMock.planEntrenador.findUnique).not.toHaveBeenCalled();
     });
 
-    it('debe lanzar UnauthorizedException si no existe el plan del entrenador', async () => {
+    it('debe lanzar NotFoundException si no existe el plan del entrenador', async () => {
       transactionMock.alumno.count.mockResolvedValue(0);
       transactionMock.entrenador.findUnique.mockResolvedValue({
         idUsuario: entrenadorId,
@@ -161,10 +167,10 @@ describe('AlumnoEntrenadorService', () => {
 
       await expect(
         service.validatePLanYAlumnosLimites(entrenadorId, transactionClientMock),
-      ).rejects.toThrow(new UnauthorizedException('Plan del entrenador no encontrado'));
+      ).rejects.toThrow(new NotFoundException('Plan del entrenador no encontrado'));
     });
 
-    it('debe lanzar UnauthorizedException cuando el plan ya alcanzó el límite de alumnos', async () => {
+    it('debe lanzar ForbiddenException cuando el plan ya alcanzó el límite de alumnos', async () => {
       transactionMock.alumno.count.mockResolvedValue(5);
       transactionMock.entrenador.findUnique.mockResolvedValue({
         idUsuario: entrenadorId,
@@ -178,7 +184,7 @@ describe('AlumnoEntrenadorService', () => {
       await expect(
         service.validatePLanYAlumnosLimites(entrenadorId, transactionClientMock),
       ).rejects.toThrow(
-        new UnauthorizedException('El entrenador ha alcanzado el límite de alumnos para su plan'),
+        new ForbiddenException('El entrenador ha alcanzado el límite de alumnos para su plan'),
       );
     });
   });
@@ -412,7 +418,7 @@ describe('AlumnoEntrenadorService', () => {
       expect(jest.mocked(bcrypt.compare)).not.toHaveBeenCalled();
     });
 
-    it('debe lanzar UnauthorizedException si la contraseña es incorrecta', async () => {
+    it('debe lanzar BadRequestException si la contraseña es incorrecta', async () => {
       transactionMock.usuario.findUnique.mockResolvedValue({
         id: alumnoId,
         role: UserRole.alumnoConEntrenador,
@@ -421,13 +427,13 @@ describe('AlumnoEntrenadorService', () => {
       jest.mocked(bcrypt.compare).mockResolvedValue(false);
 
       await expect(service.cancelarMiEntrenador(cancelarData, alumnoId)).rejects.toThrow(
-        new UnauthorizedException('Contraseña incorrecta'),
+        new BadRequestException('Contraseña incorrecta'),
       );
 
       expect(transactionMock.alumno.findUnique).not.toHaveBeenCalled();
     });
 
-    it('debe lanzar UnauthorizedException si el alumno no tiene entrenador asignado', async () => {
+    it('debe lanzar BadRequestException si el alumno no tiene entrenador asignado', async () => {
       transactionMock.usuario.findUnique.mockResolvedValue({
         id: alumnoId,
         role: UserRole.alumnoConEntrenador,
@@ -439,7 +445,7 @@ describe('AlumnoEntrenadorService', () => {
       });
 
       await expect(service.cancelarMiEntrenador(cancelarData, alumnoId)).rejects.toThrow(
-        new UnauthorizedException('El alumno no tiene un entrenador asignado'),
+        new BadRequestException('El alumno no tiene un entrenador asignado'),
       );
     });
   });
@@ -483,18 +489,18 @@ describe('AlumnoEntrenadorService', () => {
       expect(result).toEqual({ success: true, message: 'Alumno cancelado exitosamente' });
     });
 
-    it('debe lanzar UnauthorizedException si el usuario no es entrenador', async () => {
+    it('debe lanzar ForbiddenException si el usuario no es entrenador', async () => {
       transactionMock.usuario.findUnique.mockResolvedValueOnce({
         id: entrenadorId,
         role: UserRole.alumno,
       });
 
       await expect(service.cancelarAlumno(cancelarData, alumnoId, entrenadorId)).rejects.toThrow(
-        new UnauthorizedException('El usuario no es un entrenador válido'),
+        new ForbiddenException('El usuario no es un entrenador válido'),
       );
     });
 
-    it('debe lanzar UnauthorizedException si el entrenador no tiene asignado a este alumno', async () => {
+    it('debe lanzar ForbiddenException si el entrenador no tiene asignado a este alumno', async () => {
       transactionMock.usuario.findUnique
         .mockResolvedValueOnce({
           id: entrenadorId,
@@ -514,7 +520,7 @@ describe('AlumnoEntrenadorService', () => {
       });
 
       await expect(service.cancelarAlumno(cancelarData, alumnoId, entrenadorId)).rejects.toThrow(
-        new UnauthorizedException('El entrenador no tiene asignado a este alumno'),
+        new ForbiddenException('El entrenador no tiene asignado a este alumno'),
       );
     });
   });
@@ -602,20 +608,20 @@ describe('AlumnoEntrenadorService', () => {
       });
     });
 
-    it('debe lanzar UnauthorizedException si el usuario no es entrenador', async () => {
+    it('debe lanzar ForbiddenException si el usuario no es entrenador', async () => {
       transactionMock.usuario.findUnique.mockResolvedValue({
         id: entrenadorId,
         role: UserRole.alumno,
       });
 
       await expect(service.consumirToken(consumirData, entrenadorId)).rejects.toThrow(
-        new UnauthorizedException('El usuario no es un entrenador válido'),
+        new ForbiddenException('El usuario no es un entrenador válido'),
       );
 
       expect(transactionMock.tokenVinculacionAlumno.findFirst).not.toHaveBeenCalled();
     });
 
-    it('debe lanzar UnauthorizedException si el token no es válido', async () => {
+    it('debe lanzar BadRequestException si el token no es válido', async () => {
       transactionMock.usuario.findUnique.mockResolvedValue({
         id: entrenadorId,
         role: UserRole.entrenador,
@@ -632,7 +638,7 @@ describe('AlumnoEntrenadorService', () => {
       transactionMock.tokenVinculacionAlumno.findFirst.mockResolvedValue(null);
 
       await expect(service.consumirToken(consumirData, entrenadorId)).rejects.toThrow(
-        new UnauthorizedException('Token no válido o ya ha sido utilizado'),
+        new BadRequestException('Token no válido o ya ha sido utilizado'),
       );
     });
   });

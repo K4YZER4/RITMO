@@ -102,13 +102,15 @@ describe('Alumno-Entrenador (e2e)', () => {
     expect(alumna.token).toBeDefined();
   });
 
-  it('rechaza consumir un token inválido (401)', async () => {
+  it('rechaza consumir un token inválido sin cerrar la sesión (400)', async () => {
     const respuesta = await request(app.getHttpServer())
       .post('/alumno-entrenador/token/consumir')
       .set(auth(entrenadorToken))
       .send(consumirTokenPayload('CODIGO-INEXISTENTE', 'secreto-invalido'))
-      .expect(401);
+      .expect(400);
 
     expect(respuesta.body.code).toBe('HTTP_EXCEPTION');
+
+    await request(app.getHttpServer()).get('/perfil').set(auth(entrenadorToken)).expect(200);
   });
 });

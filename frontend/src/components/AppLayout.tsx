@@ -16,14 +16,16 @@ export function AppLayout() {
   });
   const trainer = profile?.role === 'entrenador';
   const items = [
-    { to: '/app', label: 'Inicio', icon: House },
-    ...(trainer
+    ...(profile ? [{ to: '/app', label: 'Inicio', icon: House }] : []),
+    ...(profile && trainer
       ? [
           { to: '/app/alumnos', label: 'Alumnos', icon: Users },
           { to: '/app/rutinas', label: 'Rutinas', icon: Dumbbell },
         ]
-      : [{ to: '/app/progreso', label: 'Progreso', icon: TrendingUp }]),
-    { to: '/app/perfil', label: 'Perfil', icon: UserRound },
+      : profile
+        ? [{ to: '/app/progreso', label: 'Progreso', icon: TrendingUp }]
+        : []),
+    ...(profile ? [{ to: '/app/perfil', label: 'Perfil', icon: UserRound }] : []),
   ];
   const logout = () => {
     void post('/auth/logout').catch(() => undefined);
