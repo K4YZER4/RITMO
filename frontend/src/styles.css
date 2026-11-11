@@ -835,6 +835,11 @@ p {
   flex-wrap: wrap;
   margin-top: 1rem;
 }
+.routine-grid .card-actions > .button,
+.exercise-library-grid .list-actions > .button {
+  width: 100%;
+  flex: 1 1 100%;
+}
 .modal.wide {
   max-width: 760px;
 }
