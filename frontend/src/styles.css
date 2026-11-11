@@ -1373,6 +1373,32 @@ p {
   gap: 5px;
   color: var(--muted);
 }
+.server-issue,
+.payment-result {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+}
+.server-issue p,
+.payment-result p {
+  max-width: 460px;
+  color: var(--muted);
+}
+.payment-result > svg {
+  width: 52px;
+  height: 52px;
+  color: var(--lime);
+}
+.archived-section {
+  margin-top: 28px;
+}
+.archived-card {
+  opacity: .72;
+}
 .progress-bar {
   height: 5px;
   background: #222a24;

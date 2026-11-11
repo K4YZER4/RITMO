@@ -26,6 +26,12 @@ export class EjerciciosController {
     return this.ejerciciosService.listarEjercicios(usuarioId, buscar);
   }
 
+  @Get('archivados')
+  @ApiOperation({ summary: 'Listar ejercicios personalizados archivados' })
+  listarEjerciciosArchivados(@CurrentUser('id') usuarioId: string) {
+    return this.ejerciciosService.listarEjerciciosArchivados(usuarioId);
+  }
+
   @Post()
   @ApiOperation({
     summary: 'Crear ejercicio personalizado',

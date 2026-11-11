@@ -16,15 +16,34 @@ import { get, post } from '../lib/api';
 import type { Profile } from '../lib/types';
 import { ConfirmActionModal } from './ConfirmActionModal';
 import { clearWorkoutDrafts } from '../lib/workoutDraft';
+import { Loading } from './Ui';
 
 export function AppLayout() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [confirmLogout, setConfirmLogout] = useState(false);
-  const { data: profile } = useQuery({
+  const {
+    data: profile,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ['profile'],
     queryFn: () => get<Profile>('/perfil'),
   });
+  if (isLoading) return <Loading />;
+  if (isError || !profile) {
+    return (
+      <div className="server-issue">
+        <span className="eyebrow">RITMO</span>
+        <h1>Problemas con el servidor</h1>
+        <p>No pudimos cargar tu cuenta. Revisa la conexión e inténtalo de nuevo.</p>
+        <button className="button primary" onClick={() => void refetch()}>
+          Reintentar
+        </button>
+      </div>
+    );
+  }
   const trainer = profile?.role === 'entrenador';
   const items = [
     ...(profile ? [{ to: '/app', label: 'Inicio', icon: House }] : []),
