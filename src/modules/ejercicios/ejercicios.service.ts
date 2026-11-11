@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateEjercicioPersonalizadoDto } from './dto/create-ejercicio.dto';
 import { UpdateEjercicioPersonalizadoDto } from './dto/update-ejercicio.dto';
-import { NotFoundException, ForbiddenException } from '@nestjs/common/exceptions';
+import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 @Injectable()
@@ -138,6 +138,11 @@ export class EjerciciosService {
       where: {
         id: id,
       },
+      include: {
+        rutinaEjercicio: { include: { rutina: { select: { nombre: true } } } },
+        sesionEjercicio: { select: { id: true } },
+        alumnoEjercicioPr: { select: { id: true } },
+      },
     });
     if (!ejercicioPersonalizado) {
       throw new NotFoundException('Ejercicio personalizado no encontrado');
@@ -145,15 +150,36 @@ export class EjerciciosService {
     if (ejercicioPersonalizado.createdByUsuario !== usuarioId) {
       throw new ForbiddenException('No tienes permiso para eliminar este ejercicio personalizado');
     }
+    const rutinasUsadas = ejercicioPersonalizado.rutinaEjercicio ?? [];
+    if (rutinasUsadas.length) {
+      const rutinas = rutinasUsadas.map((item) => item.rutina.nombre);
+      throw new ConflictException(
+        `Desvincula primero el ejercicio de estas rutinas: ${rutinas.join(', ')}`,
+      );
+    }
+    if (ejercicioPersonalizado.activa === false) {
+      if (
+        (ejercicioPersonalizado.sesionEjercicio ?? []).length ||
+        (ejercicioPersonalizado.alumnoEjercicioPr ?? []).length
+      ) {
+        throw new ConflictException(
+          'El ejercicio tiene historial de sesiones o récords y no puede eliminarse definitivamente.',
+        );
+      }
+      await this.prisma.$transaction(async (tx) => {
+        await tx.ejercicioPersonalizadoMusculo.deleteMany({
+          where: { idEjercicioPersonalizado: id },
+        });
+        await tx.ejercicioPersonalizadoEquipo.deleteMany({
+          where: { idEjercicioPersonalizado: id },
+        });
+        await tx.ejercicioPersonalizado.delete({ where: { id } });
+      });
+      return { success: true, message: 'Ejercicio personalizado eliminado definitivamente' };
+    }
     await this.prisma.ejercicioPersonalizado.update({
-      where: {
-        id: id,
-        createdByUsuario: usuarioId,
-        activa: true,
-      },
-      data: {
-        activa: false,
-      },
+      where: { id, createdByUsuario: usuarioId, activa: true },
+      data: { activa: false },
     });
     return {
       success: true,

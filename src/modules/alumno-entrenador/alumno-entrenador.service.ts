@@ -107,6 +107,12 @@ export class AlumnoEntrenadorService {
       },
       data: { activo: false, fechaFin: new Date(), motivoCambio },
     });
+    if (tx.usuarioRutina) {
+      await tx.usuarioRutina.updateMany({
+        where: { idUsuario: idAlumno, activa: true },
+        data: { activa: false, fechaFin: new Date(), motivoCambio, updatedBy: actualizadoPor },
+      });
+    }
     await tx.alumno.update({
       where: {
         idUsuario: idAlumno,

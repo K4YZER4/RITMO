@@ -7,6 +7,7 @@ export function ConfirmActionModal({
   onClose,
   onConfirm,
   busy = false,
+  error,
 }: {
   title: string;
   description: string;
@@ -14,6 +15,7 @@ export function ConfirmActionModal({
   onClose: () => void;
   onConfirm: () => void;
   busy?: boolean;
+  error?: string;
 }) {
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -32,6 +34,7 @@ export function ConfirmActionModal({
         <span className="eyebrow">CONFIRMAR ACCIÓN</span>
         <h2>{title}</h2>
         <p>{description}</p>
+        {error && <div className="error">{error}</div>}
         <div className="modal-actions">
           <button type="button" className="button ghost" onClick={onClose}>
             Cancelar

@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Card, Empty, Loading, Page } from '../components/Ui';
 import { SelectMenu } from '../components/SelectMenu';
 import { DateField } from '../components/DateField';
-import { get, post, patch } from '../lib/api';
+import { del, get, post, patch } from '../lib/api';
 import type { Catalogs, ExerciseLibrary, Routine, Student } from '../lib/types';
 import { CreateExerciseModal } from '../components/CreateExerciseModal';
 import { ExercisePicker } from '../components/ExercisePicker';
@@ -33,6 +33,7 @@ export function Routines() {
   const [start, setStart] = useState(new Date().toISOString().slice(0, 10));
   const [end, setEnd] = useState('');
   const [createExerciseOpen, setCreateExerciseOpen] = useState(false);
+  const [archivedTarget, setArchivedTarget] = useState<Routine | null>(null);
   const { data, isLoading, isError } = useQuery({
     queryKey: ['routines'],
     queryFn: () => get<Routine[]>('/rutinas'),
@@ -55,6 +56,11 @@ export function Routines() {
     queryKey: ['routine', selected?.id],
     queryFn: () => get<Routine>(`/rutinas/${selected?.id}`),
     enabled: Boolean(selected?.id),
+  });
+  const { data: archivedDetail } = useQuery({
+    queryKey: ['archived-routine', archivedTarget?.id],
+    queryFn: () => get<Routine>(`/rutinas/${archivedTarget?.id}`),
+    enabled: Boolean(archivedTarget?.id),
   });
   const { data: students } = useQuery({
     queryKey: ['students'],
@@ -119,6 +125,30 @@ export function Routines() {
   const archive = useMutation({
     mutationFn: (routineId: string) => patch(`/rutinas/${routineId}/archivar`, {}),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['routines'] }),
+  });
+  const restore = useMutation({
+    mutationFn: (routineId: string) => patch(`/rutinas/${routineId}/restaurar`, {}),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['routines'] }),
+        qc.invalidateQueries({ queryKey: ['archived-routines'] }),
+        qc.invalidateQueries({ queryKey: ['archived-routine', archivedTarget?.id] }),
+      ]);
+    },
+  });
+  const unlinkArchived = useMutation({
+    mutationFn: (assignmentId: string) => del(`/rutinas/asignaciones/${assignmentId}`),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['archived-routines'] });
+      await qc.invalidateQueries({ queryKey: ['archived-routine', archivedTarget?.id] });
+    },
+  });
+  const deleteArchived = useMutation({
+    mutationFn: (routineId: string) => del(`/rutinas/${routineId}`),
+    onSuccess: async () => {
+      setArchivedTarget(null);
+      await qc.invalidateQueries({ queryKey: ['archived-routines'] });
+    },
   });
   useEffect(() => {
     if (routineDetail?.rutinaEjercicio) {
@@ -240,6 +270,14 @@ export function Routines() {
                   <span>
                     <b>{routine._count?.usuarioRutina || 0}</b> asignaciones históricas
                   </span>
+                </div>
+                <div className="card-actions">
+                  <button className="button primary" onClick={() => restore.mutate(routine.id)}>
+                    Recuperar
+                  </button>
+                  <button className="button danger" onClick={() => setArchivedTarget(routine)}>
+                    Eliminar definitivamente
+                  </button>
                 </div>
               </Card>
             ))}
@@ -413,6 +451,55 @@ export function Routines() {
             >
               <Save /> Guardar ejercicios
             </button>
+          </section>
+        </div>
+      )}
+      {archivedTarget && (
+        <div className="modal-backdrop" onClick={() => setArchivedTarget(null)}>
+          <section className="modal" onClick={(event) => event.stopPropagation()}>
+            <button className="modal-close" onClick={() => setArchivedTarget(null)}>
+              <X />
+            </button>
+            <span className="eyebrow">RUTINA ARCHIVADA</span>
+            <h2>{archivedTarget.nombre}</h2>
+            {archivedDetail?.usuarioRutina?.filter((item) => item.activa).length ? (
+              <>
+                <p>Debes desvincular primero a estos alumnos:</p>
+                <div className="assignment-warning-list">
+                  {archivedDetail.usuarioRutina
+                    .filter((item) => item.activa)
+                    .map((assignment) => (
+                      <div className="list-row" key={assignment.id}>
+                        <div>
+                          <b>
+                            {assignment.usuario.nombre} {assignment.usuario.apellidoPaterno}
+                          </b>
+                          <small>{assignment.diaSemana.nombre}</small>
+                        </div>
+                        <button
+                          className="button danger compact"
+                          disabled={unlinkArchived.isPending}
+                          onClick={() => unlinkArchived.mutate(assignment.id)}
+                        >
+                          Desvincular
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <p>Esta acción es definitiva y no se puede deshacer.</p>
+                <button
+                  className="button danger full"
+                  disabled={deleteArchived.isPending}
+                  onClick={() => deleteArchived.mutate(archivedTarget.id)}
+                >
+                  {deleteArchived.isPending ? 'Eliminando…' : 'Eliminar definitivamente'}
+                </button>
+              </>
+            )}
+            {deleteArchived.error && <div className="error">{deleteArchived.error.message}</div>}
           </section>
         </div>
       )}
