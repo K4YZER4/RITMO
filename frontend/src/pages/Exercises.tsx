@@ -1,18 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Dumbbell, Plus, X } from 'lucide-react';
+import { Dumbbell, Edit3, Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import { Card, Empty, Loading, Page } from '../components/Ui';
 import { SelectMenu } from '../components/SelectMenu';
-import { get, post } from '../lib/api';
+import { del, get, patch, post } from '../lib/api';
+import { ConfirmActionModal } from '../components/ConfirmActionModal';
 import type { Catalogs, ExerciseLibrary } from '../lib/types';
 
 export function Exercises() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<ExerciseLibrary['personalizados'][number] | null>(null);
+  const [archiveTarget, setArchiveTarget] = useState<
+    ExerciseLibrary['personalizados'][number] | null
+  >(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [muscles, setMuscles] = useState<string[]>([]);
   const [equipment, setEquipment] = useState<string[]>([]);
+  const [image, setImage] = useState('');
+  const [informationLink, setInformationLink] = useState('');
   const catalogs = useQuery({ queryKey: ['catalogs'], queryFn: () => get<Catalogs>('/catalogos') });
   const exercises = useQuery({
     queryKey: ['exercises'],
@@ -30,13 +37,51 @@ export function Exercises() {
       }),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ['exercises'] });
-      setOpen(false);
-      setName('');
-      setDescription('');
-      setMuscles([]);
-      setEquipment([]);
+      closeForm();
     },
   });
+  const update = useMutation({
+    mutationFn: () =>
+      patch(`/ejerciciosPersonalizados/${editing?.id}`, {
+        nombre: name,
+        descripcion: description,
+        ...(image ? { url_imagen: image } : {}),
+        ...(informationLink ? { link_informacion: informationLink } : {}),
+        musculos: muscles.map(Number),
+        equipos: equipment.map(Number),
+      }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['exercises'] });
+      closeForm();
+    },
+  });
+  const remove = useMutation({
+    mutationFn: (id: string) => del(`/ejerciciosPersonalizados/${id}`),
+    onSuccess: async () => {
+      setArchiveTarget(null);
+      await qc.invalidateQueries({ queryKey: ['exercises'] });
+    },
+  });
+  const closeForm = () => {
+    setOpen(false);
+    setEditing(null);
+    setName('');
+    setDescription('');
+    setMuscles([]);
+    setEquipment([]);
+    setImage('');
+    setInformationLink('');
+  };
+  const editExercise = (exercise: ExerciseLibrary['personalizados'][number]) => {
+    setEditing(exercise);
+    setName(exercise.nombre);
+    setDescription(exercise.descripcion || '');
+    setImage(exercise.urlImagen || '');
+    setInformationLink(exercise.linkInformacion || '');
+    setMuscles((exercise.ejercicioPersonalizadoMusculo || []).map((item) => item.musculo.id));
+    setEquipment((exercise.ejercicioPersonalizadoEquipo || []).map((item) => item.equipo.id));
+    setOpen(true);
+  };
   if (exercises.isLoading) return <Loading />;
   return (
     <Page
@@ -67,6 +112,22 @@ export function Exercises() {
             </div>
             <h2>{exercise.nombre}</h2>
             <p>{exercise.descripcion || 'Sin descripción'}</p>
+            <div className="list-actions">
+              <button
+                type="button"
+                className="button ghost compact"
+                onClick={() => editExercise(exercise)}
+              >
+                <Edit3 size={15} /> Editar
+              </button>
+              <button
+                type="button"
+                className="button danger compact"
+                onClick={() => setArchiveTarget(exercise)}
+              >
+                <Trash2 size={15} /> Archivar
+              </button>
+            </div>
             <div className="exercise-use-list">
               <span className="eyebrow">USADO EN</span>
               {exercise.rutinaEjercicio?.filter((item) => item.rutina.activa).length ? (
@@ -84,7 +145,7 @@ export function Exercises() {
         <Empty>Aún no tienes ejercicios personalizados. Crea el primero.</Empty>
       )}
       {open && (
-        <div className="modal-backdrop" onClick={() => setOpen(false)}>
+        <div className="modal-backdrop" onClick={closeForm}>
           <form
             className="modal"
             onSubmit={(event) => {
@@ -97,10 +158,22 @@ export function Exercises() {
               <X />
             </button>
             <span className="eyebrow">BIBLIOTECA PERSONAL</span>
-            <h2>Nuevo ejercicio</h2>
+            <h2>{editing ? 'Editar ejercicio' : 'Nuevo ejercicio'}</h2>
             <label>
               Nombre
               <input value={name} onChange={(event) => setName(event.target.value)} required />
+            </label>
+            <label>
+              URL de imagen opcional
+              <input type="url" value={image} onChange={(event) => setImage(event.target.value)} />
+            </label>
+            <label>
+              Link informativo opcional
+              <input
+                type="url"
+                value={informationLink}
+                onChange={(event) => setInformationLink(event.target.value)}
+              />
             </label>
             <label>
               Descripción
@@ -156,12 +229,27 @@ export function Exercises() {
                 </button>
               ))}
             </div>
-            {create.error && <div className="error">{create.error.message}</div>}
-            <button className="button primary full" disabled={!muscles.length || create.isPending}>
-              {create.isPending ? 'Guardando…' : 'Guardar ejercicio'}
+            {(create.error || update.error) && (
+              <div className="error">{(create.error || update.error)?.message}</div>
+            )}
+            <button
+              className="button primary full"
+              disabled={!muscles.length || create.isPending || update.isPending}
+            >
+              {create.isPending || update.isPending ? 'Guardando…' : 'Guardar ejercicio'}
             </button>
           </form>
         </div>
+      )}
+      {archiveTarget && (
+        <ConfirmActionModal
+          title={`¿Archivar ${archiveTarget.nombre}?`}
+          description="Se quitará de tu biblioteca, pero se conservarán las rutinas, sesiones y récords históricos."
+          confirmLabel="Archivar ejercicio"
+          busy={remove.isPending}
+          onClose={() => setArchiveTarget(null)}
+          onConfirm={() => remove.mutate(archiveTarget.id)}
+        />
       )}
     </Page>
   );

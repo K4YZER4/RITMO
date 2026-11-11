@@ -11,6 +11,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import { StudentDetail } from './pages/StudentDetail';
 import { Register } from './pages/Register';
 import { Exercises } from './pages/Exercises';
+import { PlanPage } from './pages/PlanPage';
 
 function Protected() {
   return localStorage.getItem('ritmo_token') ? <AppLayout /> : <Navigate to="/login" replace />;
@@ -30,6 +31,7 @@ export function App() {
         <Route path="/app/entrenar/:id" element={<Workout />} />
         <Route path="/app/progreso" element={<Progress />} />
         <Route path="/app/perfil" element={<ProfilePage />} />
+        <Route path="/app/plan" element={<PlanPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
