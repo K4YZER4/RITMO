@@ -10,6 +10,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: DEMO_MODE
+        value: true
       - key: NODE_VERSION
         value: 24
       - key: DATABASE_URL
@@ -39,6 +41,8 @@ services:
     envVars:
       - key: VITE_API_URL
         sync: false
+      - key: VITE_DEMO_MODE
+        value: true
     routes:
       - type: rewrite
         source: /*

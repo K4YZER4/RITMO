@@ -1,9 +1,11 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   OnApplicationBootstrap,
   OnApplicationShutdown,
+  Optional,
   UnauthorizedException,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
@@ -18,12 +20,15 @@ import { DB_SEXO_IDS } from '../../common/constants/db-sexo';
 import { UserRole } from '@prisma/client';
 import { SuscripcionesService } from '../suscripciones/suscripciones.service';
 import { withTransactionRetry } from '../../common/utils/transaction-retry';
+import { ConfigService } from '@nestjs/config';
+import type { Env } from '../../config/env.schema';
 @Injectable()
 export class AuthService implements OnApplicationBootstrap, OnApplicationShutdown {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly suscripcionesService: SuscripcionesService,
+    @Optional() private readonly configService?: ConfigService<Env, true>,
   ) {}
 
   private readonly seedHash: number = 10;
@@ -65,6 +70,7 @@ export class AuthService implements OnApplicationBootstrap, OnApplicationShutdow
   // Register Entrenador method
   //
   async registerEntrenador(registerData: RegisterEntrenadorDto) {
+    this.validarRegistroDisponible();
     const hashedPassword = await bcrypt.hash(registerData.password, this.seedHash);
     const idSexo = registerData.sexo === 'MASCULINO' ? DB_SEXO_IDS.MASCULINO : DB_SEXO_IDS.FEMENINO;
 
@@ -167,6 +173,7 @@ export class AuthService implements OnApplicationBootstrap, OnApplicationShutdow
   // Register Alumno method
   //
   async registerAlumno(registerData: RegisterAlumnoDto) {
+    this.validarRegistroDisponible();
     const hashedPassword = await bcrypt.hash(registerData.password, this.seedHash);
     const idSexo = registerData.sexo === 'MASCULINO' ? DB_SEXO_IDS.MASCULINO : DB_SEXO_IDS.FEMENINO;
 
@@ -269,6 +276,14 @@ export class AuthService implements OnApplicationBootstrap, OnApplicationShutdow
       pagoId: pagoId.toString(),
       suscripcionId: resultado.suscripcion.id.toString(),
     };
+  }
+
+  private validarRegistroDisponible() {
+    if (this.configService?.get('DEMO_MODE', { infer: true })) {
+      throw new ForbiddenException(
+        'Esta es una demo. La API de creación de usuarios está desactivada.',
+      );
+    }
   }
 
   private normalizarCorreo(correo: string): string {

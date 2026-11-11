@@ -6,6 +6,7 @@ import type { Catalogs } from '../lib/types';
 import { useQuery } from '@tanstack/react-query';
 
 export function Register() {
+  const demoMode = import.meta.env.VITE_DEMO_MODE !== 'false';
   const nav = useNavigate();
   const [role, setRole] = useState<'entrenador' | 'alumno'>('entrenador');
   const [form, setForm] = useState<Record<string, string>>({
@@ -30,6 +31,12 @@ export function Register() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     setError('');
+    if (demoMode) {
+      setError(
+        'Esta es una demo. La API de crear usuario ha sido desactivada. Usa una cuenta demo desde el login.',
+      );
+      return;
+    }
     try {
       const payload = {
         ...form,
@@ -211,7 +218,17 @@ export function Register() {
           </p>
         )}
         {error && <div className="error">{error}</div>}
-        <button className="button primary full">Crear cuenta</button>
+        {demoMode && (
+          <div className="demo-disabled-notice">
+            <b>Modo demostración</b>
+            <span>
+              El registro está desactivado. Puedes explorar la aplicación con las cuentas demo.
+            </span>
+          </div>
+        )}
+        <button className="button primary full">
+          {demoMode ? 'Registro desactivado en demo' : 'Crear cuenta'}
+        </button>
       </form>
     </div>
   );
