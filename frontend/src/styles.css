@@ -634,17 +634,28 @@ p {
   border-radius: 7px;
   margin: 12px 0;
 }
-.demo-switch {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
+.demo-credentials {
+  display: grid;
+  gap: 8px;
   margin-top: 20px;
 }
-.demo-switch button {
-  border: 0;
-  background: none;
+.demo-credentials button {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 12px;
+  color: #fff;
+  background: #ffffff08;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  text-align: left;
+}
+.demo-credentials button:hover {
+  border-color: var(--lime);
+}
+.demo-credentials small {
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
 }
 .app-shell {
   min-height: 100vh;

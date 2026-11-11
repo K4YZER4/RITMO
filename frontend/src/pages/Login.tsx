@@ -4,10 +4,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { post } from '../lib/api';
 import { useQueryClient } from '@tanstack/react-query';
 export function Login() {
+  const demoPassword = 'RitmoDemo2026!';
   const nav = useNavigate();
   const qc = useQueryClient();
   const [email, setEmail] = useState('demo.entrenador@ritmo.app');
-  const [password, setPassword] = useState('RitmoDemo2026!');
+  const [password, setPassword] = useState(demoPassword);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   async function submit(e: FormEvent) {
@@ -56,12 +57,29 @@ export function Login() {
         <button className="button primary full" disabled={busy}>
           {busy ? 'Entrando…' : 'Iniciar sesión'}
         </button>
-        <div className="demo-switch">
-          <button type="button" onClick={() => setEmail('demo.entrenador@ritmo.app')}>
-            Demo entrenador
+        <div className="demo-credentials">
+          <span className="eyebrow">CUENTAS PARA PROBAR LA DEMO</span>
+          <button
+            type="button"
+            onClick={() => {
+              setEmail('demo.entrenador@ritmo.app');
+              setPassword(demoPassword);
+            }}
+          >
+            <b>Entrenador</b>
+            <small>demo.entrenador@ritmo.app</small>
+            <small>Contraseña: {demoPassword}</small>
           </button>
-          <button type="button" onClick={() => setEmail('demo.alumno@ritmo.app')}>
-            Demo alumno
+          <button
+            type="button"
+            onClick={() => {
+              setEmail('demo.alumno@ritmo.app');
+              setPassword(demoPassword);
+            }}
+          >
+            <b>Alumno</b>
+            <small>demo.alumno@ritmo.app</small>
+            <small>Contraseña: {demoPassword}</small>
           </button>
         </div>
         <p className="auth-footer">
