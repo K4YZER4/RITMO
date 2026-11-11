@@ -4,7 +4,12 @@ import { CreateRutinaDto } from './dto/create-rutina.dto';
 import { AsignarRutinaDto } from './dto/asignar-rutina.dto';
 import { ActualizarAsignacionDto } from './dto/actualizar-asignacion.dto';
 import { PrismaService } from '../../prisma/prisma.service';
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { UserRole } from '@prisma/client';
 import { withTransactionRetry } from '../../common/utils/transaction-retry';
@@ -222,12 +227,56 @@ export class RutinasService {
       }
       if (!rutina.activa) return { success: true, message: 'La rutina ya estaba archivada' };
       await tx.rutina.update({ where: { id: idRutina }, data: { activa: false } });
-      await tx.usuarioRutina.updateMany({
-        where: { idRutina, activa: true },
-        data: { activa: false, fechaFin: new Date() },
-      });
       return { success: true, message: 'Rutina archivada correctamente' };
     });
+  }
+
+  async restaurar(idRutina: bigint, usuarioId: string) {
+    const rutina = await this.prisma.rutina.findFirst({
+      where: { id: idRutina, createdByUsuario: usuarioId, activa: false },
+    });
+    if (!rutina) throw new NotFoundException('Rutina archivada no encontrada');
+    await this.prisma.rutina.update({ where: { id: idRutina }, data: { activa: true } });
+    return { success: true, message: 'Rutina recuperada correctamente' };
+  }
+
+  async eliminarArchivada(idRutina: bigint, usuarioId: string) {
+    const rutina = await this.prisma.rutina.findFirst({
+      where: { id: idRutina, createdByUsuario: usuarioId, activa: false },
+      include: {
+        usuarioRutina: {
+          where: { activa: true },
+          include: {
+            diaSemana: true,
+            usuario: { select: { nombre: true, apellidoPaterno: true } },
+          },
+        },
+        _count: { select: { sesionEntrenamiento: true } },
+      },
+    });
+    if (!rutina) throw new NotFoundException('Rutina archivada no encontrada');
+    if (rutina.usuarioRutina.length) {
+      const alumnos = rutina.usuarioRutina.map(
+        (item) =>
+          `${item.usuario.nombre} ${item.usuario.apellidoPaterno} (${item.diaSemana.nombre})`,
+      );
+      throw new ConflictException(`Desvincula primero a estos alumnos: ${alumnos.join(', ')}`);
+    }
+    if (rutina._count.sesionEntrenamiento) {
+      throw new ConflictException(
+        'La rutina tiene sesiones históricas y no puede eliminarse definitivamente; consérvala archivada.',
+      );
+    }
+    await this.prisma.$transaction(async (tx) => {
+      await tx.usuarioRutinaEjercicioOverride.deleteMany({
+        where: { usuarioRutina: { idRutina } },
+      });
+      await tx.usuarioRutina.deleteMany({ where: { idRutina } });
+      await tx.rutinaSemanaDia.deleteMany({ where: { idRutina } });
+      await tx.rutinaEjercicio.deleteMany({ where: { idRutina } });
+      await tx.rutina.delete({ where: { id: idRutina } });
+    });
+    return { success: true, message: 'Rutina eliminada definitivamente' };
   }
   //
   // Assign routine to student method

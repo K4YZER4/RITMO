@@ -88,6 +88,18 @@ export class RutinasController {
     return this.rutinasService.archivar(id, usuarioId);
   }
 
+  @Patch(':id/restaurar')
+  @ApiOperation({ summary: 'Recuperar una rutina archivada' })
+  restaurar(@Param('id', ParseBigIntPipe) id: bigint, @CurrentUser('id') usuarioId: string) {
+    return this.rutinasService.restaurar(id, usuarioId);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Eliminar definitivamente una rutina archivada sin historial' })
+  eliminar(@Param('id', ParseBigIntPipe) id: bigint, @CurrentUser('id') usuarioId: string) {
+    return this.rutinasService.eliminarArchivada(id, usuarioId);
+  }
+
   @Post(':id/asignaciones')
   @ApiOperation({
     summary: 'Asignar rutina a un alumno',

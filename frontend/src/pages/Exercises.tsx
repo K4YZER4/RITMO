@@ -14,6 +14,9 @@ export function Exercises() {
   const [archiveTarget, setArchiveTarget] = useState<
     ExerciseLibrary['personalizados'][number] | null
   >(null);
+  const [deleteTarget, setDeleteTarget] = useState<
+    ExerciseLibrary['personalizados'][number] | null
+  >(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [muscles, setMuscles] = useState<string[]>([]);
@@ -64,7 +67,17 @@ export function Exercises() {
     mutationFn: (id: string) => del(`/ejerciciosPersonalizados/${id}`),
     onSuccess: async () => {
       setArchiveTarget(null);
-      await qc.invalidateQueries({ queryKey: ['exercises'] });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['exercises'] }),
+        qc.invalidateQueries({ queryKey: ['archived-exercises'] }),
+      ]);
+    },
+  });
+  const deleteArchived = useMutation({
+    mutationFn: (id: string) => del(`/ejerciciosPersonalizados/${id}`),
+    onSuccess: async () => {
+      setDeleteTarget(null);
+      await qc.invalidateQueries({ queryKey: ['archived-exercises'] });
     },
   });
   const closeForm = () => {
@@ -167,6 +180,13 @@ export function Exercises() {
                 <h2>{exercise.nombre}</h2>
                 <p>{exercise.descripcion || 'Sin descripción'}</p>
                 <small className="muted">Solo lectura · Se conserva el historial.</small>
+                <button
+                  type="button"
+                  className="button danger compact"
+                  onClick={() => setDeleteTarget(exercise)}
+                >
+                  <Trash2 size={15} /> Eliminar definitivamente
+                </button>
               </Card>
             ))}
           </div>
@@ -277,8 +297,20 @@ export function Exercises() {
           description="Se quitará de tu biblioteca, pero se conservarán las rutinas, sesiones y récords históricos."
           confirmLabel="Archivar ejercicio"
           busy={remove.isPending}
+          error={remove.error instanceof Error ? remove.error.message : undefined}
           onClose={() => setArchiveTarget(null)}
           onConfirm={() => remove.mutate(archiveTarget.id)}
+        />
+      )}
+      {deleteTarget && (
+        <ConfirmActionModal
+          title={`¿Eliminar ${deleteTarget.nombre} definitivamente?`}
+          description="Solo se eliminará si ya no pertenece a ninguna rutina ni tiene historial. Esta acción no se puede deshacer."
+          confirmLabel="Eliminar definitivamente"
+          busy={deleteArchived.isPending}
+          error={deleteArchived.error instanceof Error ? deleteArchived.error.message : undefined}
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={() => deleteArchived.mutate(deleteTarget.id)}
         />
       )}
     </Page>

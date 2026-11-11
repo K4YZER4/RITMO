@@ -20,6 +20,13 @@ export type Routine = {
   activa: boolean;
   _count?: { rutinaEjercicio: number; usuarioRutina: number };
   categoriaRutina?: { id: number; nombre: string };
+  usuarioRutina?: Array<{
+    id: string;
+    idDiaSemana: number;
+    activa: boolean;
+    usuario: { id: string; nombre: string; apellidoPaterno: string };
+    diaSemana: { nombre: string };
+  }>;
   rutinaEjercicio?: Array<{
     id: string;
     orden: number;
