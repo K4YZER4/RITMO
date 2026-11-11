@@ -589,6 +589,10 @@ p {
   border-radius: 18px;
   box-shadow: 0 30px 90px #000;
 }
+.register-card {
+  width: min(720px, 100%);
+  margin: 28px 0;
+}
 .auth-logo {
   font: 700 22px 'Space Grotesk';
   display: flex;
@@ -932,6 +936,9 @@ p {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
+}
+.register-card .form-grid label {
+  margin: 10px 0;
 }
 .auth-footer {
   text-align: center;
