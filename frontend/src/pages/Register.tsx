@@ -2,6 +2,7 @@ import { FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { post } from '../lib/api';
 import { get } from '../lib/api';
+import { SelectMenu } from '../components/SelectMenu';
 import type { Catalogs } from '../lib/types';
 import { useQuery } from '@tanstack/react-query';
 
@@ -110,10 +111,15 @@ export function Register() {
           </label>
           <label>
             Sexo
-            <select value={form.sexo} onChange={(e) => update('sexo', e.target.value)}>
-              <option>MASCULINO</option>
-              <option>FEMENINO</option>
-            </select>
+            <SelectMenu
+              value={form.sexo}
+              placeholder="Selecciona tu sexo"
+              options={[
+                { value: 'MASCULINO', label: 'Masculino' },
+                { value: 'FEMENINO', label: 'Femenino' },
+              ]}
+              onChange={(value) => update('sexo', value)}
+            />
           </label>
           <label>
             Correo
@@ -184,29 +190,27 @@ export function Register() {
               </label>
               <label>
                 Objetivo
-                <select
+                <SelectMenu
                   value={form.id_objetivo}
-                  onChange={(e) => update('id_objetivo', e.target.value)}
-                >
-                  {catalogs?.objetivos.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.nombre}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="Selecciona tu objetivo"
+                  options={(catalogs?.objetivos || []).map((item) => ({
+                    value: String(item.id),
+                    label: item.nombre,
+                  }))}
+                  onChange={(value) => update('id_objetivo', value)}
+                />
               </label>
               <label>
                 Nivel de actividad
-                <select
+                <SelectMenu
                   value={form.id_nivel_actividad}
-                  onChange={(e) => update('id_nivel_actividad', e.target.value)}
-                >
-                  {catalogs?.nivelesActividad.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.nombre}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="Selecciona tu nivel"
+                  options={(catalogs?.nivelesActividad || []).map((item) => ({
+                    value: String(item.id),
+                    label: item.nombre,
+                  }))}
+                  onChange={(value) => update('id_nivel_actividad', value)}
+                />
               </label>
             </>
           )}
