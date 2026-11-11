@@ -634,6 +634,20 @@ p {
   border-radius: 7px;
   margin: 12px 0;
 }
+.demo-disabled-notice {
+  display: grid;
+  gap: 5px;
+  margin: 14px 0;
+  padding: 13px;
+  color: #d9f7ad;
+  background: #b7f34a12;
+  border: 1px solid #b7f34a44;
+  border-radius: 9px;
+  font-size: 0.82rem;
+}
+.demo-disabled-notice span {
+  color: var(--muted);
+}
 .demo-credentials {
   display: grid;
   gap: 8px;
