@@ -67,6 +67,24 @@ export class EjerciciosService {
     return { estandar, personalizados };
   }
 
+  listarEjerciciosArchivados(usuarioId: string) {
+    return this.prisma.ejercicioPersonalizado.findMany({
+      where: { createdByUsuario: usuarioId, activa: false },
+      orderBy: { nombre: 'asc' },
+      include: {
+        ejercicioPersonalizadoMusculo: { include: { musculo: true } },
+        ejercicioPersonalizadoEquipo: { include: { equipo: true } },
+        rutinaEjercicio: {
+          select: {
+            id: true,
+            idRutina: true,
+            rutina: { select: { id: true, nombre: true, activa: true } },
+          },
+        },
+      },
+    });
+  }
+
   async createEjercicioPersonalizado(
     createEjercicioPersonalizadoDto: CreateEjercicioPersonalizadoDto,
     usuarioId: string,

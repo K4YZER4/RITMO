@@ -27,6 +27,11 @@ export function Exercises() {
     staleTime: 5 * 60 * 1000,
     placeholderData: () => qc.getQueryData<ExerciseLibrary>(['exercises']),
   });
+  const archived = useQuery({
+    queryKey: ['archived-exercises'],
+    queryFn: () => get<ExerciseLibrary['personalizados']>('/ejercicios/archivados'),
+    staleTime: 5 * 60 * 1000,
+  });
   const create = useMutation({
     mutationFn: () =>
       post('/ejerciciosPersonalizados', {
@@ -144,6 +149,31 @@ export function Exercises() {
       {!exercises.data?.personalizados.length && (
         <Empty>Aún no tienes ejercicios personalizados. Crea el primero.</Empty>
       )}
+      <section className="archived-section">
+        <div className="card-head">
+          <div>
+            <span className="eyebrow">HISTORIAL</span>
+            <h2>Ejercicios archivados</h2>
+          </div>
+          <small>{archived.data?.length || 0} archivados</small>
+        </div>
+        {archived.data?.length ? (
+          <div className="exercise-library-grid">
+            {archived.data.map((exercise) => (
+              <Card key={exercise.id} className="archived-card">
+                <div className="routine-icon">
+                  <Dumbbell />
+                </div>
+                <h2>{exercise.nombre}</h2>
+                <p>{exercise.descripcion || 'Sin descripción'}</p>
+                <small className="muted">Solo lectura · Se conserva el historial.</small>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Empty>No hay ejercicios archivados.</Empty>
+        )}
+      </section>
       {open && (
         <div className="modal-backdrop" onClick={closeForm}>
           <form
