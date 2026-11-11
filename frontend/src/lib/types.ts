@@ -38,6 +38,20 @@ export type Catalogs = {
   equipos: Array<{ id: string; nombre: string }>;
   objetivos: Array<{ id: number; nombre: string }>;
   nivelesActividad: Array<{ id: number; nombre: string }>;
+  planesAlumno: Plan[];
+  planesEntrenador: Plan[];
+};
+export type Plan = {
+  id: number;
+  nombre: string;
+  descripcion?: string;
+  precio: string;
+  moneda: string;
+  esGratuito: boolean;
+  esVitalicio: boolean;
+  limiteEjerciciosPersonalizados?: number;
+  limiteRutinas?: number;
+  limiteAlumnos?: number;
 };
 export type ExerciseLibrary = {
   estandar: Array<ExerciseLibraryItem>;
@@ -47,6 +61,9 @@ export type ExerciseLibraryItem = {
   id: string;
   nombre: string;
   descripcion?: string;
+  urlImagen?: string;
+  linkInformacion?: string;
+  activa?: boolean;
   ejercicioEstandarMusculo?: Array<{ musculo: { id: string; nombre: string } }>;
   ejercicioEstandarEquipo?: Array<{ equipo: { id: string; nombre: string } }>;
   ejercicioPersonalizadoMusculo?: Array<{ musculo: { id: string; nombre: string } }>;

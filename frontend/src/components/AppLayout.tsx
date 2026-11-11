@@ -8,6 +8,7 @@ import {
   TrendingUp,
   UserRound,
   Users,
+  CreditCard,
 } from 'lucide-react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
@@ -37,6 +38,7 @@ export function AppLayout() {
         ? [{ to: '/app/progreso', label: 'Progreso', icon: TrendingUp }]
         : []),
     ...(profile ? [{ to: '/app/perfil', label: 'Perfil', icon: UserRound }] : []),
+    ...(profile ? [{ to: '/app/plan', label: 'Plan', icon: CreditCard }] : []),
   ];
   const logout = () => {
     void post('/auth/logout').catch(() => undefined);
