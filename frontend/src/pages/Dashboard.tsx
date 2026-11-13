@@ -118,7 +118,8 @@ export function Dashboard() {
       </Page>
     );
   const dayNames = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
-  const currentDay = new Date().getDay() || 7;
+  const todayAssignment = today?.[0];
+  const currentDay = todayAssignment?.idDiaSemana ?? (new Date().getUTCDay() || 7);
   const activeSessionId = today?.[0]?.sesionEntrenamiento.find(
     (session) => session.idEstado === 1,
   )?.id;
@@ -136,7 +137,9 @@ export function Dashboard() {
       <div className="week-strip">
         {dayNames.map((name, index) => {
           const day = index + 1;
-          const assignment = week?.find((item) => item.idDiaSemana === day);
+          const assignment =
+            week?.find((item) => item.idDiaSemana === day) ??
+            (day === currentDay ? todayAssignment : undefined);
           return (
             <div
               className={`week-day ${day === currentDay ? 'today' : ''}`}
