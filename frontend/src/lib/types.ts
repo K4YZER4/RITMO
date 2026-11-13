@@ -100,6 +100,7 @@ export type Student = {
 };
 export type Assignment = {
   id: string;
+  idDiaSemana?: number;
   rutina: { id: string; nombre: string; descripcion?: string; rutinaEjercicio: Array<unknown> };
   sesionEntrenamiento: Array<{ id: string; idEstado: number }>;
 };
