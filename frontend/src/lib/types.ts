@@ -102,7 +102,7 @@ export type Assignment = {
   id: string;
   idDiaSemana?: number;
   fechaProgramada?: string;
-  estadoSemana?: 'disponible' | 'pendiente' | 'en_curso' | 'completada';
+  estadoSemana?: 'disponible' | 'pendiente' | 'en_curso' | 'completada' | 'reprogramada';
   rutina: { id: string; nombre: string; descripcion?: string; rutinaEjercicio: Array<unknown> };
   sesionEntrenamiento: Array<{ id: string; idEstado: number }>;
 };
