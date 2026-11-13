@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Activity, Trophy, Weight } from 'lucide-react';
-import { Plus, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Card, Empty, Loading, Page } from '../components/Ui';
 import { get, post } from '../lib/api';
 import { FormEvent, useState } from 'react';
@@ -148,12 +148,13 @@ export function Progress() {
         <Card>
           <h2>Registrar medición</h2>
           <form
+            className="measurement-form"
             onSubmit={(event: FormEvent) => {
               event.preventDefault();
               saveMeasurement.mutate();
             }}
           >
-            <label>
+            <label className="measurement-field">
               Peso (kg)
               <input
                 type="number"
@@ -165,7 +166,7 @@ export function Progress() {
                 required
               />
             </label>
-            <label>
+            <label className="measurement-field">
               Grasa corporal (%)
               <input
                 type="number"
@@ -197,11 +198,8 @@ export function Progress() {
         </Card>
       </div>
       <Card>
-        <div className="card-head">
+        <div className="card-head history-heading">
           <h2>Historial de entrenamientos</h2>
-          <button className="button primary" onClick={() => setExerciseOpen(true)}>
-            <Plus /> Crear ejercicio
-          </button>
         </div>
         {sessions.data?.map((session) => (
           <div className="list-row" key={session.id}>

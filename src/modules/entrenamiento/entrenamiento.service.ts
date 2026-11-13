@@ -54,22 +54,63 @@ export class EntrenamientoService {
 
   obtenerSemana(usuarioId: string, zonaHoraria = 'UTC') {
     const hoy = this.inicioDelDiaEnZona(new Date(), zonaHoraria);
+    const diaActual = this.obtenerDiaSemana(hoy);
+    const lunes = new Date(hoy);
+    lunes.setUTCDate(lunes.getUTCDate() - diaActual + 1);
+    const siguienteLunes = new Date(lunes);
+    siguienteLunes.setUTCDate(siguienteLunes.getUTCDate() + 7);
 
-    return this.prisma.usuarioRutina.findMany({
-      where: {
-        idUsuario: usuarioId,
-        activa: true,
-        fechaInicio: { lte: hoy },
-        OR: [{ fechaFin: null }, { fechaFin: { gte: hoy } }],
-      },
-      orderBy: { idDiaSemana: 'asc' },
-      include: {
-        diaSemana: true,
-        rutina: {
-          select: { id: true, nombre: true, descripcion: true, categoriaRutina: true },
+    return Promise.all([
+      this.prisma.usuarioRutina.findMany({
+        where: {
+          idUsuario: usuarioId,
+          activa: true,
+          fechaInicio: { lte: hoy },
+          OR: [{ fechaFin: null }, { fechaFin: { gte: hoy } }],
         },
-      },
-    });
+        orderBy: { idDiaSemana: 'asc' },
+        include: {
+          diaSemana: true,
+          rutina: {
+            select: { id: true, nombre: true, descripcion: true, categoriaRutina: true },
+          },
+        },
+      }),
+      this.prisma.sesionEntrenamiento.findMany({
+        where: {
+          idUsuario: usuarioId,
+          fechaSesion: { gte: lunes, lt: siguienteLunes },
+        },
+        select: { idUsuarioRutina: true, idEstado: true, fechaSesion: true },
+      }),
+    ]).then(([asignaciones, sesiones]) =>
+      asignaciones.map((asignacion) => {
+        const fechaProgramada = new Date(lunes);
+        fechaProgramada.setUTCDate(fechaProgramada.getUTCDate() + asignacion.idDiaSemana - 1);
+        const fechaClave = this.fechaClaveEnZona(fechaProgramada, zonaHoraria);
+        const sesionesDelDia = sesiones.filter(
+          (sesion) =>
+            sesion.idUsuarioRutina === asignacion.id &&
+            this.fechaClaveEnZona(sesion.fechaSesion, zonaHoraria) === fechaClave,
+        );
+        const completada = sesionesDelDia.some(
+          (sesion) => sesion.idEstado === ESTADO_COMPLETADO_ID,
+        );
+        const enCurso = sesionesDelDia.some((sesion) => sesion.idEstado === ESTADO_ACTIVO_ID);
+        const estadoSemana = completada
+          ? 'completada'
+          : enCurso
+            ? 'en_curso'
+            : fechaProgramada < hoy
+              ? 'pendiente'
+              : 'disponible';
+        return {
+          ...asignacion,
+          fechaProgramada: fechaClave,
+          estadoSemana,
+        };
+      }),
+    );
   }
 
   async iniciarSesion(usuarioId: string, usuarioRutinaId: bigint) {
@@ -403,6 +444,11 @@ export class EntrenamientoService {
     }
     const valor = (tipo: string) => Number(partes.find((parte) => parte.type === tipo)?.value);
     return new Date(Date.UTC(valor('year'), valor('month') - 1, valor('day')));
+  }
+
+  private fechaClaveEnZona(fecha: Date, zonaHoraria: string): string {
+    const dia = this.inicioDelDiaEnZona(fecha, zonaHoraria);
+    return dia.toISOString().slice(0, 10);
   }
 
   private obtenerDiaSemana(fecha: Date): number {
