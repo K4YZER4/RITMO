@@ -13,6 +13,8 @@ export function Dashboard() {
   const nav = useNavigate();
   const [starting, setStarting] = useState(false);
   const localActiveSessionId = activeWorkoutSessionId();
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const timezoneQuery = `?zona_horaria=${encodeURIComponent(timezone)}`;
   const { data: p, isLoading } = useQuery({
     queryKey: ['profile'],
     queryFn: () => get<Profile>('/perfil'),
@@ -31,12 +33,12 @@ export function Dashboard() {
   });
   const { data: today } = useQuery({
     queryKey: ['today'],
-    queryFn: () => get<Assignment[]>('/entrenamientos/hoy'),
+    queryFn: () => get<Assignment[]>(`/entrenamientos/hoy${timezoneQuery}`),
     enabled: !!p && !trainer,
   });
   const { data: week } = useQuery({
     queryKey: ['week'],
-    queryFn: () => get<WeeklyAssignment[]>('/entrenamientos/semana'),
+    queryFn: () => get<WeeklyAssignment[]>(`/entrenamientos/semana${timezoneQuery}`),
     enabled: !!p && !trainer,
   });
   const { data: progress } = useQuery({
@@ -119,7 +121,7 @@ export function Dashboard() {
     );
   const dayNames = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
   const todayAssignment = today?.[0];
-  const currentDay = todayAssignment?.idDiaSemana ?? (new Date().getUTCDay() || 7);
+  const currentDay = new Date().getDay() || 7;
   const activeSessionId = today?.[0]?.sesionEntrenamiento.find(
     (session) => session.idEstado === 1,
   )?.id;

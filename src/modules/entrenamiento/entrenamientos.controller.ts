@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -12,13 +12,13 @@ export class EntrenamientosController {
 
   @Get('hoy')
   @ApiOperation({ summary: 'Obtener las rutinas asignadas para hoy' })
-  obtenerHoy(@CurrentUser('id') usuarioId: string) {
-    return this.service.obtenerEntrenamientoHoy(usuarioId);
+  obtenerHoy(@CurrentUser('id') usuarioId: string, @Query('zona_horaria') zonaHoraria?: string) {
+    return this.service.obtenerEntrenamientoHoy(usuarioId, zonaHoraria);
   }
 
   @Get('semana')
   @ApiOperation({ summary: 'Obtener la planificación semanal activa' })
-  obtenerSemana(@CurrentUser('id') usuarioId: string) {
-    return this.service.obtenerSemana(usuarioId);
+  obtenerSemana(@CurrentUser('id') usuarioId: string, @Query('zona_horaria') zonaHoraria?: string) {
+    return this.service.obtenerSemana(usuarioId, zonaHoraria);
   }
 }

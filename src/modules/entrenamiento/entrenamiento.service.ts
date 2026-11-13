@@ -17,8 +17,8 @@ const ESTADO_COMPLETADO_ID = 2;
 export class EntrenamientoService {
   constructor(private readonly prisma: PrismaService) {}
 
-  obtenerEntrenamientoHoy(usuarioId: string) {
-    const hoy = this.inicioDelDia(new Date());
+  obtenerEntrenamientoHoy(usuarioId: string, zonaHoraria = 'UTC') {
+    const hoy = this.inicioDelDiaEnZona(new Date(), zonaHoraria);
     const manana = new Date(hoy);
     manana.setUTCDate(manana.getUTCDate() + 1);
     const diaSemana = this.obtenerDiaSemana(hoy);
@@ -52,8 +52,8 @@ export class EntrenamientoService {
     });
   }
 
-  obtenerSemana(usuarioId: string) {
-    const hoy = this.inicioDelDia(new Date());
+  obtenerSemana(usuarioId: string, zonaHoraria = 'UTC') {
+    const hoy = this.inicioDelDiaEnZona(new Date(), zonaHoraria);
 
     return this.prisma.usuarioRutina.findMany({
       where: {
@@ -382,6 +382,27 @@ export class EntrenamientoService {
 
   private inicioDelDia(fecha: Date): Date {
     return new Date(Date.UTC(fecha.getUTCFullYear(), fecha.getUTCMonth(), fecha.getUTCDate()));
+  }
+
+  private inicioDelDiaEnZona(fecha: Date, zonaHoraria: string): Date {
+    let partes: Intl.DateTimeFormatPart[];
+    try {
+      partes = new Intl.DateTimeFormat('en-US', {
+        timeZone: zonaHoraria,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).formatToParts(fecha);
+    } catch {
+      partes = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'UTC',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).formatToParts(fecha);
+    }
+    const valor = (tipo: string) => Number(partes.find((parte) => parte.type === tipo)?.value);
+    return new Date(Date.UTC(valor('year'), valor('month') - 1, valor('day')));
   }
 
   private obtenerDiaSemana(fecha: Date): number {
