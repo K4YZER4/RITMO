@@ -2,7 +2,7 @@ const configuredApiUrl: unknown = import.meta.env.VITE_API_URL;
 const API_URL =
   typeof configuredApiUrl === 'string' && configuredApiUrl
     ? configuredApiUrl
-    : 'http://localhost:3000';
+    : 'http://localhost:3001';
 
 export function isRetryableApiError(error: unknown) {
   return error instanceof TypeError || (error instanceof ApiError && error.status >= 500);
