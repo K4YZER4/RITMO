@@ -334,6 +334,18 @@
 .pending-status {
   color: #ffbf69;
 }
+.week-day-reschedule {
+  width: 100%;
+  margin-top: 0.15rem;
+  padding: 0.45rem 0.35rem;
+  color: #10140e;
+  background: #b7f34a;
+  border: 0;
+  border-radius: 7px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  cursor: pointer;
+}
 .pending-routines-card {
   margin-top: 1.2rem;
   border-color: #ffbf6944;
@@ -353,7 +365,21 @@
   font-weight: 700;
 }
 .pending-routine-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 18px;
   border-top: 1px solid var(--line);
+}
+.pending-routine-actions {
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+}
+.reschedule-button {
+  min-width: 230px;
+  min-height: 48px;
+  font-size: 0.92rem;
 }
 .measurement-form {
   display: grid;
@@ -388,6 +414,15 @@
   margin-bottom: 8px;
 }
 @media (max-width: 760px) {
+  .pending-routine-row {
+    grid-template-columns: 1fr;
+  }
+  .pending-routine-actions {
+    justify-items: stretch;
+  }
+  .reschedule-button {
+    width: 100%;
+  }
   .measurement-form {
     grid-template-columns: 1fr;
   }
