@@ -57,14 +57,20 @@ export function WeeklyRoutinePlanner({
             ...(end ? { fecha_fin: end } : {}),
           }),
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ['student', studentId] });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['student', studentId] }),
+        qc.invalidateQueries({ queryKey: ['routine-planner-student', studentId] }),
+      ]);
       setEditing(undefined);
     },
   });
   const remove = useMutation({
     mutationFn: (assignment: AssignedRoutine) => del(`/rutinas/asignaciones/${assignment.id}`),
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ['student', studentId] });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['student', studentId] }),
+        qc.invalidateQueries({ queryKey: ['routine-planner-student', studentId] }),
+      ]);
     },
   });
   return (
@@ -132,7 +138,11 @@ export function WeeklyRoutinePlanner({
                     Hay más de una rutina asignada. Corrige este día.
                   </small>
                 )}
-                <button type="button" className="week-add" onClick={() => setEditing(null)}>
+                <button
+                  type="button"
+                  className="week-add"
+                  onClick={() => setEditing(dayAssignments[0] || null)}
+                >
                   <Plus size={15} /> {dayAssignments.length ? 'Cambiar rutina' : 'Asignar rutina'}
                 </button>
               </div>
