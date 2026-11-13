@@ -6,6 +6,9 @@ import { useState } from 'react';
 import { activeWorkoutSessionId } from '../lib/workoutDraft';
 import type { Assignment, Profile, Student } from '../lib/types';
 import { Card, Empty, Loading, Page, fullName } from '../components/Ui';
+
+type WeeklyAssignment = Assignment & { idDiaSemana: number };
+
 export function Dashboard() {
   const nav = useNavigate();
   const [starting, setStarting] = useState(false);
@@ -33,8 +36,7 @@ export function Dashboard() {
   });
   const { data: week } = useQuery({
     queryKey: ['week'],
-    queryFn: () =>
-      get<Array<Assignment & { diaSemana?: { nombre: string } }>>('/entrenamientos/semana'),
+    queryFn: () => get<WeeklyAssignment[]>('/entrenamientos/semana'),
     enabled: !!p && !trainer,
   });
   const { data: progress } = useQuery({
@@ -134,14 +136,18 @@ export function Dashboard() {
       <div className="week-strip">
         {dayNames.map((name, index) => {
           const day = index === 0 ? 7 : index;
-          const assignment = week?.find(
-            (item) =>
-              item.id && (item as Assignment & { idDiaSemana?: number }).idDiaSemana === day,
-          );
+          const assignment = week?.find((item) => item.idDiaSemana === day);
           return (
-            <div className={`week-day ${day === currentDay ? 'today' : ''}`} key={name}>
+            <div
+              className={`week-day ${day === currentDay ? 'today' : ''}`}
+              key={name}
+              title={assignment?.rutina.nombre || 'Día de descanso'}
+            >
               <small>{name}</small>
-              <b>{day === currentDay ? 'HOY' : assignment ? '•' : '—'}</b>
+              <b className={assignment ? 'week-day-routine' : ''}>
+                {assignment?.rutina.nombre || 'Descanso'}
+              </b>
+              {day === currentDay && <span className="week-day-today">HOY</span>}
             </div>
           );
         })}
