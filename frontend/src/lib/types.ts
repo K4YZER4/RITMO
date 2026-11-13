@@ -101,6 +101,8 @@ export type Student = {
 export type Assignment = {
   id: string;
   idDiaSemana?: number;
+  fechaProgramada?: string;
+  estadoSemana?: 'disponible' | 'pendiente' | 'en_curso' | 'completada';
   rutina: { id: string; nombre: string; descripcion?: string; rutinaEjercicio: Array<unknown> };
   sesionEntrenamiento: Array<{ id: string; idEstado: number }>;
 };

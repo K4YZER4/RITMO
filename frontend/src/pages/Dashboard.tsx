@@ -122,6 +122,7 @@ export function Dashboard() {
   const dayNames = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
   const todayAssignment = today?.[0];
   const currentDay = new Date().getDay() || 7;
+  const pendingRoutines = week?.filter((item) => item.estadoSemana === 'pendiente') || [];
   const activeSessionId = today?.[0]?.sesionEntrenamiento.find(
     (session) => session.idEstado === 1,
   )?.id;
@@ -152,6 +153,9 @@ export function Dashboard() {
               <b className={assignment ? 'week-day-routine' : ''}>
                 {assignment?.rutina.nombre || 'Descanso'}
               </b>
+              {assignment?.estadoSemana === 'pendiente' && (
+                <span className="week-day-status pending">Pendiente</span>
+              )}
               {day === currentDay && <span className="week-day-today">HOY</span>}
             </div>
           );
@@ -182,6 +186,30 @@ export function Dashboard() {
         )}
       </Card>
       {!today?.length && <Empty>Tu próximo entrenamiento aparecerá aquí.</Empty>}
+      {pendingRoutines.length > 0 && (
+        <Card className="pending-routines-card">
+          <div className="card-head">
+            <div>
+              <span className="eyebrow">SEGUIMIENTO</span>
+              <h2>Rutinas pendientes</h2>
+            </div>
+            <span className="pending-count">{pendingRoutines.length}</span>
+          </div>
+          <p>
+            No registraste estas sesiones. Se conservarán pendientes hasta que las completes o
+            reprogrames.
+          </p>
+          {pendingRoutines.map((assignment) => (
+            <div className="list-row pending-routine-row" key={assignment.id}>
+              <div>
+                <b>{assignment.rutina.nombre}</b>
+                <small>{assignment.fechaProgramada}</small>
+              </div>
+              <span className="status pending-status">Pendiente</span>
+            </div>
+          ))}
+        </Card>
+      )}
       <div className="stats">
         <Card>
           <ActivityIcon />

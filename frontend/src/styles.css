@@ -325,6 +325,76 @@
   font-weight: 700;
   letter-spacing: 0.12em;
 }
+.week-day-status {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.week-day-status.pending,
+.pending-status {
+  color: #ffbf69;
+}
+.pending-routines-card {
+  margin-top: 1.2rem;
+  border-color: #ffbf6944;
+}
+.pending-routines-card p {
+  color: var(--muted);
+  margin-top: 0;
+}
+.pending-count {
+  display: grid;
+  min-width: 32px;
+  height: 32px;
+  place-items: center;
+  color: #10140e;
+  background: #ffbf69;
+  border-radius: 50%;
+  font-weight: 700;
+}
+.pending-routine-row {
+  border-top: 1px solid var(--line);
+}
+.measurement-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 14px;
+  margin-top: 18px;
+}
+.measurement-field {
+  display: grid;
+  gap: 8px;
+}
+.measurement-field input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0.75rem 0.9rem;
+  color: #f1f5ef;
+  background: #0b0f0d;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.measurement-field input:focus {
+  outline: 0;
+  border-color: var(--lime);
+  box-shadow: 0 0 0 3px #b7f34a1c;
+}
+.measurement-form .button {
+  min-height: 46px;
+  white-space: nowrap;
+}
+.history-heading {
+  margin-bottom: 8px;
+}
+@media (max-width: 760px) {
+  .measurement-form {
+    grid-template-columns: 1fr;
+  }
+  .measurement-form .button {
+    width: 100%;
+  }
+}
 .week-day.today {
   color: var(--lime);
   border-color: var(--lime);
