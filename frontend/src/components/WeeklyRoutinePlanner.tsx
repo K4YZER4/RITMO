@@ -5,6 +5,7 @@ import { del, patch, post } from '../lib/api';
 import { Card, Empty } from './Ui';
 import { SelectMenu } from './SelectMenu';
 import { DateField } from './DateField';
+import { ConfirmActionModal } from './ConfirmActionModal';
 import type { Routine } from '../lib/types';
 
 export type AssignedRoutine = {
@@ -29,6 +30,10 @@ export function WeeklyRoutinePlanner({
 }) {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<AssignedRoutine | null | undefined>(undefined);
+  const [removing, setRemoving] = useState<{
+    assignment: AssignedRoutine;
+    day: string;
+  } | null>(null);
   const update = useMutation({
     mutationFn: ({
       assignment,
@@ -71,6 +76,7 @@ export function WeeklyRoutinePlanner({
         qc.invalidateQueries({ queryKey: ['student', studentId] }),
         qc.invalidateQueries({ queryKey: ['routine-planner-student', studentId] }),
       ]);
+      setRemoving(null);
     },
   });
   return (
@@ -122,10 +128,7 @@ export function WeeklyRoutinePlanner({
                       <button
                         type="button"
                         title="Quitar rutina"
-                        onClick={() => {
-                          if (window.confirm(`¿Quitar ${assignment.rutina.nombre} del ${day}?`))
-                            remove.mutate(assignment);
-                        }}
+                        onClick={() => setRemoving({ assignment, day })}
                       >
                         <Trash2 size={16} />
                       </button>
@@ -159,6 +162,19 @@ export function WeeklyRoutinePlanner({
           error={update.error instanceof Error ? update.error.message : undefined}
           onClose={() => setEditing(undefined)}
           onSave={(values) => update.mutate({ assignment: editing || undefined, ...values })}
+        />
+      )}
+      {removing && (
+        <ConfirmActionModal
+          title="¿Quitar esta rutina?"
+          description={`Se quitará “${removing.assignment.rutina.nombre}” del ${removing.day} para este alumno. Sus sesiones e historial se conservarán.`}
+          confirmLabel="Quitar rutina"
+          busy={remove.isPending}
+          error={remove.error instanceof Error ? remove.error.message : undefined}
+          onClose={() => {
+            if (!remove.isPending) setRemoving(null);
+          }}
+          onConfirm={() => remove.mutate(removing.assignment)}
         />
       )}
     </Card>
