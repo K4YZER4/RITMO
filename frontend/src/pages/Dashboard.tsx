@@ -49,6 +49,11 @@ export function Dashboard() {
       ),
     enabled: !!p && !trainer,
   });
+  const { data: sessions } = useQuery({
+    queryKey: ['sessions'],
+    queryFn: () => get<Array<{ fechaSesion: string; idEstado: number }>>('/sesiones'),
+    enabled: !!p && !trainer,
+  });
   const startWorkout = async () => {
     const activeSessionId = today?.[0]?.sesionEntrenamiento.find(
       (session) => session.idEstado === 1,
@@ -123,6 +128,20 @@ export function Dashboard() {
   const todayAssignment = today?.[0];
   const currentDay = new Date().getDay() || 7;
   const pendingRoutines = week?.filter((item) => item.estadoSemana === 'pendiente') || [];
+  const completedDays = new Set(
+    (sessions || [])
+      .filter((session) => session.idEstado === 2)
+      .map((session) => new Date(session.fechaSesion).toLocaleDateString('en-CA')),
+  );
+  let streak = 0;
+  const streakDate = new Date();
+  if (!completedDays.has(streakDate.toLocaleDateString('en-CA'))) {
+    streakDate.setDate(streakDate.getDate() - 1);
+  }
+  while (completedDays.has(streakDate.toLocaleDateString('en-CA'))) {
+    streak += 1;
+    streakDate.setDate(streakDate.getDate() - 1);
+  }
   const activeSessionId = today?.[0]?.sesionEntrenamiento.find(
     (session) => session.idEstado === 1,
   )?.id;
@@ -213,8 +232,8 @@ export function Dashboard() {
       <div className="stats">
         <Card>
           <ActivityIcon />
-          <b>{progress?.sesionesUltimos30Dias ?? 0}</b>
-          <span>sesiones este mes</span>
+          <b>{streak}</b>
+          <span>racha actual</span>
         </Card>
         <Card>
           <Dumbbell />
