@@ -9,6 +9,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ActualizarSetDto } from './dto/actualizar-set.dto';
 import { FinalizarSesionDto } from './dto/finalizar-sesion.dto';
 import { RegistrarMedicionDto } from './dto/registrar-medicion.dto';
+import { ReprogramarRutinaDto } from './dto/reprogramar-rutina.dto';
 
 const ESTADO_ACTIVO_ID = 1;
 const ESTADO_COMPLETADO_ID = 2;
@@ -97,13 +98,15 @@ export class EntrenamientoService {
           (sesion) => sesion.idEstado === ESTADO_COMPLETADO_ID,
         );
         const enCurso = sesionesDelDia.some((sesion) => sesion.idEstado === ESTADO_ACTIVO_ID);
-        const estadoSemana = completada
-          ? 'completada'
-          : enCurso
-            ? 'en_curso'
-            : fechaProgramada < hoy
-              ? 'pendiente'
-              : 'disponible';
+        const semanaActual = this.fechaClaveEnZona(lunes, zonaHoraria);
+        const reprogramada =
+          fechaProgramada < hoy &&
+          asignacion.motivoCambio === `Reprogramada semana ${semanaActual}`;
+        let estadoSemana = 'disponible';
+        if (reprogramada) estadoSemana = 'reprogramada';
+        else if (completada) estadoSemana = 'completada';
+        else if (enCurso) estadoSemana = 'en_curso';
+        else if (fechaProgramada < hoy) estadoSemana = 'pendiente';
         return {
           ...asignacion,
           fechaProgramada: fechaClave,
@@ -111,6 +114,60 @@ export class EntrenamientoService {
         };
       }),
     );
+  }
+
+  async reprogramarRutinaPendiente(
+    usuarioId: string,
+    dto: ReprogramarRutinaDto,
+    zonaHoraria = 'UTC',
+  ) {
+    const hoy = this.inicioDelDiaEnZona(new Date(), zonaHoraria);
+    const diaActual = this.obtenerDiaSemana(hoy);
+    const lunes = new Date(hoy);
+    lunes.setUTCDate(lunes.getUTCDate() - diaActual + 1);
+    const domingo = new Date(lunes);
+    domingo.setUTCDate(domingo.getUTCDate() + 6);
+    const asignacionId = BigInt(dto.id_usuario_rutina);
+    const asignacion = await this.prisma.usuarioRutina.findFirst({
+      where: { id: asignacionId, idUsuario: usuarioId, activa: true },
+      include: { rutina: true },
+    });
+    if (!asignacion) throw new NotFoundException('Rutina pendiente no encontrada');
+    if (asignacion.idDiaSemana >= diaActual) {
+      throw new BadRequestException('Solo puedes reprogramar rutinas de días anteriores');
+    }
+    const conflicto = await this.prisma.usuarioRutina.findFirst({
+      where: {
+        idUsuario: usuarioId,
+        activa: true,
+        idDiaSemana: dto.numero_dia,
+        id: { not: asignacionId },
+        fechaInicio: { lte: domingo },
+        OR: [{ fechaFin: null }, { fechaFin: { gte: hoy } }],
+      },
+    });
+    if (conflicto) throw new BadRequestException('Ese día ya tiene una rutina asignada');
+    const semana = this.fechaClaveEnZona(lunes, zonaHoraria);
+    return this.prisma.$transaction(async (tx) => {
+      await tx.usuarioRutina.update({
+        where: { id: asignacionId },
+        data: { motivoCambio: `Reprogramada semana ${semana}` },
+      });
+      await tx.usuarioRutina.create({
+        data: {
+          idUsuario: usuarioId,
+          idRutina: asignacion.idRutina,
+          idDiaSemana: dto.numero_dia,
+          fechaInicio: hoy,
+          fechaFin: domingo,
+          asignadaPorUsuario: usuarioId,
+          createdBy: usuarioId,
+          updatedBy: usuarioId,
+          motivoCambio: `Reprogramada semana ${semana}`,
+        },
+      });
+      return { success: true, message: 'Rutina reprogramada para esta semana' };
+    });
   }
 
   async iniciarSesion(usuarioId: string, usuarioRutinaId: bigint) {

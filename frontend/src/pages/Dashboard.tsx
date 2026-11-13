@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, CalendarDays, Dumbbell, Flame, Trophy, Users } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { get, post } from '../lib/api';
@@ -6,12 +6,15 @@ import { useState } from 'react';
 import { activeWorkoutSessionId } from '../lib/workoutDraft';
 import type { Assignment, Profile, Student } from '../lib/types';
 import { Card, Empty, Loading, Page, fullName } from '../components/Ui';
+import { SelectMenu } from '../components/SelectMenu';
 
 type WeeklyAssignment = Assignment & { idDiaSemana: number };
 
 export function Dashboard() {
   const nav = useNavigate();
+  const qc = useQueryClient();
   const [starting, setStarting] = useState(false);
+  const [rescheduling, setRescheduling] = useState<WeeklyAssignment | null>(null);
   const localActiveSessionId = activeWorkoutSessionId();
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const timezoneQuery = `?zona_horaria=${encodeURIComponent(timezone)}`;
@@ -73,6 +76,20 @@ export function Dashboard() {
       setStarting(false);
     }
   };
+  const reschedule = useMutation({
+    mutationFn: (day: number) =>
+      post(`/entrenamientos/reprogramar?zona_horaria=${encodeURIComponent(timezone)}`, {
+        id_usuario_rutina: rescheduling?.id,
+        numero_dia: day,
+      }),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['today'] }),
+        qc.invalidateQueries({ queryKey: ['week'] }),
+      ]);
+      setRescheduling(null);
+    },
+  });
   if (isLoading) return <Loading />;
   if (trainer)
     return (
@@ -224,7 +241,15 @@ export function Dashboard() {
                 <b>{assignment.rutina.nombre}</b>
                 <small>{assignment.fechaProgramada}</small>
               </div>
-              <span className="status pending-status">Pendiente</span>
+              <div className="pending-routine-actions">
+                <span className="status pending-status">Pendiente</span>
+                <button
+                  className="button ghost compact"
+                  onClick={() => setRescheduling(assignment)}
+                >
+                  Reprogramar rutina
+                </button>
+              </div>
             </div>
           ))}
         </Card>
@@ -255,10 +280,77 @@ export function Dashboard() {
           Ver progreso <ArrowRight />
         </Link>
       </Card>
+      {rescheduling && (
+        <RescheduleModal
+          assignment={rescheduling}
+          currentDay={currentDay}
+          assignments={week || []}
+          busy={reschedule.isPending}
+          error={reschedule.error instanceof Error ? reschedule.error.message : undefined}
+          onClose={() => setRescheduling(null)}
+          onSave={(day) => reschedule.mutate(day)}
+        />
+      )}
     </Page>
   );
 }
 
 function ActivityIcon() {
   return <Flame />;
+}
+
+function RescheduleModal({
+  assignment,
+  currentDay,
+  assignments,
+  busy,
+  error,
+  onClose,
+  onSave,
+}: {
+  assignment: WeeklyAssignment;
+  currentDay: number;
+  assignments: WeeklyAssignment[];
+  busy: boolean;
+  error?: string;
+  onClose: () => void;
+  onSave: (day: number) => void;
+}) {
+  const [day, setDay] = useState('');
+  const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+  const occupied = new Set(assignments.map((item) => item.idDiaSemana));
+  const options = dayNames
+    .map((name, index) => ({ value: String(index + 1), label: name }))
+    .filter((option) => Number(option.value) > currentDay && !occupied.has(Number(option.value)));
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <section className="modal" onClick={(event) => event.stopPropagation()}>
+        <span className="eyebrow">REPROGRAMAR ESTA SEMANA</span>
+        <h2>{assignment.rutina.nombre}</h2>
+        <p>Elige un día libre para recuperar esta rutina. La programación futura no cambiará.</p>
+        <label>
+          Día nuevo
+          <SelectMenu
+            value={day}
+            options={options}
+            placeholder="Selecciona un día"
+            onChange={setDay}
+          />
+        </label>
+        {error && <div className="error">{error}</div>}
+        <div className="modal-actions">
+          <button type="button" className="button ghost" onClick={onClose}>
+            Cancelar
+          </button>
+          <button
+            className="button primary"
+            disabled={!day || busy}
+            onClick={() => onSave(Number(day))}
+          >
+            {busy ? 'Guardando…' : 'Reprogramar rutina'}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
 }
