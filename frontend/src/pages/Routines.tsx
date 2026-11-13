@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Dumbbell, Plus, Save, UserPlus, X } from 'lucide-react';
+import { Dumbbell, Plus, Save, X } from 'lucide-react';
 import { FormEvent, useEffect, useState } from 'react';
 import { Card, Empty, Loading, Page } from '../components/Ui';
 import { SelectMenu } from '../components/SelectMenu';
-import { DateField } from '../components/DateField';
 import { del, get, post, patch } from '../lib/api';
 import type { Catalogs, ExerciseLibrary, Routine, Student } from '../lib/types';
 import { CreateExerciseModal } from '../components/CreateExerciseModal';
 import { ExercisePicker } from '../components/ExercisePicker';
+import { WeeklyRoutinePlanner } from '../components/WeeklyRoutinePlanner';
 
 type DraftExercise = {
   id: string;
@@ -19,6 +19,19 @@ type DraftExercise = {
   link: string;
 };
 
+type StudentRoutineData = {
+  usuario: {
+    usuarioRutina: Array<{
+      id: string;
+      idDiaSemana: number;
+      fechaInicio: string;
+      fechaFin?: string | null;
+      rutina: Routine;
+      diaSemana: { nombre: string };
+    }>;
+  };
+};
+
 export function Routines() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -27,11 +40,7 @@ export function Routines() {
   const [category, setCategory] = useState('');
   const [selected, setSelected] = useState<Routine | null>(null);
   const [draft, setDraft] = useState<DraftExercise[]>([]);
-  const [assignOpen, setAssignOpen] = useState(false);
-  const [studentId, setStudentId] = useState('');
-  const [day, setDay] = useState('1');
-  const [start, setStart] = useState(new Date().toISOString().slice(0, 10));
-  const [end, setEnd] = useState('');
+  const [plannerStudentId, setPlannerStudentId] = useState('');
   const [createExerciseOpen, setCreateExerciseOpen] = useState(false);
   const [archivedTarget, setArchivedTarget] = useState<Routine | null>(null);
   const { data, isLoading, isError } = useQuery({
@@ -65,6 +74,11 @@ export function Routines() {
   const { data: students } = useQuery({
     queryKey: ['students'],
     queryFn: () => get<Student[]>('/entrenador/alumnos'),
+  });
+  const { data: plannerStudent } = useQuery({
+    queryKey: ['routine-planner-student', plannerStudentId],
+    queryFn: () => get<StudentRoutineData>(`/entrenador/alumnos/${plannerStudentId}`),
+    enabled: Boolean(plannerStudentId),
   });
   const create = useMutation({
     mutationFn: () =>
@@ -107,20 +121,6 @@ export function Routines() {
       });
     },
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['routines'] }),
-  });
-  const assign = useMutation({
-    mutationFn: () =>
-      post(`/rutinas/${selected?.id}/asignaciones`, {
-        id_alumno: studentId,
-        numero_dia: Number(day),
-        fecha_inicio: start,
-        ...(end ? { fecha_fin: end } : {}),
-      }),
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ['routines'] });
-      setAssignOpen(false);
-      setSelected(null);
-    },
   });
   const archive = useMutation({
     mutationFn: (routineId: string) => patch(`/rutinas/${routineId}/archivar`, {}),
@@ -195,6 +195,36 @@ export function Routines() {
         </button>
       }
     >
+      <section className="routine-planner-section">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">PROGRAMACIÓN SEMANAL</span>
+            <h2>Planificar por alumno</h2>
+          </div>
+          <span className="muted">Selecciona un alumno para administrar sus siete días.</span>
+        </div>
+        <label className="planner-student-select">
+          Alumno
+          <SelectMenu
+            value={plannerStudentId}
+            placeholder="Selecciona un alumno"
+            options={(students || []).map((student) => ({
+              value: student.idUsuario,
+              label: `${student.usuario.nombre} ${student.usuario.apellidoPaterno}`,
+              description: student.usuario.correo,
+            }))}
+            onChange={setPlannerStudentId}
+          />
+        </label>
+        {plannerStudentId && plannerStudent && (
+          <WeeklyRoutinePlanner
+            studentId={plannerStudentId}
+            assignments={plannerStudent.usuario.usuarioRutina}
+            routines={data || []}
+          />
+        )}
+        {plannerStudentId && !plannerStudent && <Loading />}
+      </section>
       <div className="routine-grid">
         {data?.map((routine) => (
           <Card key={routine.id}>
@@ -219,11 +249,13 @@ export function Routines() {
               <button
                 className="button primary"
                 onClick={() => {
-                  setSelected(routine);
-                  setAssignOpen(true);
+                  document.querySelector('.planner-student-select')?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                  });
                 }}
               >
-                <UserPlus /> Asignar
+                Asignar a alumno
               </button>
               {routine.activa && (
                 <button
@@ -333,7 +365,7 @@ export function Routines() {
           </form>
         </div>
       )}
-      {selected && !assignOpen && (
+      {selected && (
         <div className="modal-backdrop" onClick={() => setSelected(null)}>
           <section className="modal wide" onClick={(e) => e.stopPropagation()}>
             <button className="modal-close" onClick={() => setSelected(null)}>
@@ -501,81 +533,6 @@ export function Routines() {
             )}
             {deleteArchived.error && <div className="error">{deleteArchived.error.message}</div>}
           </section>
-        </div>
-      )}
-      {assignOpen && selected && (
-        <div
-          className="modal-backdrop"
-          onClick={() => {
-            setAssignOpen(false);
-            setSelected(null);
-          }}
-        >
-          <form
-            className="modal"
-            onSubmit={(e) => {
-              e.preventDefault();
-              assign.mutate();
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <span className="eyebrow">ASIGNAR RUTINA</span>
-            <h2>{selected.nombre}</h2>
-            <label>
-              Alumno
-              <SelectMenu
-                value={studentId}
-                placeholder="Selecciona un alumno"
-                options={(students || []).map((student) => ({
-                  value: student.idUsuario,
-                  label: `${student.usuario.nombre} ${student.usuario.apellidoPaterno}`,
-                  description: student.usuario.correo,
-                }))}
-                onChange={setStudentId}
-              />
-            </label>
-            <label>
-              Día
-              <SelectMenu
-                value={day}
-                options={[
-                  'Lunes',
-                  'Martes',
-                  'Miércoles',
-                  'Jueves',
-                  'Viernes',
-                  'Sábado',
-                  'Domingo',
-                ].map((name, index) => ({ value: String(index + 1), label: name }))}
-                placeholder="Selecciona un día"
-                onChange={setDay}
-              />
-            </label>
-            <DateField
-              label="Fecha de inicio"
-              value={start}
-              min={new Date().toISOString().slice(0, 10)}
-              onChange={setStart}
-              required
-            />
-            <DateField label="Fecha final opcional" value={end} min={start} onChange={setEnd} />
-            {assign.error && <div className="error">{assign.error.message}</div>}
-            <div className="modal-actions">
-              <button
-                type="button"
-                className="button ghost"
-                onClick={() => {
-                  setAssignOpen(false);
-                  setSelected(null);
-                }}
-              >
-                Cancelar
-              </button>
-              <button className="button primary" disabled={assign.isPending}>
-                Asignar rutina
-              </button>
-            </div>
-          </form>
         </div>
       )}
       {createExerciseOpen && <CreateExerciseModal onClose={() => setCreateExerciseOpen(false)} />}
