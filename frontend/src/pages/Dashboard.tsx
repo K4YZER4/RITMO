@@ -142,7 +142,7 @@ export function Dashboard() {
       </Page>
     );
   const dayNames = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
-  const todayAssignment = today?.[0];
+  const todayAssignment = today?.[0] as WeeklyAssignment | undefined;
   const currentDay = new Date().getDay() || 7;
   const pendingRoutines = week?.filter((item) => item.estadoSemana === 'pendiente') || [];
   const completedDays = new Set(
@@ -190,7 +190,16 @@ export function Dashboard() {
                 {assignment?.rutina.nombre || 'Descanso'}
               </b>
               {assignment?.estadoSemana === 'pendiente' && (
-                <span className="week-day-status pending">Pendiente</span>
+                <>
+                  <span className="week-day-status pending">Pendiente</span>
+                  <button
+                    type="button"
+                    className="week-day-reschedule"
+                    onClick={() => setRescheduling(assignment)}
+                  >
+                    Reprogramar
+                  </button>
+                </>
               )}
               {day === currentDay && <span className="week-day-today">HOY</span>}
             </div>
@@ -244,7 +253,7 @@ export function Dashboard() {
               <div className="pending-routine-actions">
                 <span className="status pending-status">Pendiente</span>
                 <button
-                  className="button ghost compact"
+                  className="button primary reschedule-button"
                   onClick={() => setRescheduling(assignment)}
                 >
                   Reprogramar rutina
