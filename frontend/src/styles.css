@@ -310,6 +310,20 @@
 .week-day b {
   color: #657067;
   font-size: 0.75rem;
+  max-width: 90%;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.week-day b.week-day-routine {
+  color: #dce8d7;
+}
+.week-day-today {
+  color: var(--lime);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
 }
 .week-day.today {
   color: var(--lime);
@@ -318,6 +332,9 @@
 }
 .week-day.today b {
   color: var(--lime);
+}
+.week-day.today b.week-day-routine {
+  color: #f4ffe9;
 }
 .student-today {
   border-color: #b7f34a55;
