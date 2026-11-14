@@ -4,6 +4,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { EntrenamientoService } from './entrenamiento.service';
 import { ReprogramarRutinaDto } from './dto/reprogramar-rutina.dto';
+import { ReordenarSemanaDto } from './dto/reordenar-semana.dto';
 
 @ApiTags('Entrenamientos')
 @ApiBearerAuth('access-token')
@@ -31,5 +32,15 @@ export class EntrenamientosController {
     @Query('zona_horaria') zonaHoraria?: string,
   ) {
     return this.service.reprogramarRutinaPendiente(usuarioId, dto, zonaHoraria);
+  }
+
+  @Post('reordenar-semana')
+  @ApiOperation({ summary: 'Reordenar las rutinas de la semana actual' })
+  reordenarSemana(
+    @CurrentUser('id') usuarioId: string,
+    @Body() dto: ReordenarSemanaDto,
+    @Query('zona_horaria') zonaHoraria?: string,
+  ) {
+    return this.service.reordenarSemana(usuarioId, dto, zonaHoraria);
   }
 }
