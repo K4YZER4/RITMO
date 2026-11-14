@@ -15,6 +15,7 @@ export function Dashboard() {
   const qc = useQueryClient();
   const [starting, setStarting] = useState(false);
   const [rescheduling, setRescheduling] = useState<WeeklyAssignment | null>(null);
+  const [reorderOpen, setReorderOpen] = useState(false);
   const localActiveSessionId = activeWorkoutSessionId();
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const timezoneQuery = `?zona_horaria=${encodeURIComponent(timezone)}`;
@@ -88,6 +89,19 @@ export function Dashboard() {
         qc.invalidateQueries({ queryKey: ['week'] }),
       ]);
       setRescheduling(null);
+    },
+  });
+  const reorder = useMutation({
+    mutationFn: (dias: Array<{ id_usuario_rutina: string; numero_dia: number }>) =>
+      post(`/entrenamientos/reordenar-semana?zona_horaria=${encodeURIComponent(timezone)}`, {
+        dias,
+      }),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['today'] }),
+        qc.invalidateQueries({ queryKey: ['week'] }),
+      ]);
+      setReorderOpen(false);
     },
   });
   if (isLoading) return <Loading />;
@@ -238,7 +252,12 @@ export function Dashboard() {
               <span className="eyebrow">SEGUIMIENTO</span>
               <h2>Rutinas pendientes</h2>
             </div>
-            <span className="pending-count">{pendingRoutines.length}</span>
+            <div className="pending-heading-actions">
+              <button className="button ghost compact" onClick={() => setReorderOpen(true)}>
+                Reordenar semana
+              </button>
+              <span className="pending-count">{pendingRoutines.length}</span>
+            </div>
           </div>
           <p>
             No registraste estas sesiones. Se conservarán pendientes hasta que las completes o
@@ -300,6 +319,15 @@ export function Dashboard() {
           onSave={(day) => reschedule.mutate(day)}
         />
       )}
+      {reorderOpen && (
+        <WeeklyReorderModal
+          assignments={week || []}
+          busy={reorder.isPending}
+          error={reorder.error instanceof Error ? reorder.error.message : undefined}
+          onClose={() => setReorderOpen(false)}
+          onSave={(dias) => reorder.mutate(dias)}
+        />
+      )}
     </Page>
   );
 }
@@ -357,6 +385,87 @@ function RescheduleModal({
             onClick={() => onSave(Number(day))}
           >
             {busy ? 'Guardando…' : 'Reprogramar rutina'}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function WeeklyReorderModal({
+  assignments,
+  busy,
+  error,
+  onClose,
+  onSave,
+}: {
+  assignments: WeeklyAssignment[];
+  busy: boolean;
+  error?: string;
+  onClose: () => void;
+  onSave: (dias: Array<{ id_usuario_rutina: string; numero_dia: number }>) => void;
+}) {
+  const names = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+  const [slots, setSlots] = useState<Array<WeeklyAssignment | null>>(() =>
+    names.map((_, index) => assignments.find((item) => item.idDiaSemana === index + 1) || null),
+  );
+  const [dragged, setDragged] = useState<number | null>(null);
+  const move = (target: number) => {
+    if (dragged === null || dragged === target) return;
+    setSlots((current) => {
+      const next = [...current];
+      [next[dragged], next[target]] = [next[target], next[dragged]];
+      return next;
+    });
+    setDragged(null);
+  };
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <section className="modal wide reorder-modal" onClick={(event) => event.stopPropagation()}>
+        <span className="eyebrow">ESTA SEMANA</span>
+        <h2>Reordenar rutinas</h2>
+        <p>Arrastra las rutinas entre los días. Este cambio solo aplica a la semana actual.</p>
+        <div className="weekly-reorder-grid">
+          {names.map((name, index) => (
+            <div
+              className="weekly-reorder-day"
+              key={name}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={() => move(index)}
+            >
+              <strong>{name}</strong>
+              {slots[index] ? (
+                <div
+                  className="weekly-reorder-routine"
+                  draggable
+                  onDragStart={() => setDragged(index)}
+                >
+                  {slots[index]?.rutina.nombre}
+                </div>
+              ) : (
+                <span className="weekly-reorder-empty">Descanso</span>
+              )}
+            </div>
+          ))}
+        </div>
+        {error && <div className="error">{error}</div>}
+        <div className="modal-actions">
+          <button type="button" className="button ghost" onClick={onClose}>
+            Cancelar
+          </button>
+          <button
+            className="button primary"
+            disabled={busy}
+            onClick={() =>
+              onSave(
+                slots.filter(Boolean).map((item) => ({
+                  id_usuario_rutina: item!.id,
+                  numero_dia: slots.indexOf(item) + 1,
+                })),
+              )
+            }
+          >
+            {busy ? 'Guardando…' : 'Guardar orden'}
           </button>
         </div>
       </section>

@@ -364,6 +364,11 @@
   border-radius: 50%;
   font-weight: 700;
 }
+.pending-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 .pending-routine-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -402,6 +407,52 @@
   gap: 14px;
   margin-top: 18px;
 }
+.reorder-modal {
+  max-width: 980px;
+}
+.weekly-reorder-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+  margin: 20px 0;
+}
+.weekly-reorder-day {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-height: 150px;
+  padding: 12px;
+  background: #0b0f0d;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.weekly-reorder-day strong {
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+.weekly-reorder-routine {
+  display: grid;
+  min-height: 76px;
+  place-items: center;
+  padding: 10px;
+  color: #10140e;
+  background: var(--lime);
+  border-radius: 9px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: center;
+  cursor: grab;
+}
+.weekly-reorder-empty {
+  display: grid;
+  min-height: 76px;
+  place-items: center;
+  color: var(--muted);
+  border: 1px dashed #465047;
+  border-radius: 9px;
+  font-size: 0.78rem;
+}
 .measurement-field {
   display: grid;
   gap: 8px;
@@ -428,6 +479,15 @@
   margin-bottom: 8px;
 }
 @media (max-width: 760px) {
+  .pending-heading-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .weekly-reorder-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: 52vh;
+    overflow-y: auto;
+  }
   .pending-routine-row {
     grid-template-columns: 1fr;
     align-items: stretch;
