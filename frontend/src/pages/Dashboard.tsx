@@ -246,9 +246,9 @@ export function Dashboard() {
           </p>
           {pendingRoutines.map((assignment) => (
             <div className="list-row pending-routine-row" key={assignment.id}>
-              <div>
+              <div className="pending-routine-main">
                 <b>{assignment.rutina.nombre}</b>
-                <small>{assignment.fechaProgramada}</small>
+                <small>Programada para {assignment.fechaProgramada}</small>
               </div>
               <div className="pending-routine-actions">
                 <span className="status pending-status">Pendiente</span>
