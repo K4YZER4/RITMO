@@ -367,17 +367,31 @@
 .pending-routine-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: 18px;
+  align-items: center;
+  min-height: 94px;
+  gap: 28px;
   border-top: 1px solid var(--line);
 }
-.pending-routine-actions {
+.pending-routine-main {
   display: grid;
-  justify-items: end;
+  gap: 8px;
+  min-width: 0;
+}
+.pending-routine-main b {
+  color: #f1f5ef;
+  font-size: 1.08rem;
+}
+.pending-routine-main small {
+  color: var(--muted);
+}
+.pending-routine-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
   gap: 10px;
 }
 .reschedule-button {
-  min-width: 230px;
+  min-width: 220px;
   min-height: 48px;
   font-size: 0.92rem;
 }
@@ -416,9 +430,12 @@
 @media (max-width: 760px) {
   .pending-routine-row {
     grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 14px;
+    padding: 18px 0;
   }
   .pending-routine-actions {
-    justify-items: stretch;
+    justify-content: space-between;
   }
   .reschedule-button {
     width: 100%;
