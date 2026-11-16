@@ -102,7 +102,7 @@ export class PagosService {
       customerId: suscripcion.proveedorCustomerId,
       trialEnd,
       successUrl: `${frontendUrl}/pago/exito?session_id={CHECKOUT_SESSION_ID}`,
-      cancelUrl: `${frontendUrl}/pago/cancelado`,
+      cancelUrl: `${frontendUrl}/app/plan`,
     });
 
     if (!session.url) {
