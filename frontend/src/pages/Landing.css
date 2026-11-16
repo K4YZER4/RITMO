@@ -73,14 +73,14 @@
   display: block;
   height: 100%;
   width: auto;
-  filter: drop-shadow(0 20px 45px rgba(0, 0, 0, 0.85));
+  filter: drop-shadow(0 20px 45px rgba(0, 0, 0, 0.7)) brightness(1.06) contrast(1.04);
 }
 
 .ritmo-landing .art:after {
   content: '';
   position: absolute;
   inset: 0;
-  background: #0005;
+  background: rgba(0, 0, 0, 0.08);
   pointer-events: none;
 }
 
@@ -88,7 +88,7 @@
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(0deg, #000 12%, rgba(0, 0, 0, 0.4) 38%, transparent 70%);
+  background: linear-gradient(0deg, #000 6%, rgba(0, 0, 0, 0.2) 26%, transparent 60%);
   pointer-events: none;
 }
 
