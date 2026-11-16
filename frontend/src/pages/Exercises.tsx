@@ -200,7 +200,11 @@ export function Exercises() {
             className="modal"
             onSubmit={(event) => {
               event.preventDefault();
-              create.mutate();
+              if (editing) {
+                update.mutate();
+              } else {
+                create.mutate();
+              }
             }}
             onClick={(event) => event.stopPropagation()}
           >
