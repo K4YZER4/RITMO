@@ -377,6 +377,54 @@
   white-space: nowrap;
 }
 
+.ritmo-landing .tech-showcase {
+  margin: 60px 0 30px;
+  padding: 35px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+}
+
+.ritmo-landing .tech-badge-header {
+  margin-bottom: 20px;
+}
+
+.ritmo-landing .tech-badge-header h3 {
+  font-size: 22px;
+  margin: 6px 0 0;
+  letter-spacing: -0.5px;
+}
+
+.ritmo-landing .tech-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ritmo-landing .tech-pill {
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 30px;
+  font-size: 12px;
+  color: var(--w);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: border-color 180ms, transform 180ms;
+}
+
+.ritmo-landing .tech-pill b {
+  color: var(--g);
+}
+
+@media (hover: hover) {
+  .ritmo-landing .tech-pill:hover {
+    border-color: var(--g);
+    transform: translateY(-2px);
+  }
+}
+
 .ritmo-landing .steps {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -652,7 +700,55 @@
     padding: 16px;
     font-size: 10px;
   }
-  .ritmo-landing .steps {
+  .ritmo-landing .tech-showcase {
+  margin: 60px 0 30px;
+  padding: 35px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+}
+
+.ritmo-landing .tech-badge-header {
+  margin-bottom: 20px;
+}
+
+.ritmo-landing .tech-badge-header h3 {
+  font-size: 22px;
+  margin: 6px 0 0;
+  letter-spacing: -0.5px;
+}
+
+.ritmo-landing .tech-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ritmo-landing .tech-pill {
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 30px;
+  font-size: 12px;
+  color: var(--w);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: border-color 180ms, transform 180ms;
+}
+
+.ritmo-landing .tech-pill b {
+  color: var(--g);
+}
+
+@media (hover: hover) {
+  .ritmo-landing .tech-pill:hover {
+    border-color: var(--g);
+    transform: translateY(-2px);
+  }
+}
+
+.ritmo-landing .steps {
     grid-template-columns: 1fr;
     gap: 25px;
     padding: 40px 0 50px;

@@ -97,7 +97,7 @@ export function Landing() {
       canvas.height = H * d;
       ctx.setTransform(d, 0, 0, d, 0, 0);
 
-      const count = Math.min(150, Math.max(45, Math.round((W * H) / 8500)));
+      const count = Math.min(225, Math.max(70, Math.round((W * H) / 5600)));
       particles = Array.from({ length: count }, () => ({
         x: Math.random() * W,
         y: Math.random() * H,
@@ -239,58 +239,57 @@ export function Landing() {
               </div>
 
               <div className="aside">
-                <h2>Tu esfuerzo merece un rumbo.</h2>
+                <h2>Tu cartera de alumnos con dirección clara.</h2>
                 <p>
-                  Planifica con intención. Entrena con enfoque. Lleva un registro de lo que estás
-                  construyendo.
+                  Centraliza tus atletas, diseña planificaciones semanales interactivas y supervisa
+                  su sobrecarga progresiva en tiempo real.
                 </p>
                 <Link className="btn" to="/login">
-                  Probar la demo <span className="arrow">↗</span>
+                  Probar demo coach <span className="arrow">↗</span>
                 </Link>
               </div>
             </div>
 
             <div className="hero-foot">
               <div>
-                <span>01 / PLANIFICACIÓN</span>Un plan para avanzar.
+                <span>01 / PLANIFICACIÓN</span>Splits interactivos drag & drop.
               </div>
               <div>
-                <span>02 / ENTRENAMIENTO</span>Cada serie cuenta.
+                <span>02 / SEGUIMIENTO</span>Sobrecarga progresiva y PRs.
               </div>
               <div>
-                <span>03 / SEGUIMIENTO</span>Tu evolución, a la vista.
+                <span>03 / PLATAFORMA</span>Arquitectura full-stack para producción.
               </div>
             </div>
           </section>
 
           {/* STRIP DE VALORES */}
           <div className="strip">
-            <span>PARA ENTRENADORES</span>
-            <span>PARA ATLETAS</span>
-            <span>RUTINAS Y REGISTRO</span>
-            <span>UN MISMO OBJETIVO</span>
+            <span>GESTIÓN DE ALUMNOS</span>
+            <span>PLANIFICADOR DRAG & DROP</span>
+            <span>OVERLOAD Y PRS</span>
+            <span>FULL-STACK PORTAFOLIO</span>
           </div>
 
           <div className="content">
             {/* SECCIÓN INTRO */}
             <section className="intro">
               <div data-reveal>
-                <p className="kicker">La disciplina tiene un punto de partida.</p>
+                <p className="kicker">PLATAFORMA PARA ENTRENADORES Y PREPARADORES FÍSICOS</p>
                 <h2 className="title">
-                  Un plan claro.
+                  Control total de tus alumnos.
                   <br />
-                  Trabajo constante.
+                  Planificación interactiva.
                   <br />
-                  Progreso real.
+                  Progreso medible.
                 </h2>
               </div>
               <div className="intro-right" data-reveal style={{ '--delay': '80ms' } as React.CSSProperties}>
                 <p>
-                  La conexión entre lo que tu entrenador planifica y lo que tú haces en cada sesión.
+                  La conexión directa entre lo que tú planificas como entrenador y lo que tu alumno ejecuta en cada entrenamiento.
                 </p>
                 <small className="muted">
-                  Organiza las rutinas, registra pesos y repeticiones y vuelve a tu historial. Menos
-                  improvisación. Más claridad para tu siguiente entrenamiento.
+                  Crea rutinas personalizadas con arrastrar y soltar, asigna splits por días y supervisa pesos, repeticiones y PRs al instante. Menos hojas de cálculo y WhatsApp. Más profesionalismo, claridad y retención para tus alumnos.
                 </small>
               </div>
             </section>
@@ -350,31 +349,49 @@ export function Landing() {
               </p>
             </section>
 
-            {/* SECCIÓN PASOS / CÓMO FUNCIONA */}
-            <section className="steps" aria-label="Cómo funciona">
+            {/* CINTA DE TECNOLOGÍAS USADAS (PORTFOLIO SHOWCASE) */}
+            <section className="tech-showcase" data-reveal>
+              <div className="tech-badge-header">
+                <span className="eyebrow">STACK TECNOLÓGICO DEL PROYECTO</span>
+                <h3>Tecnologías y arquitectura utilizadas en este desarrollo</h3>
+              </div>
+              <div className="tech-badges">
+                <div className="tech-pill"><b>Docker</b> · Contenedor & Postgres Efímero</div>
+                <div className="tech-pill"><b>NestJS</b> · Backend Modular & DTOs</div>
+                <div className="tech-pill"><b>TypeScript</b> · Tipado Estricto End-to-End</div>
+                <div className="tech-pill"><b>React 19</b> · Frontend Reactivo & SPA</div>
+                <div className="tech-pill"><b>PostgreSQL</b> · Base de Datos Relacional</div>
+                <div className="tech-pill"><b>Prisma ORM</b> · Modelado & Migraciones</div>
+                <div className="tech-pill"><b>Stripe API</b> · Checkout & Suscripciones</div>
+                <div className="tech-pill"><b>PWA</b> · Instalable & Service Workers</div>
+                <div className="tech-pill"><b>TanStack Query</b> · Caché & Mutaciones</div>
+                <div className="tech-pill"><b>Vite</b> · Bundler Ultrarrápido</div>
+              </div>
+            </section>
+
+            {/* PILARES DE INGENIERÍA */}
+            <section className="steps" aria-label="Arquitectura y Tecnologías">
               <article className="step" data-reveal style={{ '--delay': '0ms' } as React.CSSProperties}>
-                <span className="num">01 / DEFINE EL CAMINO</span>
-                <h3>Planifica con intención.</h3>
+                <span className="num">01 / BACKEND & ARQUITECTURA</span>
+                <h3>NestJS · TypeScript · PostgreSQL</h3>
                 <p>
-                  Organiza ejercicios, series y repeticiones. Dale una dirección clara a cada sesión.
+                  Arquitectura modular por dominios, controladores REST, servicios desacoplados y validación estricta con class-validator. Base de datos PostgreSQL orquestada con Prisma ORM, migraciones automáticas y entorno efímero en Docker.
                 </p>
               </article>
 
               <article className="step" data-reveal style={{ '--delay': '80ms' } as React.CSSProperties}>
-                <span className="num">02 / HAZ EL TRABAJO</span>
-                <h3>Entrena con enfoque.</h3>
+                <span className="num">02 / FRONTEND REACTIVO</span>
+                <h3>React 19 · Vite · TanStack Query</h3>
                 <p>
-                  Consulta tu plan y registra tus pesos y repeticiones. Mantén la atención en lo que
-                  viniste a hacer.
+                  Planificador semanal interactivo con Drag & Drop nativo, PWA instalable con Service Workers, diseño mobile-first sin librerías pesadas de componentes y sistema inteligente de pegado y separación de tokens de alumnos.
                 </p>
               </article>
 
               <article className="step" data-reveal style={{ '--delay': '160ms' } as React.CSSProperties}>
-                <span className="num">03 / MIRA HACIA ADELANTE</span>
-                <h3>Reconoce tu avance.</h3>
+                <span className="num">03 / SEGURIDAD & NEGOCIO</span>
+                <h3>Stripe API · JWT · Criptografía</h3>
                 <p>
-                  Vuelve a tus registros y consulta tu historial. Tu siguiente sesión empieza con lo
-                  que ya construiste.
+                  Integración completa de pagos recurrentes con Stripe Checkout, autenticación basada en JWT con guards de roles (RBAC) y suscripción, tokens de vinculación con hash SHA-256 y control estricto de cuotas en base de datos.
                 </p>
               </article>
             </section>
@@ -393,9 +410,9 @@ export function Landing() {
                 <Link className="logo" to="/">
                   RITMO<span>.</span>
                 </Link>
-                <p>Planificación, entrenamiento y seguimiento.</p>
+                <p>Proyecto Full-Stack de Portafolio · NestJS + React + PostgreSQL + Docker + Stripe</p>
               </div>
-              <small>© 2026 RITMO. Todos los derechos reservados.</small>
+              <small>© 2026 RITMO. Diseñado y construido como demostración de ingeniería de software.</small>
             </footer>
           </div>
         </main>

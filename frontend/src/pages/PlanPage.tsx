@@ -19,6 +19,7 @@ type Subscription = {
 export function PlanPage() {
   const qc = useQueryClient();
   const [message, setMessage] = useState('');
+  const [redirectingToCheckout, setRedirectingToCheckout] = useState(false);
   const profile = useQuery({ queryKey: ['profile'], queryFn: () => get<Profile>('/perfil') });
   const catalogs = useQuery({ queryKey: ['catalogs'], queryFn: () => get<Catalogs>('/catalogos') });
   const subscription = useQuery({
@@ -32,14 +33,15 @@ export function PlanPage() {
   const isTrainer = profile.data?.role === 'entrenador';
   const current = subscription.data?.planAlumno || subscription.data?.planEntrenador;
   const plans = isTrainer ? catalogs.data?.planesEntrenador : catalogs.data?.planesAlumno;
+
   const change = useMutation({
     mutationFn: (idPlanNuevo: number) =>
-      patch('/suscripciones/plan', { idPlanNuevo, modoCambio: 'finalPeriodo' }),
+      patch<Subscription>('/suscripciones/plan', { idPlanNuevo, modoCambio: 'finalPeriodo' }),
     onSuccess: async () => {
-      setMessage('Cambio de plan programado correctamente.');
       await qc.invalidateQueries({ queryKey: ['subscription'] });
     },
   });
+
   const lifecycle = useMutation({
     mutationFn: (action: 'cancelar' | 'reanudar') => post(`/suscripciones/${action}`),
     onSuccess: async () => {
@@ -47,6 +49,7 @@ export function PlanPage() {
       await qc.invalidateQueries({ queryKey: ['subscription'] });
     },
   });
+
   const checkout = useMutation({
     mutationFn: () =>
       post<{ url: string }>('/pagos/checkout', {
@@ -57,6 +60,39 @@ export function PlanPage() {
       window.location.assign(result.url);
     },
   });
+
+  const handleSelectPlan = async (plan: Plan) => {
+    setMessage('');
+    try {
+      if (plan.esGratuito) {
+        await change.mutateAsync(plan.id);
+        setMessage('Plan Básico Gratuito activado correctamente.');
+        await qc.invalidateQueries({ queryKey: ['subscription'] });
+        return;
+      }
+
+      setRedirectingToCheckout(true);
+      await change.mutateAsync(plan.id);
+      const subActualizada = await get<Subscription>('/suscripciones/actual');
+      const pagoPendiente = subActualizada.pagos?.[0];
+
+      if (pagoPendiente) {
+        const checkoutRes = await post<{ url: string }>('/pagos/checkout', {
+          pagoId: pagoPendiente.id,
+          suscripcionId: subActualizada.id,
+        });
+        if (checkoutRes.url) {
+          window.location.assign(checkoutRes.url);
+          return;
+        }
+      }
+      setMessage('Cambio de plan registrado. Procede con el botón de Checkout.');
+    } catch (err) {
+      // El error de la mutación se refleja en change.error
+    } finally {
+      setRedirectingToCheckout(false);
+    }
+  };
   if (profile.isLoading || catalogs.isLoading || subscription.isLoading) return <Loading />;
   return (
     <Page eyebrow="CUENTA" title="Tu plan">
@@ -104,10 +140,16 @@ export function PlanPage() {
             {plan.id !== current?.id && (
               <button
                 className="button primary"
-                disabled={change.isPending}
-                onClick={() => change.mutate(plan.id)}
+                disabled={change.isPending || redirectingToCheckout}
+                onClick={() => void handleSelectPlan(plan)}
               >
-                {change.isPending ? 'Actualizando…' : 'Elegir plan'}
+                {redirectingToCheckout
+                  ? 'Abriendo Checkout de Stripe…'
+                  : change.isPending
+                  ? 'Actualizando…'
+                  : plan.esGratuito
+                  ? 'Elegir plan (Gratis)'
+                  : 'Elegir plan y Pagar'}
               </button>
             )}
           </Card>

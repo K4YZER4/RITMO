@@ -94,7 +94,7 @@ export class StripeService {
         cancel_url: input.cancelUrl,
       },
       {
-        idempotencyKey: `checkout-pago-${input.pagoId.toString()}`,
+        idempotencyKey: `checkout-pago-${input.pagoId.toString()}-${Date.now()}`,
       },
     );
   }
