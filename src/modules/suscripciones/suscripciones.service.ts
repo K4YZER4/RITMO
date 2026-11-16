@@ -156,7 +156,9 @@ export class SuscripcionesService implements OnApplicationBootstrap, OnApplicati
 
     const suscripcion = await this.buscarSuscripcionActual(usuarioId, role);
 
-    if (suscripcion.estado === EstadoSuscripcionEnum.morosa) {
+    const demoMode = process.env.DEMO_MODE !== 'false';
+
+    if (!demoMode && suscripcion.estado === EstadoSuscripcionEnum.morosa) {
       throw new ForbiddenException(
         'Tu pago está pendiente o falló. Completa o actualiza el pago para continuar.',
       );
@@ -165,6 +167,7 @@ export class SuscripcionesService implements OnApplicationBootstrap, OnApplicati
     this.validarVigencia(suscripcion);
 
     if (
+      !demoMode &&
       suscripcion.estado !== EstadoSuscripcionEnum.prueba &&
       suscripcion.estado !== EstadoSuscripcionEnum.activa
     ) {
@@ -335,7 +338,8 @@ export class SuscripcionesService implements OnApplicationBootstrap, OnApplicati
     vitalicia: boolean;
     periodoActualFin: Date | null;
   }): void {
-    if (suscripcion.vitalicia) {
+    const demoMode = process.env.DEMO_MODE !== 'false';
+    if (demoMode || suscripcion.vitalicia) {
       return;
     }
 

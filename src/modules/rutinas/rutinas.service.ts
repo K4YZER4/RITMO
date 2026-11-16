@@ -3,6 +3,7 @@ import { RutinaEjercicioDto } from './dto/rutina-ejercicio.dto';
 import { CreateRutinaDto } from './dto/create-rutina.dto';
 import { AsignarRutinaDto } from './dto/asignar-rutina.dto';
 import { ActualizarAsignacionDto } from './dto/actualizar-asignacion.dto';
+import { ReordenarAsignacionesDto } from './dto/reordenar-asignaciones.dto';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   BadRequestException,
@@ -17,25 +18,49 @@ import { withTransactionRetry } from '../../common/utils/transaction-retry';
 export class RutinasService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll(usuarioId: string) {
-    return this.prisma.rutina.findMany({
+  async findAll(usuarioId: string) {
+    const rutinas = await this.prisma.rutina.findMany({
       where: { createdByUsuario: usuarioId, activa: true },
       orderBy: { updatedAt: 'desc' },
       include: {
         categoriaRutina: true,
         _count: { select: { rutinaEjercicio: true, usuarioRutina: true } },
+        usuarioRutina: {
+          select: { idUsuario: true },
+          where: { activa: true },
+        },
       },
+    });
+
+    return rutinas.map((r) => {
+      const distinctAlumnos = new Set(r.usuarioRutina.map((u) => u.idUsuario));
+      return {
+        ...r,
+        alumnosCount: distinctAlumnos.size,
+      };
     });
   }
 
-  findArchived(usuarioId: string) {
-    return this.prisma.rutina.findMany({
+  async findArchived(usuarioId: string) {
+    const rutinas = await this.prisma.rutina.findMany({
       where: { createdByUsuario: usuarioId, activa: false },
       orderBy: { updatedAt: 'desc' },
       include: {
         categoriaRutina: true,
         _count: { select: { rutinaEjercicio: true, usuarioRutina: true } },
+        usuarioRutina: {
+          select: { idUsuario: true },
+          where: { activa: true },
+        },
       },
+    });
+
+    return rutinas.map((r) => {
+      const distinctAlumnos = new Set(r.usuarioRutina.map((u) => u.idUsuario));
+      return {
+        ...r,
+        alumnosCount: distinctAlumnos.size,
+      };
     });
   }
 
@@ -382,16 +407,40 @@ export class RutinasService {
             );
           }
 
-          await tx.usuarioRutina.create({
-            data: {
-              idRutina: id_rutina,
+          const existente = await tx.usuarioRutina.findFirst({
+            where: {
               idUsuario: asignarRutinaDto.id_alumno,
+              idRutina: id_rutina,
               idDiaSemana: asignarRutinaDto.numero_dia,
               fechaInicio,
-              fechaFin,
-              asignadaPorUsuario: usuarioId,
             },
           });
+
+          if (existente) {
+            await tx.usuarioRutina.update({
+              where: { id: existente.id },
+              data: {
+                activa: true,
+                fechaFin,
+                asignadaPorUsuario: usuarioId,
+                motivoCambio: 'Reasignada por el entrenador',
+                updatedBy: usuarioId,
+              },
+            });
+          } else {
+            await tx.usuarioRutina.create({
+              data: {
+                idRutina: id_rutina,
+                idUsuario: asignarRutinaDto.id_alumno,
+                idDiaSemana: asignarRutinaDto.numero_dia,
+                fechaInicio,
+                fechaFin,
+                asignadaPorUsuario: usuarioId,
+                createdBy: usuarioId,
+                updatedBy: usuarioId,
+              },
+            });
+          }
         },
         {
           isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
@@ -449,22 +498,12 @@ export class RutinasService {
           await tx.usuarioRutina.update({
             where: { id: idAsignacion },
             data: {
-              activa: false,
-              fechaFin: new Date(),
-              motivoCambio: 'Reemplazada por el entrenador',
-              updatedBy: entrenadorId,
-            },
-          });
-          await tx.usuarioRutina.create({
-            data: {
               idRutina: nuevaRutinaId,
-              idUsuario: asignacion.idUsuario,
               idDiaSemana: dto.numero_dia,
               fechaInicio,
               fechaFin,
-              asignadaPorUsuario: entrenadorId,
-              createdBy: entrenadorId,
               updatedBy: entrenadorId,
+              motivoCambio: 'Modificada por el entrenador',
             },
           });
         },
@@ -476,25 +515,116 @@ export class RutinasService {
   async quitarAsignacion(idAsignacion: bigint, entrenadorId: string) {
     const asignacion = await this.prisma.usuarioRutina.findUnique({
       where: { id: idAsignacion },
-      include: { rutina: true, usuario: { include: { alumno: true } } },
+      include: {
+        rutina: true,
+        usuario: { include: { alumno: true } },
+        sesionEntrenamiento: { select: { id: true } },
+      },
     });
     if (
       !asignacion ||
       !asignacion.activa ||
-      asignacion.rutina.createdByUsuario !== entrenadorId ||
-      asignacion.usuario.alumno?.idEntrenadorActual !== entrenadorId
+      (asignacion.rutina.createdByUsuario !== entrenadorId &&
+        asignacion.usuario.alumno?.idEntrenadorActual !== entrenadorId &&
+        asignacion.asignadaPorUsuario !== entrenadorId)
     ) {
       throw new ForbiddenException('No tienes permiso para quitar esta asignación');
     }
-    await this.prisma.usuarioRutina.update({
-      where: { id: idAsignacion },
-      data: {
-        activa: false,
-        fechaFin: new Date(),
-        motivoCambio: 'Quitada por el entrenador',
-        updatedBy: entrenadorId,
-      },
-    });
+
+    if (asignacion.sesionEntrenamiento.length === 0) {
+      await this.prisma.usuarioRutina.delete({
+        where: { id: idAsignacion },
+      });
+    } else {
+      await this.prisma.usuarioRutina.update({
+        where: { id: idAsignacion },
+        data: {
+          activa: false,
+          fechaFin: new Date(),
+          motivoCambio: 'Quitada por el entrenador',
+          updatedBy: entrenadorId,
+        },
+      });
+    }
     return { success: true, message: 'Rutina retirada del día correctamente' };
+  }
+
+  async reordenarAsignaciones(dto: ReordenarAsignacionesDto, entrenadorId: string) {
+    if (!dto.cambios || !dto.cambios.length) {
+      throw new BadRequestException('No se especificaron cambios');
+    }
+
+    const ids = dto.cambios.map((c) => BigInt(c.id_usuario_rutina));
+    const destinos = dto.cambios.map((c) => c.numero_dia);
+    if (new Set(destinos).size !== destinos.length) {
+      throw new BadRequestException('No puedes mover dos rutinas al mismo día');
+    }
+
+    return withTransactionRetry(() =>
+      this.prisma.$transaction(async (tx) => {
+        const asignaciones = await tx.usuarioRutina.findMany({
+          where: { id: { in: ids }, activa: true },
+          include: {
+            rutina: true,
+            usuario: { include: { alumno: true } },
+          },
+        });
+
+        if (asignaciones.length !== ids.length) {
+          throw new BadRequestException('Una o más asignaciones no existen o no están activas');
+        }
+
+        const idUsuario = asignaciones[0].idUsuario;
+        for (const asig of asignaciones) {
+          if (asig.idUsuario !== idUsuario) {
+            throw new BadRequestException('Todas las asignaciones deben pertenecer al mismo alumno');
+          }
+          if (
+            asig.rutina.createdByUsuario !== entrenadorId &&
+            asig.usuario.alumno?.idEntrenadorActual !== entrenadorId &&
+            asig.asignadaPorUsuario !== entrenadorId
+          ) {
+            throw new ForbiddenException('No tienes permiso para modificar estas asignaciones');
+          }
+        }
+
+        if (
+          asignaciones.length === 2 &&
+          asignaciones[0].idRutina === asignaciones[1].idRutina
+        ) {
+          return { success: true, message: 'Asignaciones sin cambios (misma rutina)' };
+        }
+
+        const otrasAsignaciones = await tx.usuarioRutina.findMany({
+          where: {
+            idUsuario,
+            activa: true,
+            id: { notIn: ids },
+          },
+        });
+
+        const diasOcupados = new Set(otrasAsignaciones.map((o) => o.idDiaSemana));
+        for (const c of dto.cambios) {
+          if (diasOcupados.has(c.numero_dia)) {
+            throw new BadRequestException(
+              `El alumno ya tiene otra rutina asignada en el día ${c.numero_dia}`,
+            );
+          }
+        }
+
+        for (const c of dto.cambios) {
+          await tx.usuarioRutina.update({
+            where: { id: BigInt(c.id_usuario_rutina) },
+            data: {
+              idDiaSemana: c.numero_dia,
+              updatedBy: entrenadorId,
+              motivoCambio: 'Reordenada por el entrenador',
+            },
+          });
+        }
+
+        return { success: true, message: 'Asignaciones reordenadas correctamente' };
+      }),
+    ).then((res) => res || ({ success: true, message: 'Asignaciones reordenadas correctamente' }));
   }
 }

@@ -33,6 +33,12 @@ export class EntrenadorService {
       select: {
         idUsuario: true,
         fechaInicioEntrenamiento: true,
+        observacionesMedicas: true,
+        lesionesActuales: true,
+        lesionesPasadas: true,
+        numeroCelular: true,
+        contactoEmergenciaNombre: true,
+        contactoEmergenciaTelefono: true,
         usuario: {
           select: {
             nombre: true,

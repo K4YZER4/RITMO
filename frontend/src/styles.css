@@ -364,41 +364,56 @@
   border-radius: 50%;
   font-weight: 700;
 }
-.pending-heading-actions {
+.pending-routine-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-.pending-routine-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  min-height: 94px;
-  gap: 28px;
-  border-top: 1px solid var(--line);
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 12px;
+  padding: 18px 20px;
+  border: 1px solid #ffbf6930;
+  border-radius: 14px;
+  background: #ffffff04;
 }
 .pending-routine-main {
   display: grid;
-  gap: 8px;
+  gap: 9px;
+  min-width: 0;
+}
+.pending-routine-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   min-width: 0;
 }
 .pending-routine-main b {
   color: #f1f5ef;
-  font-size: 1.08rem;
+  font-size: 1.02rem;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .pending-routine-main small {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   color: var(--muted);
+}
+.pending-routine-main small svg {
+  width: 15px;
+  height: 15px;
+  color: #ffbf69;
 }
 .pending-routine-actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
 }
 .reschedule-button {
-  min-width: 220px;
-  min-height: 48px;
-  font-size: 0.92rem;
+  min-width: 190px;
+  min-height: 44px;
+  font-size: 0.88rem;
 }
 .measurement-form {
   display: grid;
@@ -408,50 +423,82 @@
   margin-top: 18px;
 }
 .reorder-modal {
-  max-width: 980px;
+  max-width: 1140px;
+  width: 95vw;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
 }
 .weekly-reorder-grid {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(130px, 1fr));
   gap: 10px;
-  margin: 20px 0;
+  margin: 18px 0;
 }
 .weekly-reorder-day {
-  display: grid;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
-  min-height: 150px;
-  padding: 12px;
+  min-height: 145px;
+  padding: 12px 10px;
   background: #0b0f0d;
   border: 1px solid var(--line);
   border-radius: 12px;
+  transition: all 0.2s ease;
 }
-.weekly-reorder-day strong {
-  color: var(--muted);
-  font-size: 0.78rem;
+.weekly-reorder-day-heading {
+  display: grid;
+  gap: 2px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.weekly-reorder-day-heading strong {
+  color: #f1f5ef;
+  font-size: 0.82rem;
   text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.weekly-reorder-day-heading span {
+  color: var(--muted);
+  font-size: 0.72rem;
 }
 .weekly-reorder-routine {
-  display: grid;
-  min-height: 76px;
-  place-items: center;
-  padding: 10px;
-  color: #10140e;
-  background: var(--lime);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1;
+  padding: 12px 10px;
+  color: #efffe1;
+  background: #b7f34a14;
+  border: 1px solid #b7f34a55;
   border-radius: 9px;
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   font-weight: 700;
-  text-align: center;
   cursor: grab;
 }
+.weekly-reorder-routine span {
+  word-break: break-word;
+  white-space: normal;
+  line-height: 1.3;
+}
+.weekly-reorder-grip {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  color: var(--muted);
+}
 .weekly-reorder-empty {
-  display: grid;
-  min-height: 76px;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 64px;
+  padding: 8px;
   color: var(--muted);
   border: 1px dashed #465047;
   border-radius: 9px;
   font-size: 0.78rem;
+  text-align: center;
 }
 .measurement-field {
   display: grid;
@@ -478,24 +525,39 @@
 .history-heading {
   margin-bottom: 8px;
 }
-@media (max-width: 760px) {
-  .pending-heading-actions {
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
+@media (max-width: 960px) {
   .weekly-reorder-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    max-height: 52vh;
+    grid-template-columns: 1fr;
+    max-height: 54vh;
     overflow-y: auto;
   }
+  .weekly-reorder-day {
+    flex-direction: row;
+    align-items: center;
+    min-height: 64px;
+    gap: 12px;
+  }
+  .weekly-reorder-day-heading {
+    min-width: 95px;
+    padding-bottom: 0;
+    border-bottom: none;
+    border-right: 1px solid var(--line);
+    padding-right: 10px;
+  }
+  .weekly-reorder-routine {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+@media (max-width: 760px) {
   .pending-routine-row {
-    grid-template-columns: 1fr;
-    align-items: stretch;
+    display: grid;
+    align-items: start;
     gap: 14px;
-    padding: 18px 0;
+    padding: 16px;
   }
   .pending-routine-actions {
-    justify-content: space-between;
+    justify-content: stretch;
   }
   .reschedule-button {
     width: 100%;
@@ -507,6 +569,58 @@
     width: 100%;
   }
 }
+
+/* Campos Clínicos y Ficha Médica de Alumnos */
+.student-fields-grid {
+  display: grid;
+  gap: 7px;
+  margin-top: 8px;
+  max-width: 620px;
+}
+.student-info-field {
+  display: grid;
+  gap: 2px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  background: #0d120f;
+  border: 1px solid var(--line);
+}
+.student-info-field p {
+  margin: 0;
+  color: #e4ebe0;
+  line-height: 1.35;
+}
+.student-info-field.note {
+  border-left: 3px solid #e5a93b;
+}
+.student-info-field.note .field-tag {
+  color: #e5a93b;
+}
+.student-info-field.alert {
+  background: rgba(255, 107, 107, 0.08);
+  border: 1px solid rgba(255, 107, 107, 0.35);
+  border-left: 3px solid #ff6b6b;
+}
+.student-info-field.alert p {
+  color: #ffd8d8;
+  font-weight: 500;
+}
+.student-info-field.alert .field-tag {
+  color: #ff6b6b;
+}
+.student-info-field.history {
+  border-left: 3px solid #7592ff;
+}
+.student-info-field.history .field-tag {
+  color: #8da5ff;
+}
+.field-tag {
+  font-size: 0.67rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
 .week-day.today {
   color: var(--lime);
   border-color: var(--lime);
@@ -517,6 +631,11 @@
 }
 .week-day.today b.week-day-routine {
   color: #f4ffe9;
+}
+.weekly-planner-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin: -0.45rem 0 1.2rem;
 }
 .student-today {
   border-color: #b7f34a55;
@@ -981,20 +1100,33 @@ p {
 .list-row {
   display: flex;
   align-items: center;
-  gap: 13px;
-  padding: 15px 0;
+  gap: 14px;
+  padding: 14px 0;
   border-top: 1px solid var(--line);
 }
-.list-row div:nth-child(2) {
-  display: grid;
+.list-row > div:not(.avatar):not(.trophy):not(.session-icon) {
+  display: flex;
+  flex-direction: column;
   gap: 4px;
 }
 .list-row small {
   color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.3;
 }
 .list-row > span,
 .list-row > strong {
   margin-left: auto;
+}
+.session-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: #182218;
+  color: var(--lime);
+  flex-shrink: 0;
 }
 .avatar {
   width: 38px;
@@ -1338,10 +1470,52 @@ p {
   background: #182119;
   border-left: 2px solid var(--lime);
   border-radius: 8px;
+  cursor: grab;
+  transition: transform 0.15s ease, opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  user-select: none;
 }
-.week-routine > div:first-child {
+.week-routine:active {
+  cursor: grabbing;
+}
+.week-routine.is-dragging {
+  opacity: 0.35;
+  transform: scale(0.96);
+  border-left-color: var(--accent, #e5a93b);
+}
+.week-routine-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.week-routine-header > div {
   display: grid;
-  gap: 4px;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+.week-routine-grip {
+  color: var(--muted);
+  flex-shrink: 0;
+  margin-top: 2px;
+  opacity: 0.6;
+  cursor: grab;
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+.week-routine:hover .week-routine-grip {
+  color: var(--lime);
+  opacity: 1;
+}
+.week-day {
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.week-day.drag-over {
+  border-color: var(--lime) !important;
+  background: rgba(183, 243, 74, 0.08) !important;
+  box-shadow: 0 0 14px rgba(183, 243, 74, 0.22);
+}
+.week-day.drag-over .rest-day {
+  color: var(--lime);
+  font-weight: 600;
 }
 .week-routine b {
   font-size: 0.78rem;

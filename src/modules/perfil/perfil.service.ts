@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { UserRole } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
@@ -94,6 +95,25 @@ export class PerfilService {
           where: { idUsuario: usuarioId },
           data: { nombrePublico: nombre_publico },
         });
+      }
+
+      if (usuario.role === UserRole.alumno || usuario.role === UserRole.alumnoConEntrenador) {
+        const datosAlumno = {
+          ...(dto.observaciones_medicas !== undefined ? { observacionesMedicas: dto.observaciones_medicas } : {}),
+          ...(dto.lesiones_actuales !== undefined ? { lesionesActuales: dto.lesiones_actuales } : {}),
+          ...(dto.lesiones_pasadas !== undefined ? { lesionesPasadas: dto.lesiones_pasadas } : {}),
+          ...(dto.contacto_emergencia_nombre !== undefined ? { contactoEmergenciaNombre: dto.contacto_emergencia_nombre } : {}),
+          ...(dto.contacto_emergencia_telefono !== undefined ? { contactoEmergenciaTelefono: dto.contacto_emergencia_telefono } : {}),
+          ...(dto.numero_celular !== undefined ? { numeroCelular: dto.numero_celular } : {}),
+          ...(dto.id_objetivo !== undefined ? { idObjetivo: dto.id_objetivo } : {}),
+          ...(dto.id_nivel_actividad !== undefined ? { idNivelActividad: dto.id_nivel_actividad } : {}),
+        };
+        if (Object.keys(datosAlumno).length) {
+          await tx.alumno.update({
+            where: { idUsuario: usuarioId },
+            data: datosAlumno,
+          });
+        }
       }
     });
     return this.obtenerPerfil(usuarioId);

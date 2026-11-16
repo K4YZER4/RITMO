@@ -239,7 +239,13 @@ export function Routines() {
                 <b>{routine._count?.rutinaEjercicio || 0}</b> ejercicios
               </span>
               <span>
-                <b>{routine._count?.usuarioRutina || 0}</b> asignaciones
+                <b>{routine.alumnosCount ?? routine._count?.usuarioRutina ?? 0}</b>{' '}
+                {(routine.alumnosCount ?? routine._count?.usuarioRutina ?? 0) === 1
+                  ? 'alumno'
+                  : 'alumnos'}
+                {routine._count?.usuarioRutina
+                  ? ` (${routine._count.usuarioRutina} sesiones/sem)`
+                  : ''}
               </span>
             </div>
             <div className="card-actions">
@@ -300,7 +306,11 @@ export function Routines() {
                     <b>{routine._count?.rutinaEjercicio || 0}</b> ejercicios
                   </span>
                   <span>
-                    <b>{routine._count?.usuarioRutina || 0}</b> asignaciones históricas
+                    <b>{routine.alumnosCount ?? routine._count?.usuarioRutina ?? 0}</b>{' '}
+                    {(routine.alumnosCount ?? routine._count?.usuarioRutina ?? 0) === 1
+                      ? 'alumno'
+                      : 'alumnos'}{' '}
+                    históricos
                   </span>
                 </div>
                 <div className="card-actions">

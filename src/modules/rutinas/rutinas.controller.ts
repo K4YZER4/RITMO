@@ -13,6 +13,7 @@ import { CreateRutinaDto } from './dto/create-rutina.dto';
 import { RutinaEjercicioDto } from './dto/rutina-ejercicio.dto';
 import { AsignarRutinaDto } from './dto/asignar-rutina.dto';
 import { ActualizarAsignacionDto } from './dto/actualizar-asignacion.dto';
+import { ReordenarAsignacionesDto } from './dto/reordenar-asignaciones.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ParseBigIntPipe } from '../../common/pipes/parse-big-int.pipe';
 @ApiTags('Rutinas')
@@ -125,6 +126,15 @@ export class RutinasController {
     @CurrentUser('id') usuarioId: string,
   ) {
     return this.rutinasService.asignarRutinaAAlumno(id, body, usuarioId);
+  }
+
+  @Patch('asignaciones/reordenar')
+  @ApiOperation({ summary: 'Reordenar o intercambiar días de rutinas asignadas a un alumno' })
+  reordenarAsignaciones(
+    @Body() body: ReordenarAsignacionesDto,
+    @CurrentUser('id') usuarioId: string,
+  ) {
+    return this.rutinasService.reordenarAsignaciones(body, usuarioId);
   }
 
   @Patch('asignaciones/:id')

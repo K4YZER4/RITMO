@@ -65,7 +65,10 @@ export function PlanPage() {
           <span className="eyebrow">PLAN ACTUAL</span>
           <h2>{current?.nombre || 'Sin plan'}</h2>
           <p>
-            {subscription.data?.estado || 'No disponible'} · Pago: {payment.data?.estado || '—'}
+            Estado: <b>{subscription.data?.estado || 'No disponible'}</b> · Pago: {payment.data?.estado || '—'}
+            {isTrainer && current?.limiteAlumnos && (
+              <> · Capacidad: <b>hasta {current.limiteAlumnos} alumnos</b></>
+            )}
           </p>
         </div>
         <CreditCard />
@@ -85,12 +88,19 @@ export function PlanPage() {
             <span className="eyebrow">{plan.id === current?.id ? 'ACTUAL' : 'DISPONIBLE'}</span>
             <h2>{plan.nombre}</h2>
             <strong>{plan.esGratuito ? 'Gratis' : `${plan.precio} ${plan.moneda}`}</strong>
-            <p>{plan.descripcion || 'Plan para entrenar a tu ritmo.'}</p>
-            {plan.limiteRutinas && (
-              <small>
-                <Check size={14} /> {plan.limiteRutinas} rutinas
-              </small>
-            )}
+            <p style={{ margin: '8px 0', lineHeight: 1.4 }}>{plan.descripcion || 'Plan para entrenar a tu ritmo.'}</p>
+            <div className="plan-badges" style={{ display: 'grid', gap: '6px', margin: '10px 0 16px' }}>
+              {isTrainer && plan.limiteAlumnos !== undefined && (
+                <small style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--lime)', fontWeight: 600 }}>
+                  <Check size={14} /> Hasta {plan.limiteAlumnos} alumnos activos
+                </small>
+              )}
+              {plan.limiteRutinas !== undefined && (
+                <small style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--muted)' }}>
+                  <Check size={14} /> Hasta {plan.limiteRutinas} rutinas
+                </small>
+              )}
+            </div>
             {plan.id !== current?.id && (
               <button
                 className="button primary"

@@ -45,8 +45,8 @@ RITMO es una plataforma de entrenamiento físico que permite:
 | Framework                | NestJS 11                                                                    |
 | Lenguaje                 | TypeScript 5.7                                                               |
 | ORM                      | Prisma 7 (`@prisma/client` con `@prisma/adapter-pg` / Prisma Accelerate)     |
-| Base de datos            | PostgreSQL (multi-schema: `alumno`, `app_user`, `core`, `entrenador`, `ubi`) |
-| Host de DB               | Neón (remoto; ver `DIRECT_URL`)                                              |
+| Base de datos            | PostgreSQL 16 (multi-schema: `alumno`, `app_user`, `core`, `entrenador`, `ubi`) |
+| Despliegue DB            | Docker multistage con PostgreSQL efímero integrado (Render $0/mes) o remoto (Neon) |
 | Pagos                    | Stripe API v22                                                               |
 | Validación               | `class-validator` + `class-transformer`                                      |
 | Configuración de entorno | `zod` (`config/env.schema.ts`)                                               |
