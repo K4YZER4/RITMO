@@ -47,18 +47,20 @@
 }
 
 .ritmo-landing .hero {
-  height: 850px;
+  min-height: 560px;
+  max-height: 720px;
+  height: clamp(560px, calc(100vh - 36px), 710px);
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  border-radius: 12px 12px 50px 50px;
+  border-radius: 12px 12px 40px 40px;
 }
 
 .ritmo-landing .art {
   position: absolute;
   z-index: -2;
-  top: 90px;
-  height: 740px;
+  top: 45px;
+  height: clamp(470px, 86%, 620px);
   left: 52%;
   transform: translateX(-50%);
   width: max-content;
@@ -88,7 +90,7 @@
 }
 
 .ritmo-landing header {
-  padding: 28px 42px;
+  padding: 18px 36px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -166,10 +168,10 @@
   position: absolute;
   left: 5%;
   right: 5%;
-  top: 34%;
+  top: clamp(100px, 20%, 140px);
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 35px;
 }
 
@@ -177,12 +179,12 @@
   font-size: 10px;
   letter-spacing: 2px;
   color: var(--g);
-  margin: 0 0 25px;
+  margin: 0 0 16px;
 }
 
 .ritmo-landing h1 {
   font-family: var(--font-display);
-  font-size: clamp(70px, 8.8vw, 124px);
+  font-size: clamp(54px, 6.6vw, 96px);
   letter-spacing: 1px;
   line-height: 0.92;
   margin: 0;
@@ -207,35 +209,36 @@
 }
 
 .ritmo-landing .aside {
-  max-width: 240px;
-  margin-top: 75px;
+  max-width: 250px;
+  margin-top: 10px;
 }
 
 .ritmo-landing .aside h2 {
   font-family: var(--font-display);
-  font-size: 28px;
+  font-size: 24px;
   letter-spacing: 0.8px;
   line-height: 1.15;
+  margin: 0 0 10px;
 }
 
 .ritmo-landing .aside p {
   font-size: 13px;
-  line-height: 1.7;
+  line-height: 1.5;
   color: #bdc2b7;
-  margin-bottom: 25px;
+  margin-bottom: 18px;
 }
 
 .ritmo-landing .hero-foot {
   position: absolute;
-  bottom: 35px;
+  bottom: 20px;
   left: 5%;
   right: 5%;
   border-top: 1px solid #ffffff40;
   display: flex;
   justify-content: space-between;
   gap: 20px;
-  padding-top: 22px;
-  font-size: 12px;
+  padding-top: 14px;
+  font-size: 11px;
 }
 
 .ritmo-landing .hero-foot span {
