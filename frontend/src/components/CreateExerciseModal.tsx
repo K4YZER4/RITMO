@@ -49,7 +49,9 @@ export function CreateExerciseModal({ onClose }: { onClose: () => void }) {
         <span className="eyebrow">BIBLIOTECA PERSONAL</span>
         <h2>Crear ejercicio</h2>
         <label>
-          Nombre <span className="req">*</span>
+          <span className="label-head">
+            Nombre {!name.trim() && <span className="req">*</span>}
+          </span>
           <input
             value={name}
             onChange={(event) => setName(event.target.value)}
@@ -58,7 +60,9 @@ export function CreateExerciseModal({ onClose }: { onClose: () => void }) {
           />
         </label>
         <label>
-          Descripción <span className="req">*</span>
+          <span className="label-head">
+            Descripción {!description.trim() && <span className="req">*</span>}
+          </span>
           <textarea
             value={description}
             onChange={(event) => setDescription(event.target.value)}
@@ -68,7 +72,9 @@ export function CreateExerciseModal({ onClose }: { onClose: () => void }) {
           />
         </label>
         <label>
-          Músculos <span className="req">*</span>
+          <span className="label-head">
+            Músculos {muscles.length === 0 && <span className="req">*</span>}
+          </span>
           <SelectMenu
             value=""
             placeholder="Añadir músculo (ej. hombro)..."
@@ -91,7 +97,9 @@ export function CreateExerciseModal({ onClose }: { onClose: () => void }) {
           ))}
         </div>
         <label>
-          Equipo <span className="opt">(opcional)</span>
+          <span className="label-head">
+            Equipo <span className="opt">(opcional)</span>
+          </span>
           <SelectMenu
             value=""
             placeholder="Añadir equipo (ej. mancuerna)..."
@@ -114,7 +122,9 @@ export function CreateExerciseModal({ onClose }: { onClose: () => void }) {
           ))}
         </div>
         <label>
-          URL de imagen <span className="opt">(opcional)</span>
+          <span className="label-head">
+            URL de imagen <span className="opt">(opcional)</span>
+          </span>
           <input
             type="url"
             value={image}
@@ -123,7 +133,9 @@ export function CreateExerciseModal({ onClose }: { onClose: () => void }) {
           />
         </label>
         <label>
-          Link informativo o video <span className="opt">(opcional)</span>
+          <span className="label-head">
+            Link informativo o video <span className="opt">(opcional)</span>
+          </span>
           <input
             type="url"
             value={informationLink}

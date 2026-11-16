@@ -226,7 +226,9 @@ export function Progress() {
             <span className="eyebrow">BIBLIOTECA PERSONAL</span>
             <h2>Nuevo ejercicio</h2>
             <label>
-              Nombre <span className="req">*</span>
+              <span className="label-head">
+                Nombre {!exerciseName.trim() && <span className="req">*</span>}
+              </span>
               <input
                 value={exerciseName}
                 onChange={(event) => setExerciseName(event.target.value)}
@@ -235,7 +237,9 @@ export function Progress() {
               />
             </label>
             <label>
-              Descripción <span className="req">*</span>
+              <span className="label-head">
+                Descripción {!exerciseDescription.trim() && <span className="req">*</span>}
+              </span>
               <textarea
                 value={exerciseDescription}
                 onChange={(event) => setExerciseDescription(event.target.value)}
@@ -245,7 +249,9 @@ export function Progress() {
               />
             </label>
             <label>
-              Músculos <span className="req">*</span>
+              <span className="label-head">
+                Músculos {muscles.length === 0 && <span className="req">*</span>}
+              </span>
               <SelectMenu
                 value=""
                 placeholder="Añadir músculo (ej. cuadriceps)..."
@@ -268,7 +274,9 @@ export function Progress() {
               ))}
             </div>
             <label>
-              Equipo <span className="opt">(opcional)</span>
+              <span className="label-head">
+                Equipo <span className="opt">(opcional)</span>
+              </span>
               <SelectMenu
                 value=""
                 placeholder="Añadir equipo (ej. prensa)..."

@@ -251,7 +251,9 @@ export function RoutineExerciseEditor({
             <span className="eyebrow">BIBLIOTECA PERSONAL</span>
             <h2>Crear ejercicio</h2>
             <label>
-              Nombre <span className="req">*</span>
+              <span className="label-head">
+                Nombre {!exerciseName.trim() && <span className="req">*</span>}
+              </span>
               <input
                 value={exerciseName}
                 onChange={(event) => setExerciseName(event.target.value)}
@@ -260,7 +262,9 @@ export function RoutineExerciseEditor({
               />
             </label>
             <label>
-              Descripción <span className="req">*</span>
+              <span className="label-head">
+                Descripción {!exerciseDescription.trim() && <span className="req">*</span>}
+              </span>
               <textarea
                 value={exerciseDescription}
                 onChange={(event) => setExerciseDescription(event.target.value)}
@@ -270,7 +274,9 @@ export function RoutineExerciseEditor({
               />
             </label>
             <label>
-              Músculos <span className="req">*</span>
+              <span className="label-head">
+                Músculos {muscles.length === 0 && <span className="req">*</span>}
+              </span>
               <SelectMenu
                 value=""
                 placeholder="Añadir músculo (ej. espalda)..."
@@ -293,7 +299,9 @@ export function RoutineExerciseEditor({
               ))}
             </div>
             <label>
-              Equipo <span className="opt">(opcional)</span>
+              <span className="label-head">
+                Equipo <span className="opt">(opcional)</span>
+              </span>
               <SelectMenu
                 value=""
                 placeholder="Añadir equipo (ej. barra)..."
@@ -316,7 +324,9 @@ export function RoutineExerciseEditor({
               ))}
             </div>
             <label>
-              URL de imagen <span className="opt">(opcional)</span>
+              <span className="label-head">
+                URL de imagen <span className="opt">(opcional)</span>
+              </span>
               <input
                 type="url"
                 value={exerciseImage}
@@ -325,7 +335,9 @@ export function RoutineExerciseEditor({
               />
             </label>
             <label>
-              Link informativo o video <span className="opt">(opcional)</span>
+              <span className="label-head">
+                Link informativo o video <span className="opt">(opcional)</span>
+              </span>
               <input
                 type="url"
                 value={exerciseLink}

@@ -353,7 +353,9 @@ export function Routines() {
             <span className="eyebrow">NUEVA RUTINA</span>
             <h2>Construye la base</h2>
             <label>
-              Nombre <span className="req">*</span>
+              <span className="label-head">
+                Nombre {!name.trim() && <span className="req">*</span>}
+              </span>
               <input
                 value={name}
                 onChange={(e) => {
@@ -367,7 +369,9 @@ export function Routines() {
               />
             </label>
             <label>
-              Descripción <span className="req">*</span>
+              <span className="label-head">
+                Descripción {!description.trim() && <span className="req">*</span>}
+              </span>
               <textarea
                 value={description}
                 onChange={(e) => {
@@ -380,7 +384,9 @@ export function Routines() {
               />
             </label>
             <label>
-              Categoría <span className="req">*</span>
+              <span className="label-head">
+                Categoría {!category && <span className="req">*</span>}
+              </span>
               <SelectMenu
                 value={category}
                 placeholder="Selecciona una categoría..."

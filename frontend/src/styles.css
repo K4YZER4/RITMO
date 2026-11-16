@@ -807,17 +807,25 @@ p {
 }
 .auth-card label,
 .modal label {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
   margin: 18px 0;
   color: #bdc5bf;
   font-weight: 600;
   font-size: 0.9rem;
 }
+.label-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
 .req {
   color: var(--lime);
   font-weight: 700;
-  margin-left: 4px;
+  margin-left: 2px;
+  display: inline-block;
+  line-height: 1;
 }
 .opt {
   color: var(--muted);
