@@ -94,11 +94,13 @@ export function Landing() {
           entries.forEach((entry) => {
             if (entry.isIntersecting) {
               entry.target.classList.add('visible');
-              observer?.unobserve(entry.target);
+            } else {
+              // Reactiva la animación bidireccional (tanto al scrollear hacia arriba como hacia abajo)
+              entry.target.classList.remove('visible');
             }
           });
         },
-        { threshold: 0.12, rootMargin: '0px 0px -20px 0px' },
+        { threshold: 0.1, rootMargin: '0px 0px -20px 0px' },
       );
       targets.forEach((el) => observer?.observe(el));
     } else {
@@ -279,7 +281,7 @@ export function Landing() {
               </nav>
             </header>
 
-            <div className="headline">
+            <div className="headline" data-reveal>
               <div>
                 <p className="eyebrow">ENTRENA. REGISTRA. SUPÉRATE.</p>
                 <h1>
@@ -315,7 +317,7 @@ export function Landing() {
           </section>
 
           {/* STRIP DE VALORES */}
-          <div className="strip">
+          <div className="strip" data-reveal>
             <span>GESTIÓN DE ALUMNOS</span>
             <span>PLANIFICADOR DRAG & DROP</span>
             <span>OVERLOAD Y PRS</span>
