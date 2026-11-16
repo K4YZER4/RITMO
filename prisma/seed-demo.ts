@@ -584,55 +584,156 @@ async function main() {
       });
     }
 
-    // Sesión de demostración completada previa para métricas y gráficos
+    // Sesiones de demostración completadas previas para métricas, gráficos y feedback
     const asignacionLunes = await prisma.usuarioRutina.findFirst({
       where: { idUsuario: usuario.id, idRutina: rutinaTorso.id, idDiaSemana: 1, activa: true },
     });
+    const asignacionMartes = await prisma.usuarioRutina.findFirst({
+      where: { idUsuario: usuario.id, idRutina: rutinaPierna.id, idDiaSemana: 2, activa: true },
+    });
 
     if (asignacionLunes) {
-      const fechaSesion = new Date();
-      fechaSesion.setUTCDate(fechaSesion.getUTCDate() - 3);
+      const rutinaEjerciciosTorso = await prisma.rutinaEjercicio.findMany({
+        where: { idRutina: rutinaTorso.id },
+        orderBy: { orden: 'asc' },
+      });
+
+      // 1. Sesión reciente de Torso (hace 2 días) con notas de molestia en hombro
+      const fechaSesionTorso = new Date();
+      fechaSesionTorso.setUTCDate(fechaSesionTorso.getUTCDate() - 2);
 
       let sesion = await prisma.sesionEntrenamiento.findFirst({
-        where: { idUsuario: usuario.id, notasAlumno: 'Sesión completada con éxito' },
+        where: { idUsuario: usuario.id, idRutina: rutinaTorso.id, duracionMinutos: 52 },
       });
 
       if (!sesion) {
-        const rutinaEjercicios = await prisma.rutinaEjercicio.findMany({
-          where: { idRutina: rutinaTorso.id },
-          orderBy: { orden: 'asc' },
-        });
-
         sesion = await prisma.sesionEntrenamiento.create({
           data: {
             idUsuario: usuario.id,
             idUsuarioRutina: asignacionLunes.id,
             idRutina: rutinaTorso.id,
-            fechaSesion,
+            fechaSesion: fechaSesionTorso,
             idEstado: 2, // completada
-            duracionMinutos: 55,
-            notasAlumno: 'Sesión completada con éxito',
+            duracionMinutos: 52,
+            notasAlumno:
+              a.nombre === 'Ana'
+                ? 'Completé todo el entrenamiento. Sentí una punzada incómoda en la parte anterior del hombro derecho en la última serie pesada de press de banca con 72.5kg. Avísame si cambiamos agarre o bajamos carga.'
+                : 'Sesión completada con excelente intensidad y técnica sólida.',
+            notasEntrenador:
+              a.nombre === 'Ana'
+                ? 'Enterado Ana. Para la próxima sesión cambiamos el press de banca a mancuernas con agarre neutro a 30° para no comprometer el manguito rotador.'
+                : null,
             createdBy: usuario.id,
             sesionEjercicio: {
-              create: rutinaEjercicios.map((re) => ({
-                idRutinaEjercicio: re.id,
-                idEjercicioEstandar: re.idEjercicioEstandar,
-                idEjercicioPersonalizado: re.idEjercicioPersonalizado,
-                orden: re.orden,
-                sesionEjercicioSet: {
-                  create: [1, 2, 3, 4].map((numeroSet) => ({
-                    numeroSet,
-                    repeticionesObjetivo: re.repeticiones,
-                    pesoObjetivo: re.pesoObjetivo ? Number(re.pesoObjetivo) : 50,
-                    repeticionesRealizadas: re.repeticiones,
-                    pesoReal: re.pesoObjetivo ? Number(re.pesoObjetivo) : 50,
-                    completado: true,
-                  })),
-                },
-              })),
+              create: rutinaEjerciciosTorso.map((re) => {
+                const ejBanca = ejerciciosMap.get('Press de banca');
+                const esPressBanca = re.idEjercicioEstandar === ejBanca?.id;
+                const elevaciones = personalizadosMap.get('Elevaciones laterales en polea');
+                const esElevaciones = re.idEjercicioPersonalizado === elevaciones?.id;
+
+                let notaEjercicio: string | null = null;
+                if (a.nombre === 'Ana' && esPressBanca) {
+                  notaEjercicio = 'Molestia leve en hombro derecho al descender con 72.5kg (4ta serie, RIR 1).';
+                } else if (a.nombre === 'Ana' && esElevaciones) {
+                  notaEjercicio = 'Excelente aislamiento del deltoides lateral sin impacto en la articulación.';
+                }
+
+                return {
+                  idRutinaEjercicio: re.id,
+                  idEjercicioEstandar: re.idEjercicioEstandar,
+                  idEjercicioPersonalizado: re.idEjercicioPersonalizado,
+                  orden: re.orden,
+                  nota: notaEjercicio,
+                  sesionEjercicioSet: {
+                    create: [1, 2, 3, 4].map((numeroSet) => {
+                      const peso = esPressBanca
+                        ? [60, 65, 70, 72.5][numeroSet - 1]
+                        : re.pesoObjetivo
+                          ? Number(re.pesoObjetivo)
+                          : 45;
+                      const reps = esPressBanca
+                        ? [10, 10, 8, 6][numeroSet - 1]
+                        : re.repeticiones;
+                      const rpe = esPressBanca
+                        ? [7, 8, 8.5, 9.5][numeroSet - 1]
+                        : 8;
+
+                      return {
+                        numeroSet,
+                        repeticionesObjetivo: re.repeticiones,
+                        pesoObjetivo: peso,
+                        repeticionesRealizadas: reps,
+                        pesoReal: peso,
+                        rpe,
+                        rir: rpe >= 9 ? 1 : 2,
+                        completado: true,
+                      };
+                    }),
+                  },
+                };
+              }),
             },
           },
         });
+      }
+
+      // 2. Sesión anterior de Pierna (hace 5 días)
+      if (asignacionMartes) {
+        const fechaSesionPierna = new Date();
+        fechaSesionPierna.setUTCDate(fechaSesionPierna.getUTCDate() - 5);
+
+        const rutinaEjerciciosPierna = await prisma.rutinaEjercicio.findMany({
+          where: { idRutina: rutinaPierna.id },
+          orderBy: { orden: 'asc' },
+        });
+
+        const sesionPiernaExistente = await prisma.sesionEntrenamiento.findFirst({
+          where: { idUsuario: usuario.id, idRutina: rutinaPierna.id, duracionMinutos: 58 },
+        });
+
+        if (!sesionPiernaExistente) {
+          await prisma.sesionEntrenamiento.create({
+            data: {
+              idUsuario: usuario.id,
+              idUsuarioRutina: asignacionMartes.id,
+              idRutina: rutinaPierna.id,
+              fechaSesion: fechaSesionPierna,
+              idEstado: 2,
+              duracionMinutos: 58,
+              notasAlumno:
+                a.nombre === 'Ana'
+                  ? 'Gran sesión de pierna. Me sentí fuerte en sentadilla libre y aumenté 5kg sin perder profundidad.'
+                  : a.nombre === 'Sofía'
+                    ? 'El Hip Thrust con barra se sintió increíble con 120kg. Cuidé la muñeca en las extensiones y no hubo dolor.'
+                    : 'Entrenamiento de pierna intenso y completo.',
+              createdBy: usuario.id,
+              sesionEjercicio: {
+                create: rutinaEjerciciosPierna.map((re) => {
+                  const hipThrust = personalizadosMap.get('Hip Thrust con barra');
+                  const esHipThrust = re.idEjercicioPersonalizado === hipThrust?.id;
+                  return {
+                    idRutinaEjercicio: re.id,
+                    idEjercicioEstandar: re.idEjercicioEstandar,
+                    idEjercicioPersonalizado: re.idEjercicioPersonalizado,
+                    orden: re.orden,
+                    nota: esHipThrust ? 'Activación brutal de glúteo superior, pausa de 1 segundo arriba.' : null,
+                    sesionEjercicioSet: {
+                      create: [1, 2, 3, 4].map((numeroSet) => ({
+                        numeroSet,
+                        repeticionesObjetivo: re.repeticiones,
+                        pesoObjetivo: esHipThrust ? 120 : re.pesoObjetivo ? Number(re.pesoObjetivo) : 70,
+                        repeticionesRealizadas: re.repeticiones,
+                        pesoReal: esHipThrust ? 120 : re.pesoObjetivo ? Number(re.pesoObjetivo) : 70,
+                        rpe: 8.5,
+                        completado: true,
+                      })),
+                    },
+                  };
+                }),
+              },
+            },
+          });
+        }
       }
 
       const primerSet = await prisma.sesionEjercicioSet.findFirst({
@@ -650,14 +751,14 @@ async function main() {
               peso: 80,
             },
           },
-          update: { repeticiones: 8, fechaPr: fechaSesion },
+          update: { repeticiones: 8, fechaPr: sesion.fechaSesion },
           create: {
             idUsuario: usuario.id,
             idEjercicioEstandar: ejBanca.id,
             peso: 80,
             repeticiones: 8,
             idSesionEjercicioSet: primerSet.id,
-            fechaPr: fechaSesion,
+            fechaPr: sesion.fechaSesion,
           },
         });
 
@@ -672,14 +773,14 @@ async function main() {
                 peso: 120,
               },
             },
-            update: { repeticiones: 10, fechaPr: fechaSesion },
+            update: { repeticiones: 10, fechaPr: sesion.fechaSesion },
             create: {
               idUsuario: usuario.id,
               idEjercicioPersonalizado: hipThrust.id,
               peso: 120,
               repeticiones: 10,
               idSesionEjercicioSet: primerSet.id,
-              fechaPr: fechaSesion,
+              fechaPr: sesion.fechaSesion,
             },
           });
         }
@@ -695,14 +796,14 @@ async function main() {
                 peso: 14,
               },
             },
-            update: { repeticiones: 12, fechaPr: fechaSesion },
+            update: { repeticiones: 12, fechaPr: sesion.fechaSesion },
             create: {
               idUsuario: usuario.id,
               idEjercicioPersonalizado: elevaciones.id,
               peso: 14,
               repeticiones: 12,
               idSesionEjercicioSet: primerSet.id,
-              fechaPr: fechaSesion,
+              fechaPr: sesion.fechaSesion,
             },
           });
         }
