@@ -226,26 +226,29 @@ export function Progress() {
             <span className="eyebrow">BIBLIOTECA PERSONAL</span>
             <h2>Nuevo ejercicio</h2>
             <label>
-              Nombre
+              Nombre <span className="req">*</span>
               <input
                 value={exerciseName}
                 onChange={(event) => setExerciseName(event.target.value)}
+                placeholder="Ej. Prensa Inclinada 45°"
                 required
               />
             </label>
             <label>
-              Descripción
+              Descripción <span className="req">*</span>
               <textarea
                 value={exerciseDescription}
                 onChange={(event) => setExerciseDescription(event.target.value)}
+                rows={3}
+                placeholder="Describe el ejercicio y consejos técnicos..."
                 required
               />
             </label>
             <label>
-              Músculos
+              Músculos <span className="req">*</span>
               <SelectMenu
                 value=""
-                placeholder="Añadir músculo"
+                placeholder="Añadir músculo (ej. cuadriceps)..."
                 options={(catalogs.data?.musculos || [])
                   .filter((item) => !muscles.includes(item.id))
                   .map((item) => ({ value: item.id, label: item.nombre }))}
@@ -265,10 +268,10 @@ export function Progress() {
               ))}
             </div>
             <label>
-              Equipo opcional
+              Equipo <span className="opt">(opcional)</span>
               <SelectMenu
                 value=""
-                placeholder="Añadir equipo"
+                placeholder="Añadir equipo (ej. prensa)..."
                 options={(catalogs.data?.equipos || [])
                   .filter((item) => !equipment.includes(item.id))
                   .map((item) => ({ value: item.id, label: item.nombre }))}

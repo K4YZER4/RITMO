@@ -49,40 +49,29 @@ export function CreateExerciseModal({ onClose }: { onClose: () => void }) {
         <span className="eyebrow">BIBLIOTECA PERSONAL</span>
         <h2>Crear ejercicio</h2>
         <label>
-          Nombre
-          <input value={name} onChange={(event) => setName(event.target.value)} required />
-        </label>
-        <label>
-          Descripción
-          <textarea
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
+          Nombre <span className="req">*</span>
+          <input
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Ej. Press Banca Inclinado con Mancuernas"
             required
           />
         </label>
         <label>
-          URL de imagen opcional
-          <input
-            type="url"
-            value={image}
-            onChange={(event) => setImage(event.target.value)}
-            placeholder="https://..."
+          Descripción <span className="req">*</span>
+          <textarea
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            rows={3}
+            placeholder="Describe el movimiento y recomendaciones técnicas..."
+            required
           />
         </label>
         <label>
-          Link informativo opcional
-          <input
-            type="url"
-            value={informationLink}
-            onChange={(event) => setInformationLink(event.target.value)}
-            placeholder="https://..."
-          />
-        </label>
-        <label>
-          Músculos
+          Músculos <span className="req">*</span>
           <SelectMenu
             value=""
-            placeholder="Añadir músculo"
+            placeholder="Añadir músculo (ej. hombro)..."
             options={(catalogs.data?.musculos || [])
               .filter((item) => !muscles.includes(item.id))
               .map((item) => ({ value: item.id, label: item.nombre }))}
@@ -102,10 +91,10 @@ export function CreateExerciseModal({ onClose }: { onClose: () => void }) {
           ))}
         </div>
         <label>
-          Equipo opcional
+          Equipo <span className="opt">(opcional)</span>
           <SelectMenu
             value=""
-            placeholder="Añadir equipo"
+            placeholder="Añadir equipo (ej. mancuerna)..."
             options={(catalogs.data?.equipos || [])
               .filter((item) => !equipment.includes(item.id))
               .map((item) => ({ value: item.id, label: item.nombre }))}
@@ -124,6 +113,24 @@ export function CreateExerciseModal({ onClose }: { onClose: () => void }) {
             </button>
           ))}
         </div>
+        <label>
+          URL de imagen <span className="opt">(opcional)</span>
+          <input
+            type="url"
+            value={image}
+            onChange={(event) => setImage(event.target.value)}
+            placeholder="https://..."
+          />
+        </label>
+        <label>
+          Link informativo o video <span className="opt">(opcional)</span>
+          <input
+            type="url"
+            value={informationLink}
+            onChange={(event) => setInformationLink(event.target.value)}
+            placeholder="https://youtube.com/..."
+          />
+        </label>
         {create.error && <div className="error">{create.error.message}</div>}
         <button className="button primary full" disabled={!muscles.length || create.isPending}>
           {create.isPending ? 'Creando…' : 'Crear ejercicio'}

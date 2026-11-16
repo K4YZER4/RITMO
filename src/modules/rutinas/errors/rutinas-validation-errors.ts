@@ -83,71 +83,71 @@ export const RUTINAS_VALIDATION_ERRORS = {
 
   REQUIRED_CATEGORIA_RUTINA_ID: validationMessage(
     'REQUIRED_CATEGORIA_RUTINA_ID',
-    'id_categoria_rutina es obligatorio.',
+    'Debes seleccionar una categoría para la rutina.',
   ),
   INVALID_CATEGORIA_RUTINA_ID: validationMessage(
     'INVALID_CATEGORIA_RUTINA_ID',
-    'id_categoria_rutina debe ser un entero.',
+    'La categoría de la rutina no es válida.',
   ),
   CATEGORIA_RUTINA_ID_TOO_LOW: validationMessage(
     'CATEGORIA_RUTINA_ID_TOO_LOW',
-    'id_categoria_rutina debe ser mayor a 0.',
+    'Debes seleccionar una categoría para la rutina.',
   ),
 
-  REQUIRED_EJERCICIOS: validationMessage('REQUIRED_EJERCICIOS', 'ejercicios es obligatorio.'),
-  INVALID_EJERCICIOS: validationMessage('INVALID_EJERCICIOS', 'ejercicios debe ser un arreglo.'),
+  REQUIRED_EJERCICIOS: validationMessage('REQUIRED_EJERCICIOS', 'Debes incluir al menos un ejercicio en la rutina.'),
+  INVALID_EJERCICIOS: validationMessage('INVALID_EJERCICIOS', 'La lista de ejercicios debe ser un arreglo.'),
   EJERCICIOS_MIN_SIZE: validationMessage(
     'EJERCICIOS_MIN_SIZE',
-    'ejercicios debe contener al menos un ejercicio.',
+    'La rutina debe contener al menos un ejercicio.',
   ),
 
   INVALID_ID_EJERCICIO_ESTANDAR: validationMessage(
     'INVALID_ID_EJERCICIO_ESTANDAR',
-    'id_ejercicio_estandar debe ser un entero.',
+    'El ejercicio estándar seleccionado no es válido.',
   ),
   ID_EJERCICIO_ESTANDAR_TOO_LOW: validationMessage(
     'ID_EJERCICIO_ESTANDAR_TOO_LOW',
-    'id_ejercicio_estandar debe ser mayor a 0.',
+    'El ejercicio estándar seleccionado no es válido.',
   ),
 
   INVALID_ID_EJERCICIO_PERSONALIZADO: validationMessage(
     'INVALID_ID_EJERCICIO_PERSONALIZADO',
-    'id_ejercicio_personalizado debe ser un entero.',
+    'El ejercicio personalizado seleccionado no es válido.',
   ),
   ID_EJERCICIO_PERSONALIZADO_TOO_LOW: validationMessage(
     'ID_EJERCICIO_PERSONALIZADO_TOO_LOW',
-    'id_ejercicio_personalizado debe ser mayor a 0.',
+    'El ejercicio personalizado seleccionado no es válido.',
   ),
   REQUIRED_ID_EJERCICIO: validationMessage(
     'REQUIRED_ID_EJERCICIO',
-    'Cada ejercicio debe indicar al menos id_ejercicio_estandar o id_ejercicio_personalizado.',
+    'Cada elemento de la rutina debe tener un ejercicio asignado.',
   ),
 
-  REQUIRED_ORDEN: validationMessage('REQUIRED_ORDEN', 'orden es obligatorio.'),
-  INVALID_ORDEN: validationMessage('INVALID_ORDEN', 'orden debe ser un entero.'),
-  ORDEN_TOO_LOW: validationMessage('ORDEN_TOO_LOW', 'orden debe ser mayor a 0.'),
+  REQUIRED_ORDEN: validationMessage('REQUIRED_ORDEN', 'El orden del ejercicio es obligatorio.'),
+  INVALID_ORDEN: validationMessage('INVALID_ORDEN', 'El orden debe ser un número entero.'),
+  ORDEN_TOO_LOW: validationMessage('ORDEN_TOO_LOW', 'El orden debe ser mayor a 0.'),
 
-  REQUIRED_SERIES: validationMessage('REQUIRED_SERIES', 'series es obligatorio.'),
-  INVALID_SERIES: validationMessage('INVALID_SERIES', 'series debe ser un entero.'),
-  SERIES_TOO_LOW: validationMessage('SERIES_TOO_LOW', 'series debe ser mayor a 0.'),
+  REQUIRED_SERIES: validationMessage('REQUIRED_SERIES', 'El número de series es obligatorio.'),
+  INVALID_SERIES: validationMessage('INVALID_SERIES', 'El número de series debe ser un entero.'),
+  SERIES_TOO_LOW: validationMessage('SERIES_TOO_LOW', 'El número de series debe ser al menos 1.'),
 
-  REQUIRED_REPETICIONES: validationMessage('REQUIRED_REPETICIONES', 'repeticiones es obligatorio.'),
+  REQUIRED_REPETICIONES: validationMessage('REQUIRED_REPETICIONES', 'El número de repeticiones es obligatorio.'),
   INVALID_REPETICIONES: validationMessage(
     'INVALID_REPETICIONES',
-    'repeticiones debe ser un entero.',
+    'El número de repeticiones debe ser un entero.',
   ),
   REPETICIONES_TOO_LOW: validationMessage(
     'REPETICIONES_TOO_LOW',
-    'repeticiones debe ser mayor a 0.',
+    'El número de repeticiones debe ser al menos 1.',
   ),
 
   INVALID_PESO_OBJETIVO: validationMessage(
     'INVALID_PESO_OBJETIVO',
-    'peso_objetivo debe ser un número válido con máximo 2 decimales.',
+    'El peso objetivo debe ser un número válido.',
   ),
   PESO_OBJETIVO_TOO_LOW: validationMessage(
     'PESO_OBJETIVO_TOO_LOW',
-    'peso_objetivo no puede ser negativo.',
+    'El peso objetivo no puede ser negativo.',
   ),
 
   INVALID_NOTA_ENTRENADOR: validationMessage(

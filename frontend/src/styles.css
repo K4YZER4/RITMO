@@ -814,6 +814,17 @@ p {
   font-weight: 600;
   font-size: 0.9rem;
 }
+.req {
+  color: var(--lime);
+  font-weight: 700;
+  margin-left: 4px;
+}
+.opt {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 400;
+  margin-left: 6px;
+}
 .auth-card input,
 .modal input,
 .modal textarea,

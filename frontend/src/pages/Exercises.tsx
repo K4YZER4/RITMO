@@ -214,34 +214,29 @@ export function Exercises() {
             <span className="eyebrow">BIBLIOTECA PERSONAL</span>
             <h2>{editing ? 'Editar ejercicio' : 'Nuevo ejercicio'}</h2>
             <label>
-              Nombre
-              <input value={name} onChange={(event) => setName(event.target.value)} required />
-            </label>
-            <label>
-              URL de imagen opcional
-              <input type="url" value={image} onChange={(event) => setImage(event.target.value)} />
-            </label>
-            <label>
-              Link informativo opcional
+              Nombre <span className="req">*</span>
               <input
-                type="url"
-                value={informationLink}
-                onChange={(event) => setInformationLink(event.target.value)}
-              />
-            </label>
-            <label>
-              Descripción
-              <textarea
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Ej. Press Banca Inclinado con Mancuernas"
                 required
               />
             </label>
             <label>
-              Músculos
+              Descripción <span className="req">*</span>
+              <textarea
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                rows={3}
+                placeholder="Describe el movimiento, colocación y rango de movimiento..."
+                required
+              />
+            </label>
+            <label>
+              Músculos <span className="req">*</span>
               <SelectMenu
                 value=""
-                placeholder="Añadir músculo"
+                placeholder="Añadir músculo (ej. hombro)..."
                 options={(catalogs.data?.musculos || [])
                   .filter((item) => !muscles.includes(item.id))
                   .map((item) => ({ value: item.id, label: item.nombre }))}
@@ -261,10 +256,10 @@ export function Exercises() {
               ))}
             </div>
             <label>
-              Equipo opcional
+              Equipo <span className="opt">(opcional)</span>
               <SelectMenu
                 value=""
-                placeholder="Añadir equipo"
+                placeholder="Añadir equipo (ej. mancuerna)..."
                 options={(catalogs.data?.equipos || [])
                   .filter((item) => !equipment.includes(item.id))
                   .map((item) => ({ value: item.id, label: item.nombre }))}
@@ -283,6 +278,24 @@ export function Exercises() {
                 </button>
               ))}
             </div>
+            <label>
+              URL de imagen <span className="opt">(opcional)</span>
+              <input
+                type="url"
+                value={image}
+                onChange={(event) => setImage(event.target.value)}
+                placeholder="https://..."
+              />
+            </label>
+            <label>
+              Link informativo o video <span className="opt">(opcional)</span>
+              <input
+                type="url"
+                value={informationLink}
+                onChange={(event) => setInformationLink(event.target.value)}
+                placeholder="https://youtube.com/..."
+              />
+            </label>
             {(create.error || update.error) && (
               <div className="error">{(create.error || update.error)?.message}</div>
             )}

@@ -169,7 +169,8 @@ export function RoutineExerciseEditor({
                   ),
                 )
               }
-              placeholder="Series"
+              placeholder="Series *"
+              title="Series (obligatorio)"
             />
             <input
               type="number"
@@ -182,7 +183,8 @@ export function RoutineExerciseEditor({
                   ),
                 )
               }
-              placeholder="Reps"
+              placeholder="Reps *"
+              title="Repeticiones (obligatorio)"
             />
             <input
               type="number"
@@ -194,7 +196,8 @@ export function RoutineExerciseEditor({
                   draft.map((x, i) => (i === index ? { ...x, weight: event.target.value } : x)),
                 )
               }
-              placeholder="Kg"
+              placeholder="Kg (opc)"
+              title="Peso objetivo en kg (opcional)"
             />
             <input
               value={item.note}
@@ -203,7 +206,8 @@ export function RoutineExerciseEditor({
                   draft.map((x, i) => (i === index ? { ...x, note: event.target.value } : x)),
                 )
               }
-              placeholder="Nota del entrenador"
+              placeholder="Indicaciones (opcional)"
+              title="Notas o indicaciones del coach (opcional)"
               maxLength={1000}
             />
             <input
@@ -214,7 +218,8 @@ export function RoutineExerciseEditor({
                   draft.map((x, i) => (i === index ? { ...x, link: event.target.value } : x)),
                 )
               }
-              placeholder="Link de apoyo (https://...)"
+              placeholder="Link apoyo (opcional)"
+              title="Enlace de apoyo o video demostrativo (opcional)"
             />
             <button type="button" onClick={() => setDraft(draft.filter((_, i) => i !== index))}>
               <X />
@@ -246,44 +251,29 @@ export function RoutineExerciseEditor({
             <span className="eyebrow">BIBLIOTECA PERSONAL</span>
             <h2>Crear ejercicio</h2>
             <label>
-              Nombre
+              Nombre <span className="req">*</span>
               <input
                 value={exerciseName}
                 onChange={(event) => setExerciseName(event.target.value)}
+                placeholder="Ej. Remo con Barra T"
                 required
               />
             </label>
             <label>
-              Descripción
+              Descripción <span className="req">*</span>
               <textarea
                 value={exerciseDescription}
                 onChange={(event) => setExerciseDescription(event.target.value)}
+                rows={3}
+                placeholder="Describe el ejercicio y técnica de ejecución..."
                 required
               />
             </label>
             <label>
-              URL de imagen opcional
-              <input
-                type="url"
-                value={exerciseImage}
-                onChange={(event) => setExerciseImage(event.target.value)}
-                placeholder="https://..."
-              />
-            </label>
-            <label>
-              Link informativo opcional
-              <input
-                type="url"
-                value={exerciseLink}
-                onChange={(event) => setExerciseLink(event.target.value)}
-                placeholder="https://..."
-              />
-            </label>
-            <label>
-              Músculos
+              Músculos <span className="req">*</span>
               <SelectMenu
                 value=""
-                placeholder="Añadir músculo"
+                placeholder="Añadir músculo (ej. espalda)..."
                 options={(catalogs?.musculos || [])
                   .filter((item) => !muscles.includes(item.id))
                   .map((item) => ({ value: item.id, label: item.nombre }))}
@@ -303,10 +293,10 @@ export function RoutineExerciseEditor({
               ))}
             </div>
             <label>
-              Equipo opcional
+              Equipo <span className="opt">(opcional)</span>
               <SelectMenu
                 value=""
-                placeholder="Añadir equipo"
+                placeholder="Añadir equipo (ej. barra)..."
                 options={(catalogs?.equipos || [])
                   .filter((item) => !equipment.includes(item.id))
                   .map((item) => ({ value: item.id, label: item.nombre }))}
@@ -325,10 +315,33 @@ export function RoutineExerciseEditor({
                 </button>
               ))}
             </div>
+            <label>
+              URL de imagen <span className="opt">(opcional)</span>
+              <input
+                type="url"
+                value={exerciseImage}
+                onChange={(event) => setExerciseImage(event.target.value)}
+                placeholder="https://..."
+              />
+            </label>
+            <label>
+              Link informativo o video <span className="opt">(opcional)</span>
+              <input
+                type="url"
+                value={exerciseLink}
+                onChange={(event) => setExerciseLink(event.target.value)}
+                placeholder="https://youtube.com/..."
+              />
+            </label>
             {createExercise.error && <div className="error">{createExercise.error.message}</div>}
             <button
               className="button primary full"
-              disabled={!muscles.length || createExercise.isPending}
+              disabled={
+                !muscles.length ||
+                !exerciseName.trim() ||
+                !exerciseDescription.trim() ||
+                createExercise.isPending
+              }
             >
               {createExercise.isPending ? 'Creando…' : 'Crear ejercicio'}
             </button>

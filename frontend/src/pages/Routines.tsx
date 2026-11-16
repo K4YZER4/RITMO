@@ -38,6 +38,7 @@ export function Routines() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
+  const [localError, setLocalError] = useState('');
   const [selected, setSelected] = useState<Routine | null>(null);
   const [draft, setDraft] = useState<DraftExercise[]>([]);
   const [plannerStudentId, setPlannerStudentId] = useState('');
@@ -93,6 +94,7 @@ export function Routines() {
       setName('');
       setDescription('');
       setCategory('');
+      setLocalError('');
     },
   });
   const saveExercises = useMutation({
@@ -183,6 +185,19 @@ export function Routines() {
   }
   function submit(e: FormEvent) {
     e.preventDefault();
+    if (!name.trim()) {
+      setLocalError('El nombre de la rutina es obligatorio.');
+      return;
+    }
+    if (!description.trim()) {
+      setLocalError('La descripción de la rutina es obligatoria.');
+      return;
+    }
+    if (!category) {
+      setLocalError('Debes seleccionar una categoría para la rutina.');
+      return;
+    }
+    setLocalError('');
     create.mutate();
   }
   return (
@@ -327,49 +342,78 @@ export function Routines() {
         </section>
       ) : null}
       {open && (
-        <div className="modal-backdrop" onClick={() => setOpen(false)}>
+        <div
+          className="modal-backdrop"
+          onClick={() => {
+            setOpen(false);
+            setLocalError('');
+          }}
+        >
           <form className="modal" onSubmit={submit} onClick={(e) => e.stopPropagation()}>
             <span className="eyebrow">NUEVA RUTINA</span>
             <h2>Construye la base</h2>
             <label>
-              Nombre
+              Nombre <span className="req">*</span>
               <input
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (localError) setLocalError('');
+                }}
                 minLength={2}
                 maxLength={100}
+                placeholder="Ej. Torso Pesado, Pierna Enfoque Glúteo..."
                 required
               />
             </label>
             <label>
-              Descripción
+              Descripción <span className="req">*</span>
               <textarea
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={(e) => {
+                  setDescription(e.target.value);
+                  if (localError) setLocalError('');
+                }}
                 rows={3}
+                placeholder="Describe el objetivo y metodología de la rutina..."
                 required
               />
             </label>
             <label>
-              Categoría
+              Categoría <span className="req">*</span>
               <SelectMenu
                 value={category}
-                placeholder="Selecciona una categoría"
+                placeholder="Selecciona una categoría..."
                 options={(catalogs?.categoriasRutina || []).map((item) => ({
                   value: String(item.id),
                   label: item.nombre.replaceAll('_', ' '),
                   description: item.descripcion,
                 }))}
-                onChange={setCategory}
+                onChange={(val) => {
+                  setCategory(val);
+                  if (localError) setLocalError('');
+                }}
               />
             </label>
-            {create.error && <div className="error">{create.error.message}</div>}
+            {(localError || create.error) && (
+              <div className="error">{localError || create.error?.message}</div>
+            )}
             <div className="modal-actions">
-              <button type="button" className="button ghost" onClick={() => setOpen(false)}>
+              <button
+                type="button"
+                className="button ghost"
+                onClick={() => {
+                  setOpen(false);
+                  setLocalError('');
+                }}
+              >
                 Cancelar
               </button>
-              <button className="button primary" disabled={create.isPending}>
-                Crear rutina
+              <button
+                className="button primary"
+                disabled={!name.trim() || !description.trim() || !category || create.isPending}
+              >
+                {create.isPending ? 'Creando…' : 'Crear rutina'}
               </button>
             </div>
           </form>
