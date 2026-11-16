@@ -72,7 +72,6 @@ export function Landing() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [particlesPaused, setParticlesPaused] = useState(false);
   const [videoStatus, setVideoStatus] = useState('Espacio reservado para tu video de presentación.');
   const [isPlayingVideo, setIsPlayingVideo] = useState(false);
 
@@ -129,10 +128,7 @@ export function Landing() {
     if (!ctx) return;
 
     const pref = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (pref.matches) {
-      setParticlesPaused(true);
-      return;
-    }
+    if (pref.matches) return;
 
     let W = window.innerWidth;
     let H = window.innerHeight;
@@ -161,16 +157,17 @@ export function Landing() {
       canvas.height = H * d;
       ctx.setTransform(d, 0, 0, d, 0, 0);
 
-      const count = Math.min(225, Math.max(70, Math.round((W * H) / 5600)));
+      // Partículas incrementadas x1.5 para mayor atmósfera
+      const count = Math.min(350, Math.max(110, Math.round((W * H) / 3700)));
       particles = Array.from({ length: count }, () => ({
         x: Math.random() * W,
         y: Math.random() * H,
-        r: 0.35 + Math.random() * 1.5,
-        vx: (Math.random() - 0.5) * 5,
-        vy: -(3 + Math.random() * 11),
+        r: 0.38 + Math.random() * 1.6,
+        vx: (Math.random() - 0.5) * 5.5,
+        vy: -(3 + Math.random() * 12),
         phase: Math.random() * 7,
-        alpha: 0.12 + Math.random() * 0.32,
-        green: Math.random() < 0.16,
+        alpha: 0.14 + Math.random() * 0.36,
+        green: Math.random() < 0.22,
       }));
     };
 
@@ -196,7 +193,7 @@ export function Landing() {
     };
 
     const loop = (t: number) => {
-      if (particlesPaused || document.hidden) {
+      if (document.hidden) {
         frameId = 0;
         return;
       }
@@ -207,7 +204,7 @@ export function Landing() {
     };
 
     resize();
-    if (!particlesPaused && !document.hidden) {
+    if (!document.hidden) {
       frameId = requestAnimationFrame(loop);
     }
 
@@ -220,7 +217,7 @@ export function Landing() {
       if (document.hidden) {
         if (frameId) cancelAnimationFrame(frameId);
         frameId = 0;
-      } else if (!particlesPaused) {
+      } else {
         lastTime = 0;
         frameId = requestAnimationFrame(loop);
       }
@@ -232,7 +229,7 @@ export function Landing() {
       window.removeEventListener('resize', handleResize);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [particlesPaused]);
+  }, []);
 
   // 3. Manejo de Video
   const handlePlayClick = () => {
@@ -254,16 +251,6 @@ export function Landing() {
   return (
     <div className="ritmo-landing">
       <canvas id="dust" ref={canvasRef} aria-hidden="true" />
-
-      <button
-        type="button"
-        className="motion"
-        id="motion"
-        aria-pressed={particlesPaused}
-        onClick={() => setParticlesPaused((prev) => !prev)}
-      >
-        {particlesPaused ? 'Activar partículas' : 'Pausar partículas'}
-      </button>
 
       <div className="page">
         <main>
