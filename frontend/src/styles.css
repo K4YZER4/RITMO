@@ -1601,6 +1601,48 @@ p {
   color: #ffb174 !important;
   font-size: 0.68rem;
 }
+.planner-reorder-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(94, 201, 248, 0.08);
+  border: 1px solid rgba(94, 201, 248, 0.28);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.8rem;
+  margin-top: 14px;
+}
+.planner-reorder-banner svg {
+  color: #5ec9f8;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.week-routine-student-override {
+  background: #0d1a1b !important;
+  border-left: 2px solid #5ec9f8 !important;
+  cursor: default !important;
+}
+.week-routine-student-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.64rem;
+  color: #5ec9f8;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.week-routine-moved-tag {
+  display: inline-block;
+  padding: 1px 5px;
+  background: rgba(255, 158, 93, 0.12);
+  border: 1px solid rgba(255, 158, 93, 0.35);
+  border-radius: 4px;
+  color: #ff9e5d;
+  font-size: 0.62rem;
+  margin-top: 3px;
+  font-weight: 500;
+}
 .exercise-picker {
   position: relative;
 }

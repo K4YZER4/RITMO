@@ -54,6 +54,48 @@ export class CambiarPlanSuscripcionHandler {
       );
     }
 
+    if (usuario.role === UserRole.entrenador) {
+      const nuevoPlan = await this.prisma.planEntrenador.findUnique({
+        where: { id: idPlanNuevo },
+      });
+      if (nuevoPlan) {
+        const cantidadRutinas = await this.prisma.rutina.count({
+          where: { createdByUsuario: usuarioId, activa: true },
+        });
+        if (cantidadRutinas > nuevoPlan.limiteRutinas) {
+          const exceso = cantidadRutinas - nuevoPlan.limiteRutinas;
+          throw new BadRequestException(
+            `Aún no puedes cambiar al plan ${nuevoPlan.nombre}: tienes ${cantidadRutinas} rutinas activas y el plan ${nuevoPlan.nombre} permite un máximo de ${nuevoPlan.limiteRutinas}. Primero debes eliminar o archivar al menos ${exceso} rutina(s).`,
+          );
+        }
+
+        const cantidadAlumnos = await this.prisma.alumno.count({
+          where: { idEntrenadorActual: usuarioId },
+        });
+        if (cantidadAlumnos > nuevoPlan.limiteAlumnos) {
+          const exceso = cantidadAlumnos - nuevoPlan.limiteAlumnos;
+          throw new BadRequestException(
+            `Aún no puedes cambiar al plan ${nuevoPlan.nombre}: tienes ${cantidadAlumnos} alumnos activos y el plan ${nuevoPlan.nombre} permite un máximo de ${nuevoPlan.limiteAlumnos}. Primero debes desvincular al menos ${exceso} alumno(s).`,
+          );
+        }
+      }
+    } else if (usuario.role === UserRole.alumno || usuario.role === UserRole.alumnoConEntrenador) {
+      const nuevoPlan = await this.prisma.planAlumno.findUnique({
+        where: { id: idPlanNuevo },
+      });
+      if (nuevoPlan) {
+        const cantidadRutinas = await this.prisma.rutina.count({
+          where: { createdByUsuario: usuarioId, activa: true },
+        });
+        if (cantidadRutinas > nuevoPlan.limiteRutinas) {
+          const exceso = cantidadRutinas - nuevoPlan.limiteRutinas;
+          throw new BadRequestException(
+            `Aún no puedes cambiar al plan ${nuevoPlan.nombre}: tienes ${cantidadRutinas} rutinas activas y el plan ${nuevoPlan.nombre} permite un máximo de ${nuevoPlan.limiteRutinas}. Primero debes eliminar al menos ${exceso} rutina(s).`,
+          );
+        }
+      }
+    }
+
     if (!suscripcionActual.proveedorSubscriptionId) {
       return this.aplicarCambioPlanLocal(usuarioId, idPlanNuevo, usuario.role);
     }

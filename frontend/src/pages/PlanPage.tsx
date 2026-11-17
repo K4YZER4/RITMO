@@ -28,6 +28,7 @@ export function PlanPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [redirectingToCheckout, setRedirectingToCheckout] = useState(false);
   const [cancelNowModalOpen, setCancelNowModalOpen] = useState(false);
+  const [cancelNowError, setCancelNowError] = useState<string | null>(null);
   const [copiedCard, setCopiedCard] = useState(false);
 
   const profile = useQuery({ queryKey: ['profile'], queryFn: () => get<Profile>('/perfil') });
@@ -407,10 +408,21 @@ export function PlanPage() {
           description="Se cancelará el cobro recurrente en Stripe hoy mismo y tu cuenta volverá al Plan Básico gratuito. Si lo deseas, podrás volver a contratar cualquier plan en cualquier momento."
           confirmLabel="Sí, cancelar ya"
           busy={lifecycle.isPending}
-          onClose={() => setCancelNowModalOpen(false)}
-          onConfirm={async () => {
-            await lifecycle.mutateAsync('cancelar-inmediata');
+          error={cancelNowError || undefined}
+          onClose={() => {
             setCancelNowModalOpen(false);
+            setCancelNowError(null);
+          }}
+          onConfirm={async () => {
+            try {
+              setCancelNowError(null);
+              await lifecycle.mutateAsync('cancelar-inmediata');
+              setCancelNowModalOpen(false);
+            } catch (e: any) {
+              const msg = e?.response?.data?.message || e?.message || 'Error al cancelar la suscripción';
+              setCancelNowError(msg);
+              setErrorMessage(msg);
+            }
           }}
         />
       )}

@@ -245,6 +245,48 @@ export class SuscripcionesService implements OnApplicationBootstrap, OnApplicati
       );
     }
 
+    if (role === UserRole.entrenador) {
+      const planBasico = await this.prisma.planEntrenador.findUnique({
+        where: { id: 1 },
+      });
+      if (planBasico) {
+        const cantidadRutinas = await this.prisma.rutina.count({
+          where: { createdByUsuario: usuarioId, activa: true },
+        });
+        if (cantidadRutinas > planBasico.limiteRutinas) {
+          const exceso = cantidadRutinas - planBasico.limiteRutinas;
+          throw new BadRequestException(
+            `Aún no puedes cancelar al plan Básico: tienes ${cantidadRutinas} rutinas activas y el plan Básico permite un máximo de ${planBasico.limiteRutinas}. Primero debes eliminar o archivar al menos ${exceso} rutina(s).`,
+          );
+        }
+
+        const cantidadAlumnos = await this.prisma.alumno.count({
+          where: { idEntrenadorActual: usuarioId },
+        });
+        if (cantidadAlumnos > planBasico.limiteAlumnos) {
+          const exceso = cantidadAlumnos - planBasico.limiteAlumnos;
+          throw new BadRequestException(
+            `Aún no puedes cancelar al plan Básico: tienes ${cantidadAlumnos} alumnos activos y el plan Básico permite un máximo de ${planBasico.limiteAlumnos}. Primero debes desvincular al menos ${exceso} alumno(s).`,
+          );
+        }
+      }
+    } else if (role === UserRole.alumno || role === UserRole.alumnoConEntrenador) {
+      const planBasico = await this.prisma.planAlumno.findUnique({
+        where: { id: 1 },
+      });
+      if (planBasico) {
+        const cantidadRutinas = await this.prisma.rutina.count({
+          where: { createdByUsuario: usuarioId, activa: true },
+        });
+        if (cantidadRutinas > planBasico.limiteRutinas) {
+          const exceso = cantidadRutinas - planBasico.limiteRutinas;
+          throw new BadRequestException(
+            `Aún no puedes cancelar al plan Básico: tienes ${cantidadRutinas} rutinas activas y el plan Básico permite un máximo de ${planBasico.limiteRutinas}. Primero debes eliminar al menos ${exceso} rutina(s).`,
+          );
+        }
+      }
+    }
+
     const esDemo =
       !suscripcion.proveedorSubscriptionId ||
       suscripcion.proveedorSubscriptionId.startsWith('sub_demo_');

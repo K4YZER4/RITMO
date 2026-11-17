@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, Edit3, GripVertical, Plus, Trash2, X } from 'lucide-react';
+import { CalendarDays, Edit3, GripVertical, Info, Plus, Trash2, User, X } from 'lucide-react';
 import { useState } from 'react';
 import { del, patch, post } from '../lib/api';
 import { Card, Empty } from './Ui';
@@ -13,6 +13,7 @@ export type AssignedRoutine = {
   idDiaSemana: number;
   fechaInicio: string;
   fechaFin?: string | null;
+  motivoCambio?: string | null;
   rutina: Routine;
   diaSemana: { nombre: string };
 };
@@ -135,6 +136,12 @@ export function WeeklyRoutinePlanner({
       setRemoving(null);
     },
   });
+  const hasStudentReorder = assignments.some(
+    (a) =>
+      a.motivoCambio?.startsWith('Reprogramada semana') ||
+      a.motivoCambio?.startsWith('Reprogramada origen semana'),
+  );
+
   return (
     <Card className="weekly-planner-card">
       <div className="card-head">
@@ -152,16 +159,44 @@ export function WeeklyRoutinePlanner({
           {reorder.error instanceof Error ? reorder.error.message : 'Error al reordenar las rutinas'}
         </div>
       )}
+      {hasStudentReorder && (
+        <div className="planner-reorder-banner">
+          <Info size={16} />
+          <span>
+            <strong>El alumno hizo un reorden esta semana:</strong> Arriba se conserva la programación habitual (base) y abajo se muestra la rutina que el alumno reordenó para esta semana.
+          </span>
+        </div>
+      )}
       <div className="weekly-planner">
         {DAYS.map((day, index) => {
           const dayNumber = index + 1;
           const dayAssignments = assignments.filter(
             (assignment) => assignment.idDiaSemana === dayNumber,
           );
+          const baseAssignments = dayAssignments.filter(
+            (a) => !a.motivoCambio?.startsWith('Reprogramada semana'),
+          );
+          const studentOverrides = dayAssignments.filter(
+            (a) => a.motivoCambio?.startsWith('Reprogramada semana'),
+          );
+          const hasRealConflict = baseAssignments.length > 1;
           const isOver = dragOverDay === dayNumber;
+
+          const dayLabel = isOver
+            ? dayAssignments.length
+              ? '⇄ Intercambiar'
+              : '↓ Mover aquí'
+            : baseAssignments.length && studentOverrides.length
+            ? 'Base + Reorden'
+            : studentOverrides.length
+            ? 'Reorden alumno'
+            : baseAssignments.length
+            ? `${baseAssignments.length} rutina${baseAssignments.length > 1 ? 's' : ''}`
+            : 'Descanso';
+
           return (
             <div
-              className={`week-day ${dayAssignments.length > 1 ? 'week-day-warning' : ''} ${
+              className={`week-day ${hasRealConflict ? 'week-day-warning' : ''} ${
                 isOver ? 'drag-over' : ''
               }`}
               key={day}
@@ -171,19 +206,13 @@ export function WeeklyRoutinePlanner({
             >
               <div className="week-day-name">
                 <strong>{day}</strong>
-                <small>
-                  {isOver
-                    ? dayAssignments.length
-                      ? '⇄ Intercambiar'
-                      : '↓ Mover aquí'
-                    : dayAssignments.length
-                    ? `${dayAssignments.length} rutina${dayAssignments.length > 1 ? 's' : ''}`
-                    : 'Descanso'}
-                </small>
+                <small>{dayLabel}</small>
               </div>
               <div className="week-day-content">
-                {dayAssignments.map((assignment) => {
+                {/* 1. Rutina habitual / base (Arriba) */}
+                {baseAssignments.map((assignment) => {
                   const isThisDragging = draggedAssignment?.id === assignment.id;
+                  const isMovedByStudent = assignment.motivoCambio?.startsWith('Reprogramada origen semana');
                   return (
                     <div
                       className={`week-routine ${isThisDragging ? 'is-dragging' : ''}`}
@@ -203,14 +232,19 @@ export function WeeklyRoutinePlanner({
                           <small>
                             {assignment.fechaFin
                               ? `Hasta ${new Date(assignment.fechaFin).toLocaleDateString('es-MX')}`
-                              : 'Sin fecha final'}
+                              : 'Programación habitual'}
                           </small>
+                          {isMovedByStudent && (
+                            <span className="week-routine-moved-tag">
+                              Movida por el alumno esta semana
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className="week-routine-actions">
                         <button
                           type="button"
-                          title="Cambiar asignación"
+                          title="Cambiar asignación habitual"
                           onClick={(e) => {
                             e.stopPropagation();
                             setEditing({ assignment, dayNumber });
@@ -220,7 +254,7 @@ export function WeeklyRoutinePlanner({
                         </button>
                         <button
                           type="button"
-                          title="Quitar rutina"
+                          title="Quitar rutina habitual"
                           onClick={(e) => {
                             e.stopPropagation();
                             setRemoving({ assignment, day });
@@ -232,22 +266,47 @@ export function WeeklyRoutinePlanner({
                     </div>
                   );
                 })}
-                {!dayAssignments.length && (
+
+                {/* 2. Rutina reordenada por el alumno (Abajo) */}
+                {studentOverrides.map((override) => (
+                  <div
+                    className="week-routine week-routine-student-override"
+                    key={override.id}
+                    title="Ajuste temporal realizado por el alumno para esta semana"
+                  >
+                    <div className="week-routine-student-tag">
+                      <User size={12} />
+                      <span>El alumno hizo un reorden de esta semana:</span>
+                    </div>
+                    <div className="week-routine-header">
+                      <div>
+                        <b>{override.rutina.nombre}</b>
+                        <small>
+                          {override.fechaFin
+                            ? `Activa hasta ${new Date(override.fechaFin).toLocaleDateString('es-MX')}`
+                            : 'Solo esta semana'}
+                        </small>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {!baseAssignments.length && !studentOverrides.length && (
                   <span className="rest-day">
                     {isOver ? 'Suelta para asignar aquí' : 'Día de descanso'}
                   </span>
                 )}
-                {dayAssignments.length > 1 && (
+                {hasRealConflict && (
                   <small className="warning-copy">
-                    Hay más de una rutina asignada. Corrige este día.
+                    Hay más de una rutina habitual asignada. Corrige este día.
                   </small>
                 )}
                 <button
                   type="button"
                   className="week-add"
-                  onClick={() => setEditing({ assignment: dayAssignments[0] || null, dayNumber })}
+                  onClick={() => setEditing({ assignment: baseAssignments[0] || null, dayNumber })}
                 >
-                  <Plus size={15} /> {dayAssignments.length ? 'Cambiar rutina' : 'Asignar rutina'}
+                  <Plus size={15} /> {baseAssignments.length ? 'Cambiar rutina' : 'Asignar rutina'}
                 </button>
               </div>
             </div>
