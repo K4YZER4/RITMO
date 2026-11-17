@@ -235,6 +235,122 @@ export class SuscripcionesService implements OnApplicationBootstrap, OnApplicati
     });
   }
 
+  async cancelarSuscripcionInmediatamente(usuarioId: string) {
+    const role = await this.obtenerRol(usuarioId);
+    const suscripcion = await this.buscarSuscripcionActual(usuarioId, role);
+
+    if (suscripcion.vitalicia) {
+      throw new BadRequestException(
+        'Una suscripción vitalicia no tiene cobros recurrentes que cancelar',
+      );
+    }
+
+    const esDemo =
+      !suscripcion.proveedorSubscriptionId ||
+      suscripcion.proveedorSubscriptionId.startsWith('sub_demo_');
+
+    if (
+      !esDemo &&
+      suscripcion.proveedor === ProveedorPagoEnum.stripe &&
+      suscripcion.proveedorSubscriptionId
+    ) {
+      try {
+        await this.stripeService.cancelarInmediatamente(suscripcion.proveedorSubscriptionId);
+      } catch (stripeError) {
+        this.logger.warn(
+          `No se pudo cancelar inmediatamente en Stripe API (${suscripcion.proveedorSubscriptionId}): ${stripeError}`,
+        );
+      }
+    }
+
+    return this.prisma.$transaction(
+      async (tx) => {
+        const ahora = new Date();
+
+        await tx.suscripcion.update({
+          where: {
+            id: suscripcion.id,
+          },
+          data: {
+            estado: EstadoSuscripcionEnum.cancelada,
+            canceladaEn: ahora,
+            siguienteCobroEn: null,
+            cancelarAlFinalDelPeriodo: false,
+          },
+        });
+
+        if (role === UserRole.entrenador) {
+          await tx.entrenador.update({
+            where: {
+              idUsuario: usuarioId,
+            },
+            data: {
+              idPlan: 1,
+            },
+          });
+
+          const planBasico = await tx.planEntrenador.findUnique({
+            where: { id: 1 },
+          });
+
+          return tx.suscripcion.create({
+            data: {
+              entrenadorId: usuarioId,
+              planEntrenadorId: 1,
+              estado: EstadoSuscripcionEnum.activa,
+              periodoActualInicio: ahora,
+              periodoActualFin: null,
+              siguienteCobroEn: null,
+              cancelarAlFinalDelPeriodo: false,
+              vitalicia: true,
+              planNombreSnapshot: planBasico?.nombre || 'Basico',
+              precioSnapshot: planBasico?.precio || 0,
+              monedaSnapshot: (planBasico?.moneda || 'MXN').toUpperCase(),
+              proveedorPrecioIdSnapshot: null,
+              duracionUnidadSnapshot: planBasico?.duracionUnidad || null,
+              duracionCantidadSnapshot: planBasico?.duracionCantidad || null,
+            },
+          });
+        }
+
+        await tx.alumno.update({
+          where: {
+            idUsuario: usuarioId,
+          },
+          data: {
+            idPlan: 1,
+          },
+        });
+
+        const planBasicoAlumno = await tx.planAlumno.findUnique({
+          where: { id: 1 },
+        });
+
+        return tx.suscripcion.create({
+          data: {
+            alumnoId: usuarioId,
+            planAlumnoId: 1,
+            estado: EstadoSuscripcionEnum.activa,
+            periodoActualInicio: ahora,
+            periodoActualFin: null,
+            siguienteCobroEn: null,
+            cancelarAlFinalDelPeriodo: false,
+            vitalicia: true,
+            planNombreSnapshot: planBasicoAlumno?.nombre || 'Basico',
+            precioSnapshot: planBasicoAlumno?.precio || 0,
+            monedaSnapshot: (planBasicoAlumno?.moneda || 'MXN').toUpperCase(),
+            proveedorPrecioIdSnapshot: null,
+            duracionUnidadSnapshot: planBasicoAlumno?.duracionUnidad || null,
+            duracionCantidadSnapshot: planBasicoAlumno?.duracionCantidad || null,
+          },
+        });
+      },
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      },
+    );
+  }
+
   async reanudarSuscripcion(usuarioId: string) {
     const role = await this.obtenerRol(usuarioId);
 

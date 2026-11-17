@@ -1816,12 +1816,66 @@ p {
   font-size: 0.82rem;
   text-align: center;
 }
-.list-actions,
-.plan-actions {
+.list-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
+}
+.plan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 24px;
+  align-items: center;
+}
+.stripe-demo-banner {
+  background: rgba(163, 230, 53, 0.04);
+  border: 1px solid rgba(163, 230, 53, 0.25);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin: 16px 0 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.stripe-demo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--lime);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.stripe-demo-banner p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #bdc5bf;
+  line-height: 1.4;
+}
+.stripe-card-chip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface-muted, #111412);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  width: fit-content;
+}
+.stripe-card-chip code {
+  font-family: var(--font-mono, monospace);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--lime);
+  letter-spacing: 0.08em;
+}
+.stripe-card-chip .muted {
+  font-size: 0.82rem;
+  color: var(--muted);
 }
 .plan-summary {
   display: flex;
