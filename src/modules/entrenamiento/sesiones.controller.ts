@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -41,6 +41,26 @@ export class SesionesController {
     @Body() dto: ActualizarSetDto,
   ) {
     return this.service.actualizarSet(usuarioId, sesionId, setId, dto);
+  }
+
+  @Patch(':sesionId/ejercicios/:ejercicioId/nota')
+  @ApiOperation({ summary: 'Actualizar nota técnica o molestia de un ejercicio en la sesión' })
+  actualizarNotaEjercicio(
+    @CurrentUser('id') usuarioId: string,
+    @Param('sesionId', ParseBigIntPipe) sesionId: bigint,
+    @Param('ejercicioId', ParseBigIntPipe) sesionEjercicioId: bigint,
+    @Body() dto: { nota?: string },
+  ) {
+    return this.service.actualizarNotaEjercicio(usuarioId, sesionId, sesionEjercicioId, dto.nota);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Cancelar o descartar una sesión activa' })
+  cancelar(
+    @CurrentUser('id') usuarioId: string,
+    @Param('id', ParseBigIntPipe) sesionId: bigint,
+  ) {
+    return this.service.cancelarSesion(usuarioId, sesionId);
   }
 
   @Post(':id/finalizar')

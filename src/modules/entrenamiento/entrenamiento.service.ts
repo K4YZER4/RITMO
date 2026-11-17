@@ -275,6 +275,87 @@ export class EntrenamientoService {
       asignacion.override.map((item) => [item.idRutinaEjercicio.toString(), item]),
     );
 
+    // Sobrecarga progresiva: buscar el mejor desempeño de la última sesión completada para cada ejercicio
+    const idsEstandar = asignacion.rutina.rutinaEjercicio
+      .map((e) => e.idEjercicioEstandar)
+      .filter((id): id is bigint => id !== null);
+    const idsPersonalizados = asignacion.rutina.rutinaEjercicio
+      .map((e) => e.idEjercicioPersonalizado)
+      .filter((id): id is bigint => id !== null);
+
+    const claveEj = (idEst?: bigint | null, idPers?: bigint | null) =>
+      idEst ? `est_${idEst}` : `pers_${idPers}`;
+
+    const ultimosSetsCompletados = await this.prisma.sesionEjercicioSet.findMany({
+      where: {
+        completado: true,
+        sesionEjercicio: {
+          sesionEntrenamiento: {
+            idUsuario: usuarioId,
+            idEstado: ESTADO_COMPLETADO_ID,
+          },
+          OR: [
+            ...(idsEstandar.length ? [{ idEjercicioEstandar: { in: idsEstandar } }] : []),
+            ...(idsPersonalizados.length
+              ? [{ idEjercicioPersonalizado: { in: idsPersonalizados } }]
+              : []),
+          ],
+        },
+      },
+      orderBy: {
+        sesionEjercicio: {
+          sesionEntrenamiento: {
+            fechaSesion: 'desc',
+          },
+        },
+      },
+      select: {
+        pesoReal: true,
+        repeticionesRealizadas: true,
+        sesionEjercicio: {
+          select: {
+            idEjercicioEstandar: true,
+            idEjercicioPersonalizado: true,
+            sesionEntrenamiento: {
+              select: {
+                fechaSesion: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const maximosPrevios = new Map<string, { peso: number; reps: number }>();
+    for (const s of ultimosSetsCompletados) {
+      const key = claveEj(
+        s.sesionEjercicio.idEjercicioEstandar,
+        s.sesionEjercicio.idEjercicioPersonalizado,
+      );
+      if (!maximosPrevios.has(key)) {
+        const fechaUltimaSesion = s.sesionEjercicio.sesionEntrenamiento.fechaSesion.getTime();
+        const setsMismaSesion = ultimosSetsCompletados.filter(
+          (other) =>
+            claveEj(
+              other.sesionEjercicio.idEjercicioEstandar,
+              other.sesionEjercicio.idEjercicioPersonalizado,
+            ) === key &&
+            other.sesionEjercicio.sesionEntrenamiento.fechaSesion.getTime() === fechaUltimaSesion,
+        );
+        let maxPeso = Number(s.pesoReal ?? 0);
+        let maxReps = Number(s.repeticionesRealizadas ?? 0);
+        for (const setSesion of setsMismaSesion) {
+          const p = Number(setSesion.pesoReal ?? 0);
+          const r = Number(setSesion.repeticionesRealizadas ?? 0);
+          if (p > maxPeso || (p === maxPeso && r > maxReps)) {
+            maxPeso = p;
+            maxReps = r;
+          }
+        }
+        maximosPrevios.set(key, { peso: maxPeso, reps: maxReps });
+      }
+    }
+
     const sesion = await this.prisma.sesionEntrenamiento.create({
       data: {
         idUsuario: usuarioId,
@@ -287,8 +368,10 @@ export class EntrenamientoService {
           create: asignacion.rutina.rutinaEjercicio.map((ejercicio) => {
             const override = overrides.get(ejercicio.id.toString());
             const series = override?.series ?? ejercicio.series;
-            const repeticiones = override?.repeticiones ?? ejercicio.repeticiones;
-            const peso = override?.pesoObjetivo ?? ejercicio.pesoObjetivo;
+            const key = claveEj(ejercicio.idEjercicioEstandar, ejercicio.idEjercicioPersonalizado);
+            const previo = maximosPrevios.get(key);
+            const repeticiones = previo?.reps ?? override?.repeticiones ?? ejercicio.repeticiones;
+            const peso = previo?.peso ?? override?.pesoObjetivo ?? ejercicio.pesoObjetivo;
 
             return {
               idRutinaEjercicio: ejercicio.id,
@@ -454,6 +537,49 @@ export class EntrenamientoService {
     });
 
     return { sesion: actualizada, totalSets, setsCompletados };
+  }
+
+  async cancelarSesion(usuarioId: string, sesionId: bigint) {
+    const sesion = await this.prisma.sesionEntrenamiento.findFirst({
+      where: { id: sesionId, idUsuario: usuarioId, idEstado: ESTADO_ACTIVO_ID },
+    });
+    if (!sesion) {
+      throw new NotFoundException('Sesión activa no encontrada');
+    }
+    await this.prisma.$transaction(async (tx) => {
+      await tx.sesionEjercicioSet.deleteMany({
+        where: { sesionEjercicio: { idSesionEntrenamiento: sesionId } },
+      });
+      await tx.sesionEjercicio.deleteMany({
+        where: { idSesionEntrenamiento: sesionId },
+      });
+      await tx.sesionEntrenamiento.delete({
+        where: { id: sesionId },
+      });
+    });
+    return { success: true, message: 'Sesión cancelada exitosamente' };
+  }
+
+  async actualizarNotaEjercicio(
+    usuarioId: string,
+    sesionId: bigint,
+    sesionEjercicioId: bigint,
+    nota?: string,
+  ) {
+    const sesionEjercicio = await this.prisma.sesionEjercicio.findFirst({
+      where: {
+        id: sesionEjercicioId,
+        idSesionEntrenamiento: sesionId,
+        sesionEntrenamiento: { idUsuario: usuarioId, idEstado: ESTADO_ACTIVO_ID },
+      },
+    });
+    if (!sesionEjercicio) {
+      throw new NotFoundException('Ejercicio de la sesión no encontrado');
+    }
+    return this.prisma.sesionEjercicio.update({
+      where: { id: sesionEjercicioId },
+      data: { nota: nota?.trim() || null },
+    });
   }
 
   listarMediciones(usuarioId: string) {

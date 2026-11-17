@@ -686,6 +686,20 @@
   border-color: #b7f34a55;
 }
 .today-icon {
+  width: 58px;
+  height: 58px;
+  min-width: 58px;
+  border-radius: 14px;
+  background: rgba(183, 243, 74, 0.12);
+  border: 1px solid rgba(183, 243, 74, 0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--lime);
+}
+.today-icon svg {
+  width: 32px;
+  height: 32px;
   color: var(--lime);
 }
 .student-cta {
@@ -1904,6 +1918,15 @@ p {
   background: transparent;
   color: var(--lime);
   border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.set-input button:hover:not(:disabled) {
+  border-color: var(--lime);
+  transform: scale(1.05);
 }
 .set-input.done {
   background: #1c2818;
@@ -1911,6 +1934,9 @@ p {
 .set-input.done button {
   background: var(--lime);
   color: #111;
+}
+.set-input.done button:hover:not(:disabled) {
+  background: #9de42b;
 }
 .finish {
   margin: 24px 0;

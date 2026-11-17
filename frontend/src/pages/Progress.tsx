@@ -5,6 +5,7 @@ import { Card, Empty, Loading, Page } from '../components/Ui';
 import { get, post } from '../lib/api';
 import { FormEvent, useState } from 'react';
 import { SelectMenu } from '../components/SelectMenu';
+import { SessionDetailModal } from '../components/SessionDetailModal';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { Catalogs } from '../lib/types';
 type ProgressData = {
@@ -21,6 +22,7 @@ type ProgressData = {
 };
 export function Progress() {
   const qc = useQueryClient();
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [weight, setWeight] = useState('');
   const [bodyFat, setBodyFat] = useState('');
   const [exerciseOpen, setExerciseOpen] = useState(false);
@@ -202,10 +204,23 @@ export function Progress() {
           <h2>Historial de entrenamientos</h2>
         </div>
         {sessions.data?.map((session) => (
-          <div className="list-row" key={session.id}>
-            <b>{session.rutina.nombre}</b>
+          <div
+            className="list-row"
+            key={session.id}
+            onClick={() => setSelectedSessionId(session.id)}
+            style={{ cursor: 'pointer', transition: 'background 0.15s ease' }}
+            title="Ver detalle del entrenamiento"
+          >
+            <div>
+              <b style={{ color: 'var(--w)' }}>{session.rutina.nombre}</b>
+              <div style={{ fontSize: '0.78rem', color: 'var(--g, #b4ff39)', marginTop: '2px' }}>
+                Ver resumen y series →
+              </div>
+            </div>
             <small>{new Date(session.fechaSesion).toLocaleDateString('es-MX')}</small>
-            <span>{session.idEstado === 2 ? 'Completado' : 'En curso'}</span>
+            <span className={`pill small ${session.idEstado === 2 ? 'success' : ''}`}>
+              {session.idEstado === 2 ? 'Completado' : 'En curso'}
+            </span>
           </div>
         ))}
         {!sessions.data?.length && <Empty>Aún no hay sesiones registradas.</Empty>}
@@ -307,6 +322,12 @@ export function Progress() {
             </button>
           </form>
         </div>
+      )}
+      {selectedSessionId && (
+        <SessionDetailModal
+          sesionId={selectedSessionId}
+          onClose={() => setSelectedSessionId(null)}
+        />
       )}
     </Page>
   );

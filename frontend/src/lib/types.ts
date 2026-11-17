@@ -127,6 +127,7 @@ export type Session = {
   rutina: { nombre: string };
   sesionEjercicio: Array<{
     id: string;
+    nota?: string | null;
     ejercicioEstandar?: { nombre: string };
     ejercicioPersonalizado?: { nombre: string };
     sesionEjercicioSet: Array<{

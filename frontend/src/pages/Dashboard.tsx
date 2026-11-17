@@ -211,7 +211,7 @@ export function Dashboard() {
       </div>
       <Card className="today-card student-today">
         <div className="today-icon">
-          <CalendarDays />
+          <CalendarDays size={32} />
         </div>
         <div>
           <span className="eyebrow">ENTRENAMIENTO DE HOY</span>
