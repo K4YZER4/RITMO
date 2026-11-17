@@ -12,6 +12,7 @@ import { PagosService } from './pagos.service';
 import { SinSuscripcion } from '../../common/decorators/sin-suscripcion.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CrearCheckoutDto } from './dto/crear-checkout.dto';
+import { ConfirmarSesionDto } from './dto/confirmar-sesion.dto';
 import { Public } from '../../common/decorators/public.decorator';
 @ApiTags('Pagos')
 @ApiBearerAuth('access-token')
@@ -87,5 +88,25 @@ export class PagosController {
   @ApiResponse({ status: 404, description: 'Pago no encontrado.' })
   async crearCheckout(@CurrentUser('id') usuarioId: string, @Body() dto: CrearCheckoutDto) {
     return this.pagosService.crearCheckout(usuarioId, dto.pagoId, dto.suscripcionId);
+  }
+
+  @Post('confirmar-sesion')
+  @SinSuscripcion()
+  @ApiOperation({
+    summary: 'Confirmar sesión de Stripe Checkout',
+    description:
+      'Verifica la sesión directamente con la API de Stripe y activa la suscripción localmente de forma inmediata.',
+  })
+  @ApiCreatedResponse({
+    description: 'Suscripción confirmada y activada.',
+    schema: {
+      example: { ok: true, suscripcionId: '123', estado: 'activa' },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Sesión no completada o datos inválidos.' })
+  @ApiResponse({ status: 403, description: 'No tienes acceso a esta sesión de Checkout.' })
+  @ApiResponse({ status: 404, description: 'Sesión o pago no encontrado.' })
+  async confirmarSesion(@CurrentUser('id') usuarioId: string, @Body() dto: ConfirmarSesionDto) {
+    return this.pagosService.confirmarSesionCheckout(usuarioId, dto.sessionId);
   }
 }

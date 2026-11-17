@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
   OnApplicationBootstrap,
   OnApplicationShutdown,
@@ -37,6 +38,8 @@ const ESTADOS_SUSCRIPCION_ACTUAL: EstadoSuscripcionEnum[] = [
 
 @Injectable()
 export class SuscripcionesService implements OnApplicationBootstrap, OnApplicationShutdown {
+  private readonly logger = new Logger(SuscripcionesService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly stripeService: StripeService,
@@ -202,16 +205,23 @@ export class SuscripcionesService implements OnApplicationBootstrap, OnApplicati
       );
     }
 
-    if (
-      suscripcion.proveedor !== ProveedorPagoEnum.stripe ||
-      !suscripcion.proveedorSubscriptionId
-    ) {
-      throw new BadRequestException(
-        'La suscripción aún no tiene una suscripción Stripe activa para cancelar',
-      );
-    }
+    const esDemo =
+      !suscripcion.proveedorSubscriptionId ||
+      suscripcion.proveedorSubscriptionId.startsWith('sub_demo_');
 
-    await this.stripeService.cancelarAlFinalDelPeriodo(suscripcion.proveedorSubscriptionId);
+    if (
+      !esDemo &&
+      suscripcion.proveedor === ProveedorPagoEnum.stripe &&
+      suscripcion.proveedorSubscriptionId
+    ) {
+      try {
+        await this.stripeService.cancelarAlFinalDelPeriodo(suscripcion.proveedorSubscriptionId);
+      } catch (stripeError) {
+        this.logger.warn(
+          `No se pudo sincronizar cancelación con Stripe API (${suscripcion.proveedorSubscriptionId}): ${stripeError}`,
+        );
+      }
+    }
 
     return this.prisma.suscripcion.update({
       where: {
@@ -234,16 +244,23 @@ export class SuscripcionesService implements OnApplicationBootstrap, OnApplicati
       throw new BadRequestException('La suscripción no está programada para cancelarse');
     }
 
-    if (
-      suscripcion.proveedor !== ProveedorPagoEnum.stripe ||
-      !suscripcion.proveedorSubscriptionId
-    ) {
-      throw new BadRequestException(
-        'La suscripción no tiene una suscripción Stripe activa para reanudar',
-      );
-    }
+    const esDemo =
+      !suscripcion.proveedorSubscriptionId ||
+      suscripcion.proveedorSubscriptionId.startsWith('sub_demo_');
 
-    await this.stripeService.reanudarSuscripcion(suscripcion.proveedorSubscriptionId);
+    if (
+      !esDemo &&
+      suscripcion.proveedor === ProveedorPagoEnum.stripe &&
+      suscripcion.proveedorSubscriptionId
+    ) {
+      try {
+        await this.stripeService.reanudarSuscripcion(suscripcion.proveedorSubscriptionId);
+      } catch (stripeError) {
+        this.logger.warn(
+          `No se pudo sincronizar reanudación con Stripe API (${suscripcion.proveedorSubscriptionId}): ${stripeError}`,
+        );
+      }
+    }
 
     return this.prisma.suscripcion.update({
       where: {

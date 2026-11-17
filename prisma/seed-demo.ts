@@ -88,16 +88,16 @@ async function main() {
   );
   await prisma.entrenador.upsert({
     where: { idUsuario: entrenador.id },
-    update: { nombrePublico: 'Mateo Coach', idPlan: 1 },
+    update: { nombrePublico: 'Mateo Coach', idPlan: 2 },
     create: {
       idUsuario: entrenador.id,
       slug: 'mateo-coach-demo',
       nombrePublico: 'Mateo Coach',
       fechaEntrenador: new Date('2020-01-01'),
-      idPlan: 1,
+      idPlan: 2,
     },
   });
-  await asegurarSuscripcion(entrenador.id, 'entrenador', 1);
+  await asegurarSuscripcion(entrenador.id, 'entrenador', 2);
 
   // 2. Biblioteca de Ejercicios Estándar
   const ejerciciosDef = [
@@ -1169,13 +1169,23 @@ async function asegurarSuscripcion(
       : await prisma.planEntrenador.findUnique({ where: { id: idPlan } });
 
   const esGratuito = idPlan === 1;
+  const finPeriodo = new Date();
+  finPeriodo.setUTCDate(finPeriodo.getUTCDate() + 30);
+
   const datos = {
     ...where,
     ...(tipo === 'alumno' ? { planAlumnoId: idPlan } : { planEntrenadorId: idPlan }),
     estado: EstadoSuscripcionEnum.activa,
-    periodoActualInicio: new Date('2026-01-01T00:00:00.000Z'),
-    periodoActualFin: esGratuito ? null : new Date('2027-01-01T00:00:00.000Z'),
+    periodoActualInicio: new Date(),
+    periodoActualFin: esGratuito ? null : finPeriodo,
+    siguienteCobroEn: esGratuito ? null : finPeriodo,
     vitalicia: esGratuito,
+    cancelarAlFinalDelPeriodo: false,
+    canceladaEn: null,
+    proveedor: esGratuito ? null : ('stripe' as any),
+    proveedorSubscriptionId: esGratuito ? null : `sub_demo_${tipo}_${idPlan}`,
+    proveedorCustomerId: `cus_demo_${usuarioId.slice(0, 8)}`,
+    proveedorPrecioIdSnapshot: planInfo?.proveedorPrecioId || null,
     planNombreSnapshot: planInfo?.nombre || (esGratuito ? 'Basico' : 'Intermedio'),
     precioSnapshot: esGratuito ? 0 : Number(planInfo?.precio || 200.0),
     monedaSnapshot: 'MXN',

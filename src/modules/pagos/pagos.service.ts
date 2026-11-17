@@ -124,6 +124,129 @@ export class PagosService {
     };
   }
 
+  async confirmarSesionCheckout(usuarioId: string, sessionId: string) {
+    if (!sessionId) {
+      throw new BadRequestException('El sessionId es requerido');
+    }
+
+    const session = await this.stripeService.obtenerCheckoutSession(sessionId);
+
+    if (!session) {
+      throw new NotFoundException('Sesión de Stripe no encontrada');
+    }
+
+    if (session.status !== 'complete' && session.payment_status !== 'paid') {
+      throw new BadRequestException('La sesión de Stripe aún no ha sido completada o pagada');
+    }
+
+    if (session.metadata?.usuarioId && session.metadata.usuarioId !== usuarioId) {
+      throw new ForbiddenException('No tienes acceso a esta sesión de Checkout');
+    }
+
+    const customerId = this.obtenerIdStripe(session.customer);
+    const stripeSubscriptionId = this.obtenerIdSuscripcionStripe(session.subscription);
+
+    const pagoIdMetadata = session.metadata?.pagoId
+      ? this.obtenerBigIntDesdeMetadata(session.metadata.pagoId)
+      : null;
+    const suscripcionIdMetadata = session.metadata?.suscripcionId
+      ? this.obtenerBigIntDesdeMetadata(session.metadata.suscripcionId)
+      : null;
+
+    const pago = await this.prisma.pago.findFirst({
+      where: {
+        OR: [
+          ...(pagoIdMetadata ? [{ id: pagoIdMetadata }] : []),
+          { proveedorPagoId: session.id },
+          ...(suscripcionIdMetadata ? [{ suscripcionId: suscripcionIdMetadata }] : []),
+        ],
+      },
+      include: {
+        suscripcion: true,
+      },
+      orderBy: {
+        id: 'desc',
+      },
+    });
+
+    if (!pago) {
+      throw new NotFoundException('No se encontró el pago asociado a la sesión de Checkout');
+    }
+
+    const esDueno =
+      pago.suscripcion.entrenadorId === usuarioId || pago.suscripcion.alumnoId === usuarioId;
+    if (!esDueno) {
+      throw new ForbiddenException('No tienes acceso a esta suscripción');
+    }
+
+    let periodoInicio = new Date();
+    let periodoFin = new Date();
+    let cancelAtPeriodEnd = false;
+
+    if (stripeSubscriptionId) {
+      try {
+        const suscripcionStripe = await this.stripeService.obtenerSuscripcion(stripeSubscriptionId);
+        const periodo = this.obtenerPeriodoDeSuscripcionStripe(suscripcionStripe);
+        periodoInicio = periodo.inicio;
+        periodoFin = periodo.fin;
+        cancelAtPeriodEnd = Boolean(suscripcionStripe.cancel_at_period_end);
+      } catch {
+        periodoFin.setDate(periodoFin.getDate() + 30);
+      }
+    } else {
+      periodoFin.setDate(periodoFin.getDate() + 30);
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.pago.update({
+        where: { id: pago.id },
+        data: {
+          estado: EstadoPagoEnum.pagado,
+          pagadoEn: new Date(),
+          proveedor: ProveedorPagoEnum.stripe,
+          proveedorPagoId: session.id,
+        },
+      });
+
+      await tx.suscripcion.update({
+        where: { id: pago.suscripcionId },
+        data: {
+          estado: EstadoSuscripcionEnum.activa,
+          proveedor: ProveedorPagoEnum.stripe,
+          proveedorCustomerId: customerId,
+          proveedorSubscriptionId: stripeSubscriptionId,
+          periodoActualInicio: periodoInicio,
+          periodoActualFin: periodoFin,
+          siguienteCobroEn: cancelAtPeriodEnd ? null : periodoFin,
+          cancelarAlFinalDelPeriodo: cancelAtPeriodEnd,
+          canceladaEn: cancelAtPeriodEnd ? new Date() : null,
+        },
+      });
+
+      if (pago.suscripcion.entrenadorId && customerId) {
+        await tx.entrenador.update({
+          where: { idUsuario: pago.suscripcion.entrenadorId },
+          data: { proveedorCustomerId: customerId },
+        });
+      }
+
+      if (pago.suscripcion.alumnoId && customerId) {
+        await tx.alumno.update({
+          where: { idUsuario: pago.suscripcion.alumnoId },
+          data: { proveedorCustomerId: customerId },
+        });
+      }
+    });
+
+    return {
+      ok: true,
+      suscripcionId: pago.suscripcionId.toString(),
+      estado: EstadoSuscripcionEnum.activa,
+      stripeSubscriptionId,
+      periodoActualFin: periodoFin,
+    };
+  }
+
   async procesarWebhookStripe(rawBody: Buffer | undefined, firma: string | undefined) {
     if (!rawBody || !firma) {
       throw new BadRequestException('Webhook de Stripe incompleto');

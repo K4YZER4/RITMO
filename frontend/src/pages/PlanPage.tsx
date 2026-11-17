@@ -106,6 +106,9 @@ export function PlanPage() {
           <h2>{current?.nombre || 'Sin plan'}</h2>
           <p>
             Estado: <b>{subscription.data?.estado || 'No disponible'}</b> · Pago: {payment.data?.estado || '—'}
+            {subscription.data?.cancelarAlFinalDelPeriodo && (
+              <> · <b style={{ color: '#f59e0b' }}>Cancelación programada</b></>
+            )}
             {isTrainer && current?.limiteAlumnos && (
               <> · Capacidad: <b>hasta {current.limiteAlumnos} alumnos</b></>
             )}
@@ -117,6 +120,11 @@ export function PlanPage() {
         <p className="muted">
           Periodo actual hasta{' '}
           {new Date(subscription.data.periodoActualFin).toLocaleDateString('es-MX')}.
+          {subscription.data?.cancelarAlFinalDelPeriodo && (
+            <span style={{ color: '#f59e0b', marginLeft: '8px', fontWeight: 600 }}>
+              (Cancelación programada: mantendrás acceso hasta el término del periodo)
+            </span>
+          )}
         </p>
       )}
       <div className="plan-grid">

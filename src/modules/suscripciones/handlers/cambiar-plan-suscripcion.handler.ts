@@ -53,7 +53,13 @@ export class CambiarPlanSuscripcionHandler {
     }
 
     if (modoCambio === MODOS_CAMBIO_PLAN.INSTANTANEO) {
-      await this.stripeService.cancelarInmediatamente(suscripcionActual.proveedorSubscriptionId);
+      if (!suscripcionActual.proveedorSubscriptionId.startsWith('sub_demo_')) {
+        try {
+          await this.stripeService.cancelarInmediatamente(suscripcionActual.proveedorSubscriptionId);
+        } catch {
+          // Continuar con el cambio local si Stripe no tiene el recurso o falla conexión
+        }
+      }
       return this.aplicarCambioPlanLocal(usuarioId, idPlanNuevo, usuario.role);
     }
 
@@ -227,13 +233,16 @@ export class CambiarPlanSuscripcionHandler {
       throw new ForbiddenException('Rol no válido para cambiar plan');
     }
 
-    if (!suscripcionActual.proveedorSubscriptionId) {
-      throw new BadRequestException(
-        'La suscripción no tiene una suscripción Stripe activa para programar el cambio',
-      );
+    if (
+      suscripcionActual.proveedorSubscriptionId &&
+      !suscripcionActual.proveedorSubscriptionId.startsWith('sub_demo_')
+    ) {
+      try {
+        await this.stripeService.cancelarAlFinalDelPeriodo(suscripcionActual.proveedorSubscriptionId);
+      } catch {
+        // Continuar con la programación local
+      }
     }
-
-    await this.stripeService.cancelarAlFinalDelPeriodo(suscripcionActual.proveedorSubscriptionId);
 
     const dataPendiente =
       role === UserRole.alumno
