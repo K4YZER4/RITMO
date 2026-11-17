@@ -334,6 +334,7 @@ function WeeklyReorderModal({
     names.map((_, index) => assignments.find((item) => item.idDiaSemana === index + 1) || null),
   );
   const [dragged, setDragged] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
 
   const swap = (from: number, to: number) => {
@@ -346,9 +347,14 @@ function WeeklyReorderModal({
   };
 
   const move = (target: number) => {
-    if (dragged === null || dragged === target) return;
+    if (dragged === null || dragged === target) {
+      setDragged(null);
+      setDragOverIndex(null);
+      return;
+    }
     swap(dragged, target);
     setDragged(null);
+    setDragOverIndex(null);
     setSelected(null);
   };
 
@@ -368,45 +374,72 @@ function WeeklyReorderModal({
       <section className="modal wide reorder-modal" onClick={(event) => event.stopPropagation()}>
         <span className="eyebrow">ESTA SEMANA</span>
         <h2>Reordenar rutinas</h2>
-        <p>
-          Arrastra o haz clic en una rutina y luego en otro día para intercambiarlos. Este cambio
-          solo aplica a la semana actual.
+        <p style={{ margin: '4px 0 2px' }}>
+          Arrastra y desliza una rutina hacia otro día para moverla o intercambiarla, tal como en el planificador del entrenador.
         </p>
-        <div className="weekly-reorder-grid">
-          {names.map((name, index) => {
-            const isSelected = selected === index;
-            return (
-              <div
-                className={`weekly-reorder-day ${isSelected ? 'selected' : ''}`}
-                key={name}
-                style={{
-                  cursor: selected !== null || slots[index] ? 'pointer' : 'default',
-                  borderColor: isSelected ? 'var(--lime)' : undefined,
-                  boxShadow: isSelected ? '0 0 0 2px var(--lime)' : undefined,
-                }}
-                onClick={() => handleSlotClick(index)}
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={() => move(index)}
-              >
-                <div className="weekly-reorder-day-heading">
-                  <strong>{name}</strong>
-                  <span>{formatScheduledDate(weekDates[index])}</span>
-                </div>
-                {slots[index] ? (
-                  <div
-                    className="weekly-reorder-routine"
-                    draggable
-                    onDragStart={() => setDragged(index)}
-                  >
-                    <GripVertical className="weekly-reorder-grip" />
-                    <span>{slots[index]?.rutina.nombre}</span>
+        <small style={{ color: 'var(--muted)', display: 'block', fontSize: '0.8rem', marginBottom: '4px' }}>
+          💡 Si tu pantalla es estrecha, puedes deslizar la barra horizontalmente para recorrer todos los días de la semana.
+        </small>
+        <div className="weekly-reorder-grid-wrapper">
+          <div className="weekly-reorder-grid">
+            {names.map((name, index) => {
+              const isSelected = selected === index;
+              const isOver = dragOverIndex === index;
+              return (
+                <div
+                  className={`weekly-reorder-day ${isSelected ? 'selected' : ''} ${isOver ? 'drag-over' : ''}`}
+                  key={name}
+                  style={{
+                    cursor: selected !== null || slots[index] ? 'pointer' : 'default',
+                  }}
+                  onClick={() => handleSlotClick(index)}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = 'move';
+                    if (dragOverIndex !== index) setDragOverIndex(index);
+                  }}
+                  onDragLeave={() => setDragOverIndex((curr) => (curr === index ? null : curr))}
+                  onDrop={() => move(index)}
+                >
+                  <div className="weekly-reorder-day-heading">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <strong>{name}</strong>
+                      {isOver && (
+                        <span style={{ color: 'var(--lime)', fontWeight: 600, fontSize: '0.72rem' }}>
+                          {slots[index] ? '⇄ Intercambiar' : '↓ Mover aquí'}
+                        </span>
+                      )}
+                    </div>
+                    <span>{formatScheduledDate(weekDates[index])}</span>
                   </div>
-                ) : (
-                  <span className="weekly-reorder-empty">Descanso (clic para mover aquí)</span>
-                )}
-              </div>
-            );
-          })}
+                  {slots[index] ? (
+                    <div
+                      className={`weekly-reorder-routine ${dragged === index ? 'is-dragging' : ''}`}
+                      draggable
+                      onDragStart={(e) => {
+                        setDragged(index);
+                        e.dataTransfer.effectAllowed = 'move';
+                      }}
+                      onDragEnd={() => {
+                        setDragged(null);
+                        setDragOverIndex(null);
+                      }}
+                      title="Arrastra para mover a otro día o intercambiar"
+                    >
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', width: '100%' }}>
+                        <GripVertical className="weekly-reorder-grip" />
+                        <span style={{ fontWeight: 600, fontSize: '0.84rem' }}>{slots[index]?.rutina.nombre}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="weekly-reorder-empty">
+                      {isOver ? <span style={{ color: 'var(--lime)', fontWeight: 600 }}>↓ Soltar aquí</span> : 'Descanso'}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
         {selected !== null && (
           <div style={{ color: 'var(--lime)', fontSize: '0.85rem', marginBottom: '8px' }}>

@@ -338,9 +338,13 @@
 }
 .week-strip {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(115px, 1fr));
   gap: 0.55rem;
   margin-bottom: 1.2rem;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
 }
 .week-day {
   display: grid;
@@ -468,27 +472,57 @@
   margin-top: 18px;
 }
 .reorder-modal {
-  max-width: 1140px;
+  max-width: 1080px;
   width: 95vw;
   max-height: calc(100vh - 40px);
   overflow-y: auto;
+}
+.weekly-reorder-grid-wrapper {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 6px 2px 14px;
+  margin: 14px 0 16px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--lime) rgba(255, 255, 255, 0.06);
+}
+.weekly-reorder-grid-wrapper::-webkit-scrollbar {
+  height: 6px;
+}
+.weekly-reorder-grid-wrapper::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+.weekly-reorder-grid-wrapper::-webkit-scrollbar-thumb {
+  background: var(--lime);
+  border-radius: 4px;
 }
 .weekly-reorder-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(130px, 1fr));
   gap: 10px;
-  margin: 18px 0;
+  min-width: 930px;
 }
 .weekly-reorder-day {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  min-height: 145px;
+  min-height: 155px;
   padding: 12px 10px;
   background: #0b0f0d;
   border: 1px solid var(--line);
   border-radius: 12px;
   transition: all 0.2s ease;
+  user-select: none;
+}
+.weekly-reorder-day.drag-over {
+  border-color: var(--lime) !important;
+  background: rgba(183, 243, 74, 0.08) !important;
+  box-shadow: 0 0 14px rgba(183, 243, 74, 0.22);
+}
+.weekly-reorder-day.selected {
+  border-color: var(--lime);
+  box-shadow: 0 0 0 2px var(--lime);
 }
 .weekly-reorder-day-heading {
   display: grid;
@@ -514,12 +548,22 @@
   flex: 1;
   padding: 12px 10px;
   color: #efffe1;
-  background: #b7f34a14;
-  border: 1px solid #b7f34a55;
+  background: #182119;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--lime);
   border-radius: 9px;
   font-size: 0.84rem;
   font-weight: 700;
   cursor: grab;
+  transition: transform 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+}
+.weekly-reorder-routine:active {
+  cursor: grabbing;
+}
+.weekly-reorder-routine.is-dragging {
+  opacity: 0.35;
+  transform: scale(0.96);
+  border-left-color: var(--accent, #e5a93b);
 }
 .weekly-reorder-routine span {
   word-break: break-word;
@@ -531,6 +575,7 @@
   width: 17px;
   height: 17px;
   color: var(--muted);
+  cursor: grab;
 }
 .weekly-reorder-empty {
   display: flex;
@@ -569,30 +614,6 @@
 }
 .history-heading {
   margin-bottom: 8px;
-}
-@media (max-width: 960px) {
-  .weekly-reorder-grid {
-    grid-template-columns: 1fr;
-    max-height: 54vh;
-    overflow-y: auto;
-  }
-  .weekly-reorder-day {
-    flex-direction: row;
-    align-items: center;
-    min-height: 64px;
-    gap: 12px;
-  }
-  .weekly-reorder-day-heading {
-    min-width: 95px;
-    padding-bottom: 0;
-    border-bottom: none;
-    border-right: 1px solid var(--line);
-    padding-right: 10px;
-  }
-  .weekly-reorder-routine {
-    flex-direction: row;
-    align-items: center;
-  }
 }
 @media (max-width: 760px) {
   .pending-routine-row {
