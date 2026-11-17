@@ -183,9 +183,7 @@ export function Dashboard() {
       <div className="week-strip">
         {dayNames.map((name, index) => {
           const day = index + 1;
-          const assignment =
-            week?.find((item) => item.idDiaSemana === day) ??
-            (day === currentDay ? todayAssignment : undefined);
+          const assignment = week?.find((item) => item.idDiaSemana === day);
           return (
             <div
               className={`week-day ${day === currentDay ? 'today' : ''}`}
