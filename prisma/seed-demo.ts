@@ -501,22 +501,90 @@ async function main() {
     });
     await asegurarSuscripcion(usuario.id, 'alumno');
 
-    // Mediciones
-    await prisma.usuarioMedicion.upsert({
-      where: {
-        idUsuario_fechaMedicion: {
-          idUsuario: usuario.id,
-          fechaMedicion: new Date('2026-11-01T00:00:00.000Z'),
+    // Mediciones periódicas realistas (historial de 8 semanas para graficar evolución continua)
+    const historialMedicionesPorAlumno: Record<string, Array<{ diasAtras: number; peso: number; grasa: number }>> = {
+      Ana: [
+        { diasAtras: 56, peso: 66.8, grasa: 23.8 },
+        { diasAtras: 49, peso: 66.4, grasa: 23.4 },
+        { diasAtras: 42, peso: 66.0, grasa: 23.1 },
+        { diasAtras: 35, peso: 65.6, grasa: 22.7 },
+        { diasAtras: 28, peso: 65.2, grasa: 22.3 },
+        { diasAtras: 21, peso: 64.9, grasa: 21.9 },
+        { diasAtras: 14, peso: 64.7, grasa: 21.5 },
+        { diasAtras: 7,  peso: 64.6, grasa: 21.2 },
+        { diasAtras: 1,  peso: 64.5, grasa: 21.0 },
+      ],
+      Sofía: [
+        { diasAtras: 56, peso: 56.2, grasa: 24.5 },
+        { diasAtras: 49, peso: 56.5, grasa: 24.2 },
+        { diasAtras: 42, peso: 56.9, grasa: 24.0 },
+        { diasAtras: 35, peso: 57.2, grasa: 23.7 },
+        { diasAtras: 28, peso: 57.4, grasa: 23.5 },
+        { diasAtras: 21, peso: 57.6, grasa: 23.4 },
+        { diasAtras: 14, peso: 57.8, grasa: 23.2 },
+        { diasAtras: 7,  peso: 57.9, grasa: 23.1 },
+        { diasAtras: 1,  peso: 58.0, grasa: 23.0 },
+      ],
+      Diego: [
+        { diasAtras: 56, peso: 86.5, grasa: 21.5 },
+        { diasAtras: 49, peso: 85.8, grasa: 21.0 },
+        { diasAtras: 42, peso: 85.1, grasa: 20.4 },
+        { diasAtras: 35, peso: 84.5, grasa: 19.8 },
+        { diasAtras: 28, peso: 83.9, grasa: 19.3 },
+        { diasAtras: 21, peso: 83.4, grasa: 18.8 },
+        { diasAtras: 14, peso: 83.0, grasa: 18.4 },
+        { diasAtras: 7,  peso: 82.7, grasa: 18.2 },
+        { diasAtras: 1,  peso: 82.5, grasa: 18.0 },
+      ],
+      Carlos: [
+        { diasAtras: 56, peso: 73.2, grasa: 16.2 },
+        { diasAtras: 49, peso: 73.7, grasa: 16.0 },
+        { diasAtras: 42, peso: 74.2, grasa: 15.8 },
+        { diasAtras: 35, peso: 74.6, grasa: 15.6 },
+        { diasAtras: 28, peso: 75.1, grasa: 15.4 },
+        { diasAtras: 21, peso: 75.4, grasa: 15.3 },
+        { diasAtras: 14, peso: 75.7, grasa: 15.1 },
+        { diasAtras: 7,  peso: 75.9, grasa: 15.0 },
+        { diasAtras: 1,  peso: 76.0, grasa: 15.0 },
+      ],
+      Valentina: [
+        { diasAtras: 56, peso: 63.0, grasa: 26.5 },
+        { diasAtras: 49, peso: 62.6, grasa: 26.2 },
+        { diasAtras: 42, peso: 62.3, grasa: 25.9 },
+        { diasAtras: 35, peso: 62.0, grasa: 25.6 },
+        { diasAtras: 28, peso: 61.7, grasa: 25.4 },
+        { diasAtras: 21, peso: 61.5, grasa: 25.2 },
+        { diasAtras: 14, peso: 61.4, grasa: 25.1 },
+        { diasAtras: 7,  peso: 61.3, grasa: 25.0 },
+        { diasAtras: 1,  peso: 61.2, grasa: 25.0 },
+      ],
+    };
+
+    const medicionesAlumno = historialMedicionesPorAlumno[a.nombre] || [
+      { diasAtras: 1, peso: a.pesoKg, grasa: a.grasaPct },
+    ];
+
+    for (const med of medicionesAlumno) {
+      const fechaMed = new Date();
+      fechaMed.setUTCDate(fechaMed.getUTCDate() - med.diasAtras);
+      fechaMed.setUTCHours(0, 0, 0, 0);
+
+      await prisma.usuarioMedicion.upsert({
+        where: {
+          idUsuario_fechaMedicion: {
+            idUsuario: usuario.id,
+            fechaMedicion: fechaMed,
+          },
         },
-      },
-      update: { pesoKg: a.pesoKg, grasaCorporalPct: a.grasaPct },
-      create: {
-        idUsuario: usuario.id,
-        fechaMedicion: new Date('2026-11-01T00:00:00.000Z'),
-        pesoKg: a.pesoKg,
-        grasaCorporalPct: a.grasaPct,
-      },
-    });
+        update: { pesoKg: med.peso, grasaCorporalPct: med.grasa },
+        create: {
+          idUsuario: usuario.id,
+          fechaMedicion: fechaMed,
+          pesoKg: med.peso,
+          grasaCorporalPct: med.grasa,
+        },
+      });
+    }
 
     // Si es Valentina (independiente), preparamos token de vinculación demo para probar el límite
     if (esIndependiente) {
@@ -591,10 +659,27 @@ async function main() {
     const asignacionMartes = await prisma.usuarioRutina.findFirst({
       where: { idUsuario: usuario.id, idRutina: rutinaPierna.id, idDiaSemana: 2, activa: true },
     });
+    const asignacionMiercoles = await prisma.usuarioRutina.findFirst({
+      where: { idUsuario: usuario.id, idRutina: rutinaAccesorios.id, idDiaSemana: 3, activa: true },
+    });
+    const asignacionJueves = await prisma.usuarioRutina.findFirst({
+      where: { idUsuario: usuario.id, idRutina: rutinaTorso.id, idDiaSemana: 4, activa: true },
+    });
+    const asignacionViernes = await prisma.usuarioRutina.findFirst({
+      where: { idUsuario: usuario.id, idRutina: rutinaPierna.id, idDiaSemana: 5, activa: true },
+    });
 
     if (asignacionLunes) {
       const rutinaEjerciciosTorso = await prisma.rutinaEjercicio.findMany({
         where: { idRutina: rutinaTorso.id },
+        orderBy: { orden: 'asc' },
+      });
+      const rutinaEjerciciosPierna = await prisma.rutinaEjercicio.findMany({
+        where: { idRutina: rutinaPierna.id },
+        orderBy: { orden: 'asc' },
+      });
+      const rutinaEjerciciosAccesorios = await prisma.rutinaEjercicio.findMany({
+        where: { idRutina: rutinaAccesorios.id },
         orderBy: { orden: 'asc' },
       });
 
@@ -682,11 +767,6 @@ async function main() {
         const fechaSesionPierna = new Date();
         fechaSesionPierna.setUTCDate(fechaSesionPierna.getUTCDate() - 5);
 
-        const rutinaEjerciciosPierna = await prisma.rutinaEjercicio.findMany({
-          where: { idRutina: rutinaPierna.id },
-          orderBy: { orden: 'asc' },
-        });
-
         const sesionPiernaExistente = await prisma.sesionEntrenamiento.findFirst({
           where: { idUsuario: usuario.id, idRutina: rutinaPierna.id, duracionMinutos: 58 },
         });
@@ -736,6 +816,148 @@ async function main() {
         }
       }
 
+      // 3. Sesiones históricas en los últimos 30 días para enriquecer el historial de entrenamientos, volumen y métricas
+      const sesionesAdicionales = [
+        {
+          diasAtras: 7,
+          duracion: 46,
+          asig: asignacionMiercoles,
+          rutina: rutinaAccesorios,
+          ejercicios: rutinaEjerciciosAccesorios,
+          nota: 'Excelente aislamiento en hombros y glúteo. El Hip Thrust en accesorios se sintió con buena congestión.',
+          notaCoach: 'Buena técnica, mantén esa cadencia controlada.',
+        },
+        {
+          diasAtras: 9,
+          duracion: 54,
+          asig: asignacionJueves,
+          rutina: rutinaTorso,
+          ejercicios: rutinaEjerciciosTorso,
+          nota: 'Press de banca con técnica impecable y buena retracción escapular.',
+          notaCoach: 'Sólido movimiento en banca.',
+        },
+        {
+          diasAtras: 12,
+          duracion: 59,
+          asig: asignacionViernes,
+          rutina: rutinaPierna,
+          ejercicios: rutinaEjerciciosPierna,
+          nota: 'Sentadilla pesada con 95kg, muy buena profundidad sin molestias.',
+          notaCoach: 'Gran progreso en fuerza de pierna Ana.',
+        },
+        {
+          diasAtras: 14,
+          duracion: 48,
+          asig: asignacionMiercoles,
+          rutina: rutinaAccesorios,
+          ejercicios: rutinaEjerciciosAccesorios,
+          nota: 'Sesión de core y hombros completada con gran intensidad.',
+          notaCoach: null,
+        },
+        {
+          diasAtras: 16,
+          duracion: 51,
+          asig: asignacionLunes,
+          rutina: rutinaTorso,
+          ejercicios: rutinaEjerciciosTorso,
+          nota: 'Remo con barra y jalón al pecho con peso máximo récord.',
+          notaCoach: 'Felicidades por esa marca en jalón.',
+        },
+        {
+          diasAtras: 19,
+          duracion: 57,
+          asig: asignacionMartes,
+          rutina: rutinaPierna,
+          ejercicios: rutinaEjerciciosPierna,
+          nota: 'Prensa de piernas y peso muerto rumano con cadencia lenta en excéntrica.',
+          notaCoach: null,
+        },
+        {
+          diasAtras: 21,
+          duracion: 45,
+          asig: asignacionMiercoles,
+          rutina: rutinaAccesorios,
+          ejercicios: rutinaEjerciciosAccesorios,
+          nota: 'Face pulls y elevaciones laterales en polea con máxima contracción.',
+          notaCoach: null,
+        },
+        {
+          diasAtras: 24,
+          duracion: 53,
+          asig: asignacionJueves,
+          rutina: rutinaTorso,
+          ejercicios: rutinaEjerciciosTorso,
+          nota: 'Press militar estricto y fondos con excelente estabilidad.',
+          notaCoach: null,
+        },
+        {
+          diasAtras: 26,
+          duracion: 56,
+          asig: asignacionViernes,
+          rutina: rutinaPierna,
+          ejercicios: rutinaEjerciciosPierna,
+          nota: 'Inicio del ciclo de fuerza en básicos de pierna.',
+          notaCoach: 'Muy bien ejecutado.',
+        },
+        {
+          diasAtras: 28,
+          duracion: 47,
+          asig: asignacionMiercoles,
+          rutina: rutinaAccesorios,
+          ejercicios: rutinaEjerciciosAccesorios,
+          nota: 'Trabajo complementario de estabilidad lumbar y hombro posterior.',
+          notaCoach: null,
+        },
+      ];
+
+      for (const s of sesionesAdicionales) {
+        if (!s.asig) continue;
+        const fecha = new Date();
+        fecha.setUTCDate(fecha.getUTCDate() - s.diasAtras);
+
+        const sesionExiste = await prisma.sesionEntrenamiento.findFirst({
+          where: { idUsuario: usuario.id, duracionMinutos: s.duracion },
+        });
+
+        if (!sesionExiste) {
+          await prisma.sesionEntrenamiento.create({
+            data: {
+              idUsuario: usuario.id,
+              idUsuarioRutina: s.asig.id,
+              idRutina: s.rutina.id,
+              fechaSesion: fecha,
+              idEstado: 2, // completada
+              duracionMinutos: s.duracion,
+              notasAlumno: s.nota,
+              notasEntrenador: s.notaCoach,
+              createdBy: usuario.id,
+              sesionEjercicio: {
+                create: s.ejercicios.map((re) => ({
+                  idRutinaEjercicio: re.id,
+                  idEjercicioEstandar: re.idEjercicioEstandar,
+                  idEjercicioPersonalizado: re.idEjercicioPersonalizado,
+                  orden: re.orden,
+                  sesionEjercicioSet: {
+                    create: [1, 2, 3, 4].map((numeroSet) => {
+                      const peso = re.pesoObjetivo ? Number(re.pesoObjetivo) : 50;
+                      return {
+                        numeroSet,
+                        repeticionesObjetivo: re.repeticiones,
+                        pesoObjetivo: peso,
+                        repeticionesRealizadas: re.repeticiones,
+                        pesoReal: peso,
+                        rpe: 8,
+                        completado: true,
+                      };
+                    }),
+                  },
+                })),
+              },
+            },
+          });
+        }
+      }
+
       const primerSet = await prisma.sesionEjercicioSet.findFirst({
         where: { sesionEjercicio: { idSesionEntrenamiento: sesion.id } },
       });
@@ -743,28 +965,99 @@ async function main() {
       if (primerSet) {
         // PR Estándar: Press de banca
         const ejBanca = ejerciciosMap.get('Press de banca');
-        await prisma.alumnoEjercicioPr.upsert({
-          where: {
-            idUsuario_idEjercicioEstandar_peso: {
+        if (ejBanca) {
+          await prisma.alumnoEjercicioPr.upsert({
+            where: {
+              idUsuario_idEjercicioEstandar_peso: {
+                idUsuario: usuario.id,
+                idEjercicioEstandar: ejBanca.id,
+                peso: 80,
+              },
+            },
+            update: { repeticiones: 8, fechaPr: sesion.fechaSesion },
+            create: {
               idUsuario: usuario.id,
               idEjercicioEstandar: ejBanca.id,
               peso: 80,
+              repeticiones: 8,
+              idSesionEjercicioSet: primerSet.id,
+              fechaPr: sesion.fechaSesion,
             },
-          },
-          update: { repeticiones: 8, fechaPr: sesion.fechaSesion },
-          create: {
-            idUsuario: usuario.id,
-            idEjercicioEstandar: ejBanca.id,
-            peso: 80,
-            repeticiones: 8,
-            idSesionEjercicioSet: primerSet.id,
-            fechaPr: sesion.fechaSesion,
-          },
-        });
+          });
+        }
 
-        // PR Personalizado: Hip Thrust con barra para Sofía
+        // PR Estándar: Sentadilla con barra
+        const ejSentadilla = ejerciciosMap.get('Sentadilla con barra');
+        if (ejSentadilla) {
+          await prisma.alumnoEjercicioPr.upsert({
+            where: {
+              idUsuario_idEjercicioEstandar_peso: {
+                idUsuario: usuario.id,
+                idEjercicioEstandar: ejSentadilla.id,
+                peso: 105,
+              },
+            },
+            update: { repeticiones: 6, fechaPr: sesion.fechaSesion },
+            create: {
+              idUsuario: usuario.id,
+              idEjercicioEstandar: ejSentadilla.id,
+              peso: 105,
+              repeticiones: 6,
+              idSesionEjercicioSet: primerSet.id,
+              fechaPr: sesion.fechaSesion,
+            },
+          });
+        }
+
+        // PR Estándar: Remo con barra
+        const ejRemo = ejerciciosMap.get('Remo con barra');
+        if (ejRemo) {
+          await prisma.alumnoEjercicioPr.upsert({
+            where: {
+              idUsuario_idEjercicioEstandar_peso: {
+                idUsuario: usuario.id,
+                idEjercicioEstandar: ejRemo.id,
+                peso: 75,
+              },
+            },
+            update: { repeticiones: 8, fechaPr: sesion.fechaSesion },
+            create: {
+              idUsuario: usuario.id,
+              idEjercicioEstandar: ejRemo.id,
+              peso: 75,
+              repeticiones: 8,
+              idSesionEjercicioSet: primerSet.id,
+              fechaPr: sesion.fechaSesion,
+            },
+          });
+        }
+
+        // PR Estándar: Peso muerto rumano
+        const ejPesoMuerto = ejerciciosMap.get('Peso muerto rumano');
+        if (ejPesoMuerto) {
+          await prisma.alumnoEjercicioPr.upsert({
+            where: {
+              idUsuario_idEjercicioEstandar_peso: {
+                idUsuario: usuario.id,
+                idEjercicioEstandar: ejPesoMuerto.id,
+                peso: 100,
+              },
+            },
+            update: { repeticiones: 8, fechaPr: sesion.fechaSesion },
+            create: {
+              idUsuario: usuario.id,
+              idEjercicioEstandar: ejPesoMuerto.id,
+              peso: 100,
+              repeticiones: 8,
+              idSesionEjercicioSet: primerSet.id,
+              fechaPr: sesion.fechaSesion,
+            },
+          });
+        }
+
+        // PR Personalizado: Hip Thrust con barra para Sofía, Ana y Valentina
         const hipThrust = personalizadosMap.get('Hip Thrust con barra');
-        if (hipThrust && (a.nombre === 'Sofía' || a.nombre === 'Valentina')) {
+        if (hipThrust && (a.nombre === 'Sofía' || a.nombre === 'Ana' || a.nombre === 'Valentina')) {
           await prisma.alumnoEjercicioPr.upsert({
             where: {
               idUsuario_idEjercicioPersonalizado_peso: {
@@ -802,6 +1095,29 @@ async function main() {
               idEjercicioPersonalizado: elevaciones.id,
               peso: 14,
               repeticiones: 12,
+              idSesionEjercicioSet: primerSet.id,
+              fechaPr: sesion.fechaSesion,
+            },
+          });
+        }
+
+        // PR Personalizado: Face Pull con cuerda en polea
+        const facePull = personalizadosMap.get('Face Pull con cuerda en polea');
+        if (facePull) {
+          await prisma.alumnoEjercicioPr.upsert({
+            where: {
+              idUsuario_idEjercicioPersonalizado_peso: {
+                idUsuario: usuario.id,
+                idEjercicioPersonalizado: facePull.id,
+                peso: 30,
+              },
+            },
+            update: { repeticiones: 15, fechaPr: sesion.fechaSesion },
+            create: {
+              idUsuario: usuario.id,
+              idEjercicioPersonalizado: facePull.id,
+              peso: 30,
+              repeticiones: 15,
               idSesionEjercicioSet: primerSet.id,
               fechaPr: sesion.fechaSesion,
             },

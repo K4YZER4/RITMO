@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, CreditCard } from 'lucide-react';
 import { useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { Card, Loading, Page } from '../components/Ui';
 import { get, patch, post } from '../lib/api';
 import type { Catalogs, Plan, Profile } from '../lib/types';
@@ -94,6 +95,9 @@ export function PlanPage() {
     }
   };
   if (profile.isLoading || catalogs.isLoading || subscription.isLoading) return <Loading />;
+  if (profile.data && !isTrainer) {
+    return <Navigate to="/app" replace />;
+  }
   return (
     <Page eyebrow="CUENTA" title="Tu plan">
       <Card className="plan-summary">
