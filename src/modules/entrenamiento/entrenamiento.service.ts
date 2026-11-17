@@ -30,7 +30,7 @@ export class EntrenamientoService {
         idUsuario: usuarioId,
         activa: true,
         idDiaSemana: diaSemana,
-        fechaInicio: { lt: manana },
+        fechaInicio: { lte: manana },
         OR: [{ fechaFin: null }, { fechaFin: { gte: hoy } }],
       },
       orderBy: { createdAt: 'asc' },
@@ -67,8 +67,8 @@ export class EntrenamientoService {
         where: {
           idUsuario: usuarioId,
           activa: true,
-          fechaInicio: { lte: hoy },
-          OR: [{ fechaFin: null }, { fechaFin: { gte: hoy } }],
+          fechaInicio: { lt: siguienteLunes },
+          OR: [{ fechaFin: null }, { fechaFin: { gte: lunes } }],
         },
         orderBy: { idDiaSemana: 'asc' },
         include: {

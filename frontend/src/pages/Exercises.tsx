@@ -9,6 +9,7 @@ import type { Catalogs, ExerciseLibrary } from '../lib/types';
 
 export function Exercises() {
   const qc = useQueryClient();
+  const [tab, setTab] = useState<'personalizados' | 'estandar'>('personalizados');
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ExerciseLibrary['personalizados'][number] | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<
@@ -111,89 +112,165 @@ export function Exercises() {
         </button>
       }
     >
-      <div className="exercise-library-head">
-        <div>
-          <span className="eyebrow">PERSONALIZADOS</span>
-          <h2>Tu biblioteca de ejercicios</h2>
-          <p>Crea movimientos propios y úsalos en cualquiera de tus rutinas.</p>
-        </div>
-        <div className="exercise-library-count">
-          <strong>{exercises.data?.personalizados.length || 0}</strong>
-          <span>ejercicios creados</span>
-        </div>
+      <div className="exercise-tabs">
+        <button
+          type="button"
+          className={`exercise-tab-btn ${tab === 'personalizados' ? 'active' : ''}`}
+          onClick={() => setTab('personalizados')}
+        >
+          Personalizados
+          <span className="tab-count">{exercises.data?.personalizados.length || 0}</span>
+        </button>
+        <button
+          type="button"
+          className={`exercise-tab-btn ${tab === 'estandar' ? 'active' : ''}`}
+          onClick={() => setTab('estandar')}
+        >
+          Catálogo estándar
+          <span className="tab-count">{exercises.data?.estandar.length || 0}</span>
+        </button>
       </div>
-      <div className="exercise-library-grid">
-        {(exercises.data?.personalizados || []).map((exercise) => (
-          <Card key={exercise.id}>
-            <div className="routine-icon">
-              <Dumbbell />
+
+      {tab === 'personalizados' && (
+        <>
+          <div className="exercise-library-head">
+            <div>
+              <span className="eyebrow">FUERA DE CATÁLOGO</span>
+              <h2>Ejercicios personalizados</h2>
+              <p>Movimientos exclusivos creados por ti fuera del catálogo base para enriquecer tus rutinas.</p>
             </div>
-            <h2>{exercise.nombre}</h2>
-            <p>{exercise.descripcion || 'Sin descripción'}</p>
-            <div className="list-actions">
-              <button
-                type="button"
-                className="button ghost compact"
-                onClick={() => editExercise(exercise)}
-              >
-                <Edit3 size={15} /> Editar
-              </button>
-              <button
-                type="button"
-                className="button danger compact"
-                onClick={() => setArchiveTarget(exercise)}
-              >
-                <Trash2 size={15} /> Archivar
-              </button>
+            <div className="exercise-library-count">
+              <strong>{exercises.data?.personalizados.length || 0}</strong>
+              <span>creados</span>
             </div>
-            <div className="exercise-use-list">
-              <span className="eyebrow">USADO EN</span>
-              {exercise.rutinaEjercicio?.filter((item) => item.rutina.activa).length ? (
-                exercise.rutinaEjercicio
-                  .filter((item) => item.rutina.activa)
-                  .map((item) => <small key={item.id}>{item.rutina.nombre}</small>)
-              ) : (
-                <small className="muted">Todavía no está en una rutina activa.</small>
-              )}
-            </div>
-          </Card>
-        ))}
-      </div>
-      {!exercises.data?.personalizados.length && (
-        <Empty>Aún no tienes ejercicios personalizados. Crea el primero.</Empty>
-      )}
-      <section className="archived-section">
-        <div className="card-head">
-          <div>
-            <span className="eyebrow">HISTORIAL</span>
-            <h2>Ejercicios archivados</h2>
           </div>
-          <small>{archived.data?.length || 0} archivados</small>
-        </div>
-        {archived.data?.length ? (
           <div className="exercise-library-grid">
-            {archived.data.map((exercise) => (
-              <Card key={exercise.id} className="archived-card">
+            {(exercises.data?.personalizados || []).map((exercise) => (
+              <Card key={exercise.id}>
+                <span className="custom-exercise-badge">Personalizado · Fuera de catálogo</span>
                 <div className="routine-icon">
                   <Dumbbell />
                 </div>
                 <h2>{exercise.nombre}</h2>
                 <p>{exercise.descripcion || 'Sin descripción'}</p>
-                <small className="muted">Solo lectura · Se conserva el historial.</small>
-                <button
-                  type="button"
-                  className="button danger compact"
-                  onClick={() => setDeleteTarget(exercise)}
-                >
-                  <Trash2 size={15} /> Eliminar definitivamente
-                </button>
+                <div className="list-actions">
+                  <button
+                    type="button"
+                    className="button ghost compact"
+                    onClick={() => editExercise(exercise)}
+                  >
+                    <Edit3 size={15} /> Editar
+                  </button>
+                  <button
+                    type="button"
+                    className="button danger compact"
+                    onClick={() => setArchiveTarget(exercise)}
+                  >
+                    <Trash2 size={15} /> Archivar
+                  </button>
+                </div>
+                <div className="exercise-use-list">
+                  <span className="eyebrow">USADO EN</span>
+                  <div className="exercise-use-badges">
+                    {exercise.rutinaEjercicio?.filter((item) => item.rutina.activa).length ? (
+                      exercise.rutinaEjercicio
+                        .filter((item) => item.rutina.activa)
+                        .map((item) => (
+                          <span key={item.id} className="routine-tag">
+                            {item.rutina.nombre}
+                          </span>
+                        ))
+                    ) : (
+                      <small className="muted">Todavía no está en una rutina activa.</small>
+                    )}
+                  </div>
+                </div>
               </Card>
             ))}
           </div>
-        ) : (
-          <Empty>No hay ejercicios archivados.</Empty>
-        )}
-      </section>
+          {!exercises.data?.personalizados.length && (
+            <Empty>Aún no tienes ejercicios personalizados creados fuera del catálogo.</Empty>
+          )}
+
+          <section className="archived-section">
+            <div className="card-head">
+              <div>
+                <span className="eyebrow">HISTORIAL</span>
+                <h2>Ejercicios archivados</h2>
+              </div>
+              <small>{archived.data?.length || 0} archivados</small>
+            </div>
+            {archived.data?.length ? (
+              <div className="exercise-library-grid">
+                {archived.data.map((exercise) => (
+                  <Card key={exercise.id} className="archived-card">
+                    <span className="custom-exercise-badge">Archivado</span>
+                    <div className="routine-icon">
+                      <Dumbbell />
+                    </div>
+                    <h2>{exercise.nombre}</h2>
+                    <p>{exercise.descripcion || 'Sin descripción'}</p>
+                    <small className="muted">Solo lectura · Se conserva el historial.</small>
+                    <button
+                      type="button"
+                      className="button danger compact"
+                      onClick={() => setDeleteTarget(exercise)}
+                    >
+                      <Trash2 size={15} /> Eliminar definitivamente
+                    </button>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Empty>No hay ejercicios archivados.</Empty>
+            )}
+          </section>
+        </>
+      )}
+
+      {tab === 'estandar' && (
+        <>
+          <div className="exercise-library-head">
+            <div>
+              <span className="eyebrow">BIBLIOTECA OFICIAL</span>
+              <h2>Catálogo estándar</h2>
+              <p>Ejercicios base oficiales incluidos en RITMO con biomecánica y patrones estándar.</p>
+            </div>
+            <div className="exercise-library-count">
+              <strong>{exercises.data?.estandar.length || 0}</strong>
+              <span>estándar</span>
+            </div>
+          </div>
+          <div className="exercise-library-grid">
+            {(exercises.data?.estandar || []).map((exercise) => (
+              <Card key={exercise.id}>
+                <span className="standard-exercise-badge">Catálogo estándar</span>
+                <div className="routine-icon">
+                  <Dumbbell />
+                </div>
+                <h2>{exercise.nombre}</h2>
+                <p>{exercise.descripcion || 'Sin descripción'}</p>
+                <div className="exercise-use-list">
+                  <span className="eyebrow">USADO EN TUS RUTINAS</span>
+                  <div className="exercise-use-badges">
+                    {exercise.rutinaEjercicio?.filter((item) => item.rutina.activa).length ? (
+                      exercise.rutinaEjercicio
+                        .filter((item) => item.rutina.activa)
+                        .map((item) => (
+                          <span key={item.id} className="routine-tag">
+                            {item.rutina.nombre}
+                          </span>
+                        ))
+                    ) : (
+                      <small className="muted">No está agregado en ninguna de tus rutinas activas.</small>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </>
+      )}
       {open && (
         <div className="modal-backdrop" onClick={closeForm}>
           <form

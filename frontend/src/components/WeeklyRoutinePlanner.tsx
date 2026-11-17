@@ -288,6 +288,14 @@ export function WeeklyRoutinePlanner({
   );
 }
 
+function getLocalTodayDateString(): string {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function AssignmentModal({
   dayNumber,
   assignment,
@@ -305,9 +313,10 @@ function AssignmentModal({
   onClose: () => void;
   onSave: (values: { routineId: string; day: number; start: string; end: string }) => void;
 }) {
+  const localToday = getLocalTodayDateString();
   const [routineId, setRoutineId] = useState(assignment?.rutina.id || '');
   const [start, setStart] = useState(
-    assignment?.fechaInicio?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+    assignment?.fechaInicio?.slice(0, 10) || localToday,
   );
   const [end, setEnd] = useState(assignment?.fechaFin?.slice(0, 10) || '');
   const dayName = DAYS[dayNumber - 1];
@@ -343,7 +352,6 @@ function AssignmentModal({
         <DateField
           label="Fecha de inicio"
           value={start}
-          min={new Date().toISOString().slice(0, 10)}
           onChange={setStart}
           required
         />
