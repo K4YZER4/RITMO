@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertCircle, Check, Copy, CreditCard } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Check, Clock, Copy, CreditCard } from 'lucide-react';
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Card, Loading, Page } from '../components/Ui';
@@ -13,6 +13,10 @@ type Subscription = {
   vitalicia: boolean;
   cancelarAlFinalDelPeriodo: boolean;
   periodoActualFin?: string;
+  planAlumnoId?: number;
+  planEntrenadorId?: number;
+  planAlumnoPendienteId?: number | null;
+  planEntrenadorPendienteId?: number | null;
   planAlumno?: Plan;
   planEntrenador?: Plan;
   pagos?: Array<{ id: string; estado: string }>;
@@ -39,6 +43,18 @@ export function PlanPage() {
   const isTrainer = profile.data?.role === 'entrenador';
   const current = subscription.data?.planAlumno || subscription.data?.planEntrenador;
   const plans = isTrainer ? catalogs.data?.planesEntrenador : catalogs.data?.planesAlumno;
+
+  const pendingPlanId = isTrainer
+    ? subscription.data?.planEntrenadorPendienteId
+    : subscription.data?.planAlumnoPendienteId;
+  const pendingPlan = (plans || []).find((p) => p.id === pendingPlanId);
+  const formattedPeriodEnd = subscription.data?.periodoActualFin
+    ? new Date(subscription.data.periodoActualFin).toLocaleDateString('es-MX', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : '';
 
   const handleCopyTestCard = async () => {
     try {
@@ -112,27 +128,19 @@ export function PlanPage() {
     try {
       if (plan.esGratuito) {
         await change.mutateAsync(plan.id);
-        setSuccessMessage('Plan Básico Gratuito activado correctamente.');
+        setSuccessMessage(
+          `Has programado el cambio al Plan Básico (Gratuito). Seguirás disfrutando de tu ${current?.nombre || 'plan actual'} hasta el ${formattedPeriodEnd || 'fin de tu periodo'}. Pulsa "Reanudar suscripción" si deseas cancelarlo y conservar tu plan previo.`,
+        );
         await qc.invalidateQueries({ queryKey: ['subscription'] });
         return;
       }
 
       setRedirectingToCheckout(true);
       await change.mutateAsync(plan.id);
-      const subActualizada = await get<Subscription>('/suscripciones/actual');
-      const pagoPendiente = subActualizada.pagos?.[0];
-
-      if (pagoPendiente) {
-        const checkoutRes = await post<{ url: string }>('/pagos/checkout', {
-          pagoId: pagoPendiente.id,
-          suscripcionId: subActualizada.id,
-        });
-        if (checkoutRes.url) {
-          window.location.assign(checkoutRes.url);
-          return;
-        }
-      }
-      setSuccessMessage('Cambio de plan registrado. Procede con el botón de Checkout.');
+      setSuccessMessage(
+        `Has programado el cambio al ${plan.nombre} para cuando termine tu periodo actual (${formattedPeriodEnd || 'fin de mes'}). Te quedarás en la versión ${current?.nombre || 'plan actual'} hasta esa fecha. Si deseas activarlo hoy mismo, cancela tu suscripción con "Cancelar ya".`,
+      );
+      await qc.invalidateQueries({ queryKey: ['subscription'] });
     } catch (err: any) {
       setSuccessMessage('');
       setErrorMessage(err?.message || 'No se pudo cambiar de plan.');
@@ -162,15 +170,71 @@ export function PlanPage() {
         </div>
         <CreditCard />
       </Card>
-      {subscription.data?.periodoActualFin && (
-        <p className="muted">
-          Periodo actual hasta{' '}
-          {new Date(subscription.data.periodoActualFin).toLocaleDateString('es-MX')}.
-          {subscription.data?.cancelarAlFinalDelPeriodo && (
-            <span style={{ color: '#f59e0b', marginLeft: '8px', fontWeight: 600 }}>
-              (Cancelación programada: mantendrás acceso hasta el término del periodo)
-            </span>
+      {subscription.data?.cancelarAlFinalDelPeriodo && (
+        <>
+          {pendingPlan?.esGratuito ? (
+            <div className="plan-notice-banner warning">
+              <div className="plan-notice-header">
+                <AlertTriangle size={18} />
+                <span>CAMBIO PROGRAMADO AL PLAN BÁSICO (GRATUITO)</span>
+              </div>
+              <p>
+                Tu cuenta pasará al <strong>Plan Básico (Gratuito)</strong> el{' '}
+                <strong>{formattedPeriodEnd}</strong>. Hasta esa fecha continuarás disfrutando de tu{' '}
+                <strong>{current?.nombre}</strong> con todas sus funciones sin ningún cobro adicional.
+              </p>
+              <div className="subtext">
+                • Si deseas conservar tu <strong>{current?.nombre}</strong> después de esa fecha con
+                su cobro correspondiente, pulsa <strong>"Reanudar suscripción"</strong>.
+                <br />• Si deseas pasar a la versión gratuita de inmediato sin esperar, pulsa{' '}
+                <strong>"Cancelar ya"</strong>.
+              </div>
+            </div>
+          ) : pendingPlan && !pendingPlan.esGratuito ? (
+            <div className="plan-notice-banner info">
+              <div className="plan-notice-header">
+                <Clock size={18} />
+                <span>CAMBIO PROGRAMADO AL {pendingPlan.nombre.toUpperCase()}</span>
+              </div>
+              <p>
+                Has programado el cambio al <strong>{pendingPlan.nombre}</strong> para cuando termine
+                tu periodo actual el <strong>{formattedPeriodEnd}</strong>. Te quedarás en la
+                versión <strong>{current?.nombre}</strong> hasta esa fecha.
+              </p>
+              <div className="subtext">
+                • Si deseas pasar de inmediato al <strong>{pendingPlan.nombre}</strong> hoy mismo,
+                cancela tu suscripción actual con <strong>"Cancelar ya"</strong> y podrás
+                contratarlo de inmediato.
+                <br />• Si deseas conservar tu <strong>{current?.nombre}</strong> recurrente, pulsa{' '}
+                <strong>"Reanudar suscripción"</strong>.
+              </div>
+            </div>
+          ) : (
+            <div className="plan-notice-banner warning">
+              <div className="plan-notice-header">
+                <AlertTriangle size={18} />
+                <span>CANCELACIÓN PROGRAMADA AL FINAL DEL PERIODO</span>
+              </div>
+              <p>
+                Tu suscripción finalizará el <strong>{formattedPeriodEnd}</strong>. Conservarás
+                acceso completo a tu <strong>{current?.nombre}</strong> hasta esa fecha sin
+                renovación automática.
+              </p>
+              <div className="subtext">
+                • Pulsa <strong>"Reanudar suscripción"</strong> si deseas mantener tu plan actual y
+                reactivar el cobro recurrente.
+                <br />• Si deseas pasar a la versión gratuita de inmediato, pulsa{' '}
+                <strong>"Cancelar ya"</strong>.
+              </div>
+            </div>
           )}
+        </>
+      )}
+
+      {!subscription.data?.cancelarAlFinalDelPeriodo && subscription.data?.periodoActualFin && (
+        <p className="muted" style={{ margin: '12px 0' }}>
+          Periodo actual activo hasta el <strong>{formattedPeriodEnd}</strong>. Próximo cobro
+          automático programado en Stripe.
         </p>
       )}
 

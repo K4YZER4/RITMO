@@ -386,6 +386,8 @@ export class SuscripcionesService implements OnApplicationBootstrap, OnApplicati
         cancelarAlFinalDelPeriodo: false,
         canceladaEn: null,
         siguienteCobroEn: suscripcion.periodoActualFin,
+        planAlumnoPendienteId: null,
+        planEntrenadorPendienteId: null,
       },
     });
   }

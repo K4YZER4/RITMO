@@ -1839,6 +1839,51 @@ p {
   flex-direction: column;
   gap: 10px;
 }
+.plan-notice-banner {
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin: 16px 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.plan-notice-banner.warning {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fde68a;
+}
+.plan-notice-banner.info {
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  color: #bfdbfe;
+}
+.plan-notice-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.plan-notice-banner.warning .plan-notice-header {
+  color: #f59e0b;
+}
+.plan-notice-banner.info .plan-notice-header {
+  color: #60a5fa;
+}
+.plan-notice-banner p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: #f3f4f6;
+}
+.plan-notice-banner .subtext {
+  font-size: 0.85rem;
+  color: #d1d5db;
+  line-height: 1.5;
+  margin-top: 4px;
+}
 .stripe-demo-badge {
   display: inline-flex;
   align-items: center;
