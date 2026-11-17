@@ -48,6 +48,12 @@ export class CambiarPlanSuscripcionHandler {
 
     const suscripcionActual = await this.buscarSuscripcionActual(usuarioId, usuario.role);
 
+    if (suscripcionActual.cancelarAlFinalDelPeriodo) {
+      throw new BadRequestException(
+        'Tu suscripción tiene una cancelación programada para el final del periodo. Para cambiar de plan antes de que finalice, selecciona primero "Cancelar ya".',
+      );
+    }
+
     if (!suscripcionActual.proveedorSubscriptionId) {
       return this.aplicarCambioPlanLocal(usuarioId, idPlanNuevo, usuario.role);
     }

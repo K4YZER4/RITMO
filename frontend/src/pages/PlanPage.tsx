@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Copy, CreditCard } from 'lucide-react';
+import { AlertCircle, Check, Copy, CreditCard } from 'lucide-react';
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Card, Loading, Page } from '../components/Ui';
@@ -20,7 +20,8 @@ type Subscription = {
 
 export function PlanPage() {
   const qc = useQueryClient();
-  const [message, setMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [redirectingToCheckout, setRedirectingToCheckout] = useState(false);
   const [cancelNowModalOpen, setCancelNowModalOpen] = useState(false);
   const [copiedCard, setCopiedCard] = useState(false);
@@ -53,7 +54,12 @@ export function PlanPage() {
     mutationFn: (idPlanNuevo: number) =>
       patch<Subscription>('/suscripciones/plan', { idPlanNuevo, modoCambio: 'finalPeriodo' }),
     onSuccess: async () => {
+      setErrorMessage('');
       await qc.invalidateQueries({ queryKey: ['subscription'] });
+    },
+    onError: (err: any) => {
+      setSuccessMessage('');
+      setErrorMessage(err?.message || 'Error al cambiar de plan');
     },
   });
 
@@ -61,7 +67,8 @@ export function PlanPage() {
     mutationFn: (action: 'cancelar' | 'reanudar' | 'cancelar-inmediata') =>
       post(`/suscripciones/${action}`),
     onSuccess: async (_, action) => {
-      setMessage(
+      setErrorMessage('');
+      setSuccessMessage(
         action === 'cancelar-inmediata'
           ? 'Suscripción cancelada de inmediato. Tu cuenta ha vuelto al Plan Básico.'
           : 'Estado de suscripción actualizado.',
@@ -69,6 +76,10 @@ export function PlanPage() {
       await qc.invalidateQueries({ queryKey: ['subscription'] });
       await qc.invalidateQueries({ queryKey: ['profile'] });
       await qc.invalidateQueries({ queryKey: ['payment-status'] });
+    },
+    onError: (err: any) => {
+      setSuccessMessage('');
+      setErrorMessage(err?.message || 'Error en la operación de suscripción');
     },
   });
 
@@ -81,14 +92,27 @@ export function PlanPage() {
     onSuccess: (result) => {
       window.location.assign(result.url);
     },
+    onError: (err: any) => {
+      setSuccessMessage('');
+      setErrorMessage(err?.message || 'Error al abrir Checkout');
+    },
   });
 
   const handleSelectPlan = async (plan: Plan) => {
-    setMessage('');
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    if (subscription.data?.cancelarAlFinalDelPeriodo) {
+      setErrorMessage(
+        'Tu suscripción tiene una cancelación programada para el final del periodo. Para cambiar de plan antes de que finalice, selecciona primero "Cancelar ya".',
+      );
+      return;
+    }
+
     try {
       if (plan.esGratuito) {
         await change.mutateAsync(plan.id);
-        setMessage('Plan Básico Gratuito activado correctamente.');
+        setSuccessMessage('Plan Básico Gratuito activado correctamente.');
         await qc.invalidateQueries({ queryKey: ['subscription'] });
         return;
       }
@@ -108,9 +132,10 @@ export function PlanPage() {
           return;
         }
       }
-      setMessage('Cambio de plan registrado. Procede con el botón de Checkout.');
-    } catch (err) {
-      // El error de la mutación se refleja en change.error
+      setSuccessMessage('Cambio de plan registrado. Procede con el botón de Checkout.');
+    } catch (err: any) {
+      setSuccessMessage('');
+      setErrorMessage(err?.message || 'No se pudo cambiar de plan.');
     } finally {
       setRedirectingToCheckout(false);
     }
@@ -267,9 +292,49 @@ export function PlanPage() {
             </button>
           )}
       </div>
-      {(message || change.error || lifecycle.error || checkout.error) && (
-        <div className={change.error || lifecycle.error || checkout.error ? 'error' : 'success'}>
-          {message || change.error?.message || lifecycle.error?.message || checkout.error?.message}
+      {(errorMessage || change.error || lifecycle.error || checkout.error) && (
+        <div
+          className="error"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            background: 'rgba(239, 68, 68, 0.12)',
+            border: '1px solid rgba(239, 68, 68, 0.4)',
+            color: '#fca5a5',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            marginTop: '16px',
+            fontWeight: 500,
+          }}
+        >
+          <AlertCircle size={20} style={{ flexShrink: 0, color: '#ef4444' }} />
+          <span>
+            {errorMessage ||
+              change.error?.message ||
+              lifecycle.error?.message ||
+              checkout.error?.message}
+          </span>
+        </div>
+      )}
+      {successMessage && !errorMessage && !change.error && !lifecycle.error && !checkout.error && (
+        <div
+          className="success"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            background: 'rgba(163, 230, 53, 0.1)',
+            border: '1px solid rgba(163, 230, 53, 0.3)',
+            color: 'var(--lime)',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            marginTop: '16px',
+            fontWeight: 500,
+          }}
+        >
+          <Check size={18} style={{ flexShrink: 0 }} />
+          <span>{successMessage}</span>
         </div>
       )}
       {cancelNowModalOpen && (
