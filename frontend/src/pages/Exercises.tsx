@@ -9,6 +9,7 @@ import type { Catalogs, ExerciseLibrary } from '../lib/types';
 
 export function Exercises() {
   const qc = useQueryClient();
+  const [tab, setTab] = useState<'personalizados' | 'estandar'>('personalizados');
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ExerciseLibrary['personalizados'][number] | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<
@@ -111,96 +112,176 @@ export function Exercises() {
         </button>
       }
     >
-      <div className="exercise-library-head">
-        <div>
-          <span className="eyebrow">PERSONALIZADOS</span>
-          <h2>Tu biblioteca de ejercicios</h2>
-          <p>Crea movimientos propios y úsalos en cualquiera de tus rutinas.</p>
-        </div>
-        <div className="exercise-library-count">
-          <strong>{exercises.data?.personalizados.length || 0}</strong>
-          <span>ejercicios creados</span>
-        </div>
+      <div className="exercise-tabs">
+        <button
+          type="button"
+          className={`exercise-tab-btn ${tab === 'personalizados' ? 'active' : ''}`}
+          onClick={() => setTab('personalizados')}
+        >
+          Personalizados
+          <span className="tab-count">{exercises.data?.personalizados.length || 0}</span>
+        </button>
+        <button
+          type="button"
+          className={`exercise-tab-btn ${tab === 'estandar' ? 'active' : ''}`}
+          onClick={() => setTab('estandar')}
+        >
+          Catálogo estándar
+          <span className="tab-count">{exercises.data?.estandar.length || 0}</span>
+        </button>
       </div>
-      <div className="exercise-library-grid">
-        {(exercises.data?.personalizados || []).map((exercise) => (
-          <Card key={exercise.id}>
-            <div className="routine-icon">
-              <Dumbbell />
+
+      {tab === 'personalizados' && (
+        <>
+          <div className="exercise-library-head">
+            <div>
+              <span className="eyebrow">FUERA DE CATÁLOGO</span>
+              <h2>Ejercicios personalizados</h2>
+              <p>Movimientos exclusivos creados por ti fuera del catálogo base para enriquecer tus rutinas.</p>
             </div>
-            <h2>{exercise.nombre}</h2>
-            <p>{exercise.descripcion || 'Sin descripción'}</p>
-            <div className="list-actions">
-              <button
-                type="button"
-                className="button ghost compact"
-                onClick={() => editExercise(exercise)}
-              >
-                <Edit3 size={15} /> Editar
-              </button>
-              <button
-                type="button"
-                className="button danger compact"
-                onClick={() => setArchiveTarget(exercise)}
-              >
-                <Trash2 size={15} /> Archivar
-              </button>
+            <div className="exercise-library-count">
+              <strong>{exercises.data?.personalizados.length || 0}</strong>
+              <span>creados</span>
             </div>
-            <div className="exercise-use-list">
-              <span className="eyebrow">USADO EN</span>
-              {exercise.rutinaEjercicio?.filter((item) => item.rutina.activa).length ? (
-                exercise.rutinaEjercicio
-                  .filter((item) => item.rutina.activa)
-                  .map((item) => <small key={item.id}>{item.rutina.nombre}</small>)
-              ) : (
-                <small className="muted">Todavía no está en una rutina activa.</small>
-              )}
-            </div>
-          </Card>
-        ))}
-      </div>
-      {!exercises.data?.personalizados.length && (
-        <Empty>Aún no tienes ejercicios personalizados. Crea el primero.</Empty>
-      )}
-      <section className="archived-section">
-        <div className="card-head">
-          <div>
-            <span className="eyebrow">HISTORIAL</span>
-            <h2>Ejercicios archivados</h2>
           </div>
-          <small>{archived.data?.length || 0} archivados</small>
-        </div>
-        {archived.data?.length ? (
           <div className="exercise-library-grid">
-            {archived.data.map((exercise) => (
-              <Card key={exercise.id} className="archived-card">
+            {(exercises.data?.personalizados || []).map((exercise) => (
+              <Card key={exercise.id}>
+                <span className="custom-exercise-badge">Personalizado · Fuera de catálogo</span>
                 <div className="routine-icon">
                   <Dumbbell />
                 </div>
                 <h2>{exercise.nombre}</h2>
                 <p>{exercise.descripcion || 'Sin descripción'}</p>
-                <small className="muted">Solo lectura · Se conserva el historial.</small>
-                <button
-                  type="button"
-                  className="button danger compact"
-                  onClick={() => setDeleteTarget(exercise)}
-                >
-                  <Trash2 size={15} /> Eliminar definitivamente
-                </button>
+                <div className="list-actions">
+                  <button
+                    type="button"
+                    className="button ghost compact"
+                    onClick={() => editExercise(exercise)}
+                  >
+                    <Edit3 size={15} /> Editar
+                  </button>
+                  <button
+                    type="button"
+                    className="button danger compact"
+                    onClick={() => setArchiveTarget(exercise)}
+                  >
+                    <Trash2 size={15} /> Archivar
+                  </button>
+                </div>
+                <div className="exercise-use-list">
+                  <span className="eyebrow">USADO EN</span>
+                  <div className="exercise-use-badges">
+                    {exercise.rutinaEjercicio?.filter((item) => item.rutina.activa).length ? (
+                      exercise.rutinaEjercicio
+                        .filter((item) => item.rutina.activa)
+                        .map((item) => (
+                          <span key={item.id} className="routine-tag">
+                            {item.rutina.nombre}
+                          </span>
+                        ))
+                    ) : (
+                      <small className="muted">Todavía no está en una rutina activa.</small>
+                    )}
+                  </div>
+                </div>
               </Card>
             ))}
           </div>
-        ) : (
-          <Empty>No hay ejercicios archivados.</Empty>
-        )}
-      </section>
+          {!exercises.data?.personalizados.length && (
+            <Empty>Aún no tienes ejercicios personalizados creados fuera del catálogo.</Empty>
+          )}
+
+          <section className="archived-section">
+            <div className="card-head">
+              <div>
+                <span className="eyebrow">HISTORIAL</span>
+                <h2>Ejercicios archivados</h2>
+              </div>
+              <small>{archived.data?.length || 0} archivados</small>
+            </div>
+            {archived.data?.length ? (
+              <div className="exercise-library-grid">
+                {archived.data.map((exercise) => (
+                  <Card key={exercise.id} className="archived-card">
+                    <span className="custom-exercise-badge">Archivado</span>
+                    <div className="routine-icon">
+                      <Dumbbell />
+                    </div>
+                    <h2>{exercise.nombre}</h2>
+                    <p>{exercise.descripcion || 'Sin descripción'}</p>
+                    <small className="muted">Solo lectura · Se conserva el historial.</small>
+                    <button
+                      type="button"
+                      className="button danger compact"
+                      onClick={() => setDeleteTarget(exercise)}
+                    >
+                      <Trash2 size={15} /> Eliminar definitivamente
+                    </button>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Empty>No hay ejercicios archivados.</Empty>
+            )}
+          </section>
+        </>
+      )}
+
+      {tab === 'estandar' && (
+        <>
+          <div className="exercise-library-head">
+            <div>
+              <span className="eyebrow">BIBLIOTECA OFICIAL</span>
+              <h2>Catálogo estándar</h2>
+              <p>Ejercicios base oficiales incluidos en RITMO con biomecánica y patrones estándar.</p>
+            </div>
+            <div className="exercise-library-count">
+              <strong>{exercises.data?.estandar.length || 0}</strong>
+              <span>estándar</span>
+            </div>
+          </div>
+          <div className="exercise-library-grid">
+            {(exercises.data?.estandar || []).map((exercise) => (
+              <Card key={exercise.id}>
+                <span className="standard-exercise-badge">Catálogo estándar</span>
+                <div className="routine-icon">
+                  <Dumbbell />
+                </div>
+                <h2>{exercise.nombre}</h2>
+                <p>{exercise.descripcion || 'Sin descripción'}</p>
+                <div className="exercise-use-list">
+                  <span className="eyebrow">USADO EN TUS RUTINAS</span>
+                  <div className="exercise-use-badges">
+                    {exercise.rutinaEjercicio?.filter((item) => item.rutina.activa).length ? (
+                      exercise.rutinaEjercicio
+                        .filter((item) => item.rutina.activa)
+                        .map((item) => (
+                          <span key={item.id} className="routine-tag">
+                            {item.rutina.nombre}
+                          </span>
+                        ))
+                    ) : (
+                      <small className="muted">No está agregado en ninguna de tus rutinas activas.</small>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </>
+      )}
       {open && (
         <div className="modal-backdrop" onClick={closeForm}>
           <form
             className="modal"
             onSubmit={(event) => {
               event.preventDefault();
-              create.mutate();
+              if (editing) {
+                update.mutate();
+              } else {
+                create.mutate();
+              }
             }}
             onClick={(event) => event.stopPropagation()}
           >
@@ -210,34 +291,35 @@ export function Exercises() {
             <span className="eyebrow">BIBLIOTECA PERSONAL</span>
             <h2>{editing ? 'Editar ejercicio' : 'Nuevo ejercicio'}</h2>
             <label>
-              Nombre
-              <input value={name} onChange={(event) => setName(event.target.value)} required />
-            </label>
-            <label>
-              URL de imagen opcional
-              <input type="url" value={image} onChange={(event) => setImage(event.target.value)} />
-            </label>
-            <label>
-              Link informativo opcional
+              <span className="label-head">
+                Nombre {!name.trim() && <span className="req">*</span>}
+              </span>
               <input
-                type="url"
-                value={informationLink}
-                onChange={(event) => setInformationLink(event.target.value)}
-              />
-            </label>
-            <label>
-              Descripción
-              <textarea
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Ej. Press Banca Inclinado con Mancuernas"
                 required
               />
             </label>
             <label>
-              Músculos
+              <span className="label-head">
+                Descripción {!description.trim() && <span className="req">*</span>}
+              </span>
+              <textarea
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                rows={3}
+                placeholder="Describe el movimiento, colocación y rango de movimiento..."
+                required
+              />
+            </label>
+            <label>
+              <span className="label-head">
+                Músculos {muscles.length === 0 && <span className="req">*</span>}
+              </span>
               <SelectMenu
                 value=""
-                placeholder="Añadir músculo"
+                placeholder="Añadir músculo (ej. hombro)..."
                 options={(catalogs.data?.musculos || [])
                   .filter((item) => !muscles.includes(item.id))
                   .map((item) => ({ value: item.id, label: item.nombre }))}
@@ -257,10 +339,12 @@ export function Exercises() {
               ))}
             </div>
             <label>
-              Equipo opcional
+              <span className="label-head">
+                Equipo <span className="opt">(opcional)</span>
+              </span>
               <SelectMenu
                 value=""
-                placeholder="Añadir equipo"
+                placeholder="Añadir equipo (ej. mancuerna)..."
                 options={(catalogs.data?.equipos || [])
                   .filter((item) => !equipment.includes(item.id))
                   .map((item) => ({ value: item.id, label: item.nombre }))}
@@ -279,6 +363,28 @@ export function Exercises() {
                 </button>
               ))}
             </div>
+            <label>
+              <span className="label-head">
+                URL de imagen <span className="opt">(opcional)</span>
+              </span>
+              <input
+                type="url"
+                value={image}
+                onChange={(event) => setImage(event.target.value)}
+                placeholder="https://..."
+              />
+            </label>
+            <label>
+              <span className="label-head">
+                Link informativo o video <span className="opt">(opcional)</span>
+              </span>
+              <input
+                type="url"
+                value={informationLink}
+                onChange={(event) => setInformationLink(event.target.value)}
+                placeholder="https://youtube.com/..."
+              />
+            </label>
             {(create.error || update.error) && (
               <div className="error">{(create.error || update.error)?.message}</div>
             )}

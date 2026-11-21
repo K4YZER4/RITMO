@@ -1,14 +1,33 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, CalendarDays, Trophy, Weight } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  CalendarDays,
+  CheckCircle2,
+  Clock,
+  Dumbbell,
+  MessageSquare,
+  Trophy,
+  Weight,
+  X,
+} from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, Empty, Loading, Page, fullName } from '../components/Ui';
 import { get } from '../lib/api';
 import type { ExerciseLibrary } from '../lib/types';
 import { WeeklyRoutinePlanner } from '../components/WeeklyRoutinePlanner';
 import type { Routine } from '../lib/types';
+import { SessionDetailModal } from '../components/SessionDetailModal';
 
 type StudentDetailData = {
+  idUsuario: string;
+  observacionesMedicas?: string;
+  lesionesActuales?: string;
+  lesionesPasadas?: string;
+  contactoEmergenciaNombre?: string;
+  contactoEmergenciaTelefono?: string;
+  numeroCelular?: string;
   usuario: {
     nombre: string;
     apellidoPaterno: string;
@@ -47,6 +66,7 @@ type StudentDetailData = {
 export function StudentDetail() {
   const { id } = useParams();
   const qc = useQueryClient();
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   useEffect(() => {
     void qc.prefetchQuery({
       queryKey: ['exercises'],
@@ -86,7 +106,43 @@ export function StudentDetail() {
     >
       <p>
         {data.usuario.correo} · Objetivo: {data.objetivo?.nombre || 'No definido'}
+        {data.numeroCelular && ` · 📱 ${data.numeroCelular}`}
       </p>
+
+      {/* Ficha médica y restricciones de lesiones para el entrenador */}
+      <Card style={{ marginBottom: '16px', background: 'var(--card-subtle, rgba(255,255,255,0.02))' }}>
+        <h3 style={{ margin: '0 0 8px', fontSize: '1rem', color: 'var(--accent, #e5a93b)' }}>
+          📋 Ficha Médica y Restricciones Físicas
+        </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+          <div>
+            <span className="eyebrow" style={{ color: 'var(--danger, #ff6b6b)' }}>LESIONES ACTUALES</span>
+            <p style={{ margin: '2px 0 0', fontSize: '0.85rem' }}>
+              {data.lesionesActuales || 'Ninguna molestia activa reportada.'}
+            </p>
+          </div>
+          <div>
+            <span className="eyebrow">LESIONES PASADAS</span>
+            <p style={{ margin: '2px 0 0', fontSize: '0.85rem' }}>
+              {data.lesionesPasadas || 'Sin historial de lesiones previas.'}
+            </p>
+          </div>
+          <div>
+            <span className="eyebrow">OBSERVACIONES MÉDICAS</span>
+            <p style={{ margin: '2px 0 0', fontSize: '0.85rem' }}>
+              {data.observacionesMedicas || 'Apto para entrenamiento sin restricciones.'}
+            </p>
+          </div>
+          {data.contactoEmergenciaNombre && (
+            <div>
+              <span className="eyebrow">CONTACTO DE EMERGENCIA</span>
+              <p style={{ margin: '2px 0 0', fontSize: '0.85rem' }}>
+                {data.contactoEmergenciaNombre} ({data.contactoEmergenciaTelefono || 'Sin teléfono'})
+              </p>
+            </div>
+          )}
+        </div>
+      </Card>
       {progress.isError && (
         <div className="error">No se pudo cargar el resumen de progreso de este alumno.</div>
       )}
@@ -107,39 +163,80 @@ export function StudentDetail() {
           <span>volumen en 30 días</span>
         </Card>
       </div>
-      <div className="split">
-        <WeeklyRoutinePlanner
-          studentId={id || ''}
-          assignments={data.usuario.usuarioRutina}
-          routines={routines.data || []}
-        />
+      {/* Planificador semanal a ancho completo */}
+      <WeeklyRoutinePlanner
+        studentId={id || ''}
+        assignments={data.usuario.usuarioRutina}
+        routines={routines.data || []}
+      />
+
+      {/* Grid balanceado de Récords y Sesiones recientes */}
+      <div className="split" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', marginTop: '20px' }}>
         <Card>
-          <h2>Récords personales</h2>
+          <div className="card-head">
+            <h2>Récords personales</h2>
+            <Trophy className="accent-icon" />
+          </div>
           {data.usuario.alumnoEjercicioPr.map((pr) => (
             <div className="list-row" key={pr.id}>
-              <div>
+              <div className="session-icon" style={{ background: '#293521' }}>
+                <Trophy size={18} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                 <b>{pr.ejercicioEstandar?.nombre || pr.ejercicioPersonalizado?.nombre}</b>
-                <small>{pr.repeticiones} repeticiones</small>
+                <small>{pr.repeticiones} repeticiones máximas</small>
               </div>
               <strong>{pr.peso} kg</strong>
             </div>
           ))}
           {!data.usuario.alumnoEjercicioPr.length && <Empty>Sin récords todavía.</Empty>}
         </Card>
-      </div>
-      <Card>
-        <h2>Sesiones recientes</h2>
-        {data.usuario.sesionEntrenamiento.map((session) => (
-          <div className="list-row" key={session.id}>
-            <b>{session.rutina.nombre}</b>
-            <small>{new Date(session.fechaSesion).toLocaleDateString('es-MX')}</small>
-            <span>{session.idEstado === 2 ? 'Completada' : 'En curso'}</span>
+
+        <Card>
+          <div className="card-head">
+            <h2>Sesiones recientes</h2>
+            <Dumbbell className="accent-icon" />
           </div>
-        ))}
-        {!data.usuario.sesionEntrenamiento.length && (
-          <Empty>El alumno todavía no tiene sesiones.</Empty>
-        )}
-      </Card>
+          {data.usuario.sesionEntrenamiento.map((session) => (
+            <div
+              className="list-row"
+              key={session.id}
+              onClick={() => setSelectedSessionId(session.id)}
+              style={{ cursor: 'pointer', transition: 'background 150ms' }}
+              title="Haz clic para ver el detalle de la sesión"
+            >
+              <div className="session-icon">
+                <Dumbbell size={18} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1 }}>
+                <b>{session.rutina.nombre}</b>
+                <small>
+                  {new Date(session.fechaSesion).toLocaleDateString('es-MX', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                  {' · '}
+                  <span style={{ color: 'var(--g, #b4ff39)' }}>Ver detalle ↗</span>
+                </small>
+              </div>
+              <span className={`pill small ${session.idEstado === 2 ? 'success' : ''}`}>
+                {session.idEstado === 2 ? 'Completada' : 'En curso'}
+              </span>
+            </div>
+          ))}
+          {!data.usuario.sesionEntrenamiento.length && (
+            <Empty>El alumno todavía no tiene sesiones.</Empty>
+          )}
+        </Card>
+      </div>
+
+      {selectedSessionId && (
+        <SessionDetailModal
+          sesionId={selectedSessionId}
+          onClose={() => setSelectedSessionId(null)}
+        />
+      )}
     </Page>
   );
 }

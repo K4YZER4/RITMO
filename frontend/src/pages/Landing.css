@@ -1,0 +1,1153 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
+
+.ritmo-landing {
+  --g: #b4ff39;
+  --w: #f4f5ee;
+  --m: #a4ac9b;
+  --line: #ffffff26;
+  --font-display: 'Bebas Neue', Impact, 'Arial Black', sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #000;
+  color: var(--w);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  position: relative;
+  isolation: isolate;
+}
+
+/* Scrollbar estilizada estilo RITMO para la ventana principal */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(180, 255, 57, 0.4) #000;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 9999px;
+  transition: background 180ms ease, box-shadow 180ms ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--g, #b4ff39);
+  box-shadow: 0 0 12px rgba(180, 255, 57, 0.7);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.ritmo-landing * {
+  box-sizing: border-box;
+}
+
+.ritmo-landing a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.ritmo-landing button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.ritmo-landing #dust {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ritmo-landing .page {
+  max-width: 1500px;
+  padding: 18px;
+  margin: auto;
+  position: relative;
+  z-index: 1;
+}
+
+.ritmo-landing .hero {
+  min-height: 560px;
+  max-height: 720px;
+  height: clamp(560px, calc(100vh - 36px), 710px);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 12px 12px 40px 40px;
+}
+
+.ritmo-landing .art {
+  position: absolute;
+  z-index: -2;
+  top: 10px;
+  height: clamp(520px, 96%, 720px);
+  left: 51%;
+  transform: translateX(-50%) scale(1.18);
+  transform-origin: center top;
+  width: max-content;
+  animation: appear 900ms ease-out both;
+  pointer-events: none;
+}
+
+.ritmo-landing .art img {
+  display: block;
+  height: 100%;
+  width: auto;
+  filter: drop-shadow(0 20px 45px rgba(0, 0, 0, 0.7)) brightness(1.06) contrast(1.04);
+}
+
+.ritmo-landing .art:after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.08);
+  pointer-events: none;
+}
+
+.ritmo-landing .fade {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(0deg, #000 6%, rgba(0, 0, 0, 0.2) 26%, transparent 60%);
+  pointer-events: none;
+}
+
+.ritmo-landing header {
+  padding: 18px 36px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.ritmo-landing .logo {
+  font-family: var(--font-display);
+  font-size: 32px;
+  letter-spacing: 1px;
+  font-weight: normal;
+}
+
+.ritmo-landing .logo span {
+  color: var(--g);
+}
+
+.ritmo-landing nav {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.ritmo-landing .btn {
+  font-family: var(--font-display);
+  display: inline-flex;
+  align-items: center;
+  gap: 22px;
+  border-radius: 40px;
+  padding: 10px 14px 10px 22px;
+  background: var(--g);
+  color: #15200c;
+  font-size: 15px;
+  letter-spacing: 0.8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 180ms, border-color 180ms, background-color 180ms;
+}
+
+.ritmo-landing .arrow {
+  width: 29px;
+  height: 29px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #15200c;
+  color: var(--g);
+  font-size: 18px;
+  transition: transform 180ms;
+}
+
+.ritmo-landing .outline {
+  background: #ffffff06;
+  border-color: #ffffff40;
+  color: var(--w);
+}
+
+.ritmo-landing .outline .arrow {
+  background: #ffffff10;
+  color: var(--g);
+  font-size: 12px;
+}
+
+.ritmo-landing .login {
+  background: var(--w);
+}
+
+.ritmo-landing .login .arrow {
+  background: var(--g);
+  color: #15200c;
+}
+
+.ritmo-landing .headline {
+  position: absolute;
+  left: 5%;
+  right: 5%;
+  top: clamp(100px, 20%, 140px);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 35px;
+}
+
+.ritmo-landing .eyebrow {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--g);
+  margin: 0 0 16px;
+}
+
+.ritmo-landing h1 {
+  font-family: var(--font-display);
+  font-size: clamp(54px, 6.6vw, 96px);
+  letter-spacing: 1px;
+  line-height: 0.92;
+  margin: 0;
+}
+
+.ritmo-landing h1 .line {
+  display: block;
+  animation: enter 600ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.ritmo-landing h1 .line:nth-child(1) {
+  animation-delay: 120ms;
+}
+
+.ritmo-landing h1 .line:nth-child(2) {
+  animation-delay: 220ms;
+}
+
+.ritmo-landing h1 .line:nth-child(3) {
+  animation-delay: 320ms;
+  color: var(--g);
+}
+
+.ritmo-landing .aside {
+  max-width: 250px;
+  margin-top: 10px;
+}
+
+.ritmo-landing .aside h2 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  letter-spacing: 0.8px;
+  line-height: 1.15;
+  margin: 0 0 10px;
+}
+
+.ritmo-landing .aside p {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #bdc2b7;
+  margin-bottom: 18px;
+}
+
+.ritmo-landing .hero-foot {
+  position: absolute;
+  bottom: 20px;
+  left: 5%;
+  right: 5%;
+  border-top: 1px solid #ffffff40;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding-top: 14px;
+  font-size: 11px;
+}
+
+.ritmo-landing .hero-foot span {
+  display: block;
+  color: var(--g);
+  font-size: 10px;
+  letter-spacing: 1px;
+  margin-bottom: 9px;
+}
+
+.ritmo-landing .strip {
+  padding: 30px 5%;
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid var(--line);
+  color: #c0c6b9;
+  font-size: 10px;
+  letter-spacing: 1.2px;
+}
+
+.ritmo-landing .strip span:before {
+  content: '＋ ';
+  color: var(--g);
+}
+
+.ritmo-landing .content {
+  padding: 0 5%;
+}
+
+.ritmo-landing .intro {
+  padding: 85px 0 50px;
+  display: grid;
+  grid-template-columns: 1fr 0.8fr;
+  gap: 80px;
+  align-items: end;
+}
+
+.ritmo-landing .kicker {
+  color: var(--g);
+  font-size: 12px;
+  margin-bottom: 22px;
+}
+
+.ritmo-landing .title {
+  font-family: var(--font-display);
+  font-size: clamp(42px, 5.2vw, 68px);
+  line-height: 1.02;
+  letter-spacing: 1px;
+  margin: 0;
+}
+
+.ritmo-landing .intro-right p {
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+.ritmo-landing .muted {
+  color: var(--m);
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.ritmo-landing .video-wrap {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  overflow: hidden;
+  background: #0002;
+}
+
+.ritmo-landing .stage {
+  position: relative;
+  aspect-ratio: 16/8.1;
+  display: grid;
+  place-items: center;
+  background-color: #0a0e14;
+  overflow: hidden;
+}
+
+.ritmo-landing .stage-poster-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.55;
+  filter: brightness(0.85) contrast(1.05);
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.ritmo-landing .stage-backdrop-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(10, 14, 20, 0.25) 0%, rgba(10, 14, 20, 0.88) 100%),
+              linear-gradient(to top, rgba(10, 14, 20, 0.95) 0%, transparent 45%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.ritmo-landing .word {
+  font-size: clamp(70px, 16vw, 210px);
+  font-weight: 900;
+  letter-spacing: -8px;
+  color: #ffffff0a;
+  position: absolute;
+  z-index: 3;
+}
+
+.ritmo-landing .play {
+  border: 0;
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  background: var(--g);
+  color: #15200c;
+  font-size: 25px;
+  position: relative;
+  box-shadow: 0 0 0 14px #b4ff3915, 0 0 40px rgba(180, 255, 57, 0.35);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+  cursor: pointer;
+  z-index: 6;
+}
+
+.ritmo-landing .play:hover {
+  transform: scale(1.08);
+  box-shadow: 0 0 0 18px #b4ff3925, 0 0 50px rgba(180, 255, 57, 0.5);
+}
+
+.ritmo-landing .label {
+  position: absolute;
+  top: 25px;
+  left: 30px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.7px;
+  color: var(--g);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  z-index: 6;
+}
+
+.ritmo-landing .caption {
+  position: absolute;
+  bottom: 25px;
+  left: 30px;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.7px;
+  color: var(--w);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
+  z-index: 6;
+}
+
+.ritmo-landing video {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  inset: 0;
+  background-color: #0a0e14 !important;
+  object-fit: contain;
+  z-index: 5;
+  transition: opacity 0.25s ease;
+}
+
+.ritmo-landing [hidden] {
+  display: none !important;
+}
+
+.ritmo-landing .video-bar {
+  padding: 18px 25px;
+  background: #ffffff03;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  font-size: 11px;
+  color: var(--m);
+}
+
+.ritmo-landing .load {
+  padding: 10px 15px;
+  border: 1px solid #ffffff40;
+  border-radius: 30px;
+  cursor: pointer;
+  color: var(--w);
+  white-space: nowrap;
+}
+
+.ritmo-landing .tech-showcase {
+  margin: 60px 0 30px;
+  padding: 35px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+}
+
+.ritmo-landing .tech-badge-header {
+  margin-bottom: 20px;
+}
+
+.ritmo-landing .tech-badge-header h3 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  margin: 6px 0 0;
+  letter-spacing: 0.8px;
+}
+
+.ritmo-landing .tech-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ritmo-landing .tech-pill {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 30px;
+  font-size: 13px;
+  color: var(--w);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: border-color 180ms, transform 180ms, background 180ms;
+}
+
+.ritmo-landing .tech-pill-icon {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  color: var(--g);
+  transition: transform 180ms, color 180ms;
+}
+
+.ritmo-landing .tech-pill b {
+  color: var(--g);
+}
+
+@media (hover: hover) {
+  .ritmo-landing .tech-pill:hover {
+    border-color: var(--g);
+    background: rgba(180, 255, 57, 0.06);
+    transform: translateY(-2px);
+  }
+
+  .ritmo-landing .tech-pill:hover .tech-pill-icon {
+    transform: scale(1.12);
+  }
+}
+
+.ritmo-landing .steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+  padding: 55px 0 75px;
+}
+
+.ritmo-landing .step {
+  border-top: 1px solid var(--line);
+  padding-top: 22px;
+}
+
+.ritmo-landing .num {
+  font-family: var(--font-display);
+  color: var(--g);
+  font-size: 16px;
+  letter-spacing: 1.5px;
+}
+
+.ritmo-landing .step h3 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  letter-spacing: 0.8px;
+  margin: 25px 0 14px;
+}
+
+.ritmo-landing .step p {
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--m);
+}
+
+.ritmo-landing .cta {
+  border-top: 1px solid var(--line);
+  padding: 45px 0 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 25px;
+}
+
+.ritmo-landing .cta h2 {
+  font-family: var(--font-display);
+  font-size: 42px;
+  letter-spacing: 1px;
+  margin: 0;
+}
+
+.ritmo-landing footer {
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 25px;
+  padding: 30px 0 55px;
+}
+
+.ritmo-landing footer p,
+.ritmo-landing footer small {
+  font-size: 10px;
+  color: var(--m);
+}
+
+.ritmo-landing :focus-visible {
+  outline: 2px solid var(--g);
+  outline-offset: 5px;
+}
+
+.ritmo-landing .btn:focus-visible {
+  transform: translateY(-2px);
+}
+
+.ritmo-landing .btn:focus-visible .arrow {
+  transform: translate(2px, -2px);
+}
+
+.ritmo-landing .btn:active {
+  transform: scale(0.98);
+}
+
+@media (hover: hover) {
+  .ritmo-landing .btn:hover,
+  .ritmo-landing .play:hover {
+    transform: translateY(-2px);
+  }
+  .ritmo-landing .btn:hover .arrow {
+    transform: translate(2px, -2px);
+  }
+  .ritmo-landing .outline:hover {
+    border-color: var(--g);
+    background: #b4ff390b;
+  }
+  .ritmo-landing .btn:active {
+    transform: scale(0.98);
+  }
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.ritmo-landing .ready {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 600ms cubic-bezier(0.16, 1, 0.3, 1) var(--delay, 0ms),
+              transform 600ms cubic-bezier(0.16, 1, 0.3, 1) var(--delay, 0ms);
+  will-change: opacity, transform;
+}
+
+.ritmo-landing .ready.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (max-width: 850px) {
+  .ritmo-landing header {
+    padding: 25px;
+  }
+  .ritmo-landing .aside {
+    max-width: 175px;
+  }
+  .ritmo-landing .aside h2 {
+    font-size: 21px;
+  }
+  .ritmo-landing h1 {
+    font-size: 71px;
+    letter-spacing: 0.5px;
+  }
+  .ritmo-landing .intro {
+    gap: 35px;
+  }
+}
+
+@media (max-width: 600px) {
+  .ritmo-landing .page {
+    padding: 8px;
+  }
+  .ritmo-landing .hero {
+    height: 1000px;
+  }
+  .ritmo-landing header {
+    padding: 17px 12px;
+    gap: 10px;
+  }
+  .ritmo-landing .logo {
+    font-size: 24px;
+  }
+  .ritmo-landing nav {
+    gap: 7px;
+  }
+  .ritmo-landing nav .btn {
+    font-size: 10px;
+    gap: 7px;
+    padding: 8px 9px 8px 12px;
+  }
+  .ritmo-landing nav .arrow {
+    width: 23px;
+    height: 23px;
+    font-size: 12px;
+  }
+  .ritmo-landing .btn {
+    font-size: 11px;
+    gap: 15px;
+    padding-left: 16px;
+  }
+  .ritmo-landing .art {
+    top: 95px;
+    height: 530px;
+    left: 57%;
+  }
+  .ritmo-landing .fade {
+    background: linear-gradient(0deg, #000 30%, #0005 54%, transparent 80%);
+  }
+  .ritmo-landing .headline {
+    display: block;
+    top: 43%;
+    left: 7%;
+    right: 7%;
+  }
+  .ritmo-landing h1 {
+    font-size: 62px;
+    letter-spacing: 0.5px;
+  }
+  .ritmo-landing .eyebrow {
+    font-size: 9px;
+  }
+  .ritmo-landing .aside {
+    max-width: 270px;
+    margin-top: 25px;
+  }
+  .ritmo-landing .aside h2 {
+    font-size: 21px;
+    margin: 0 0 12px;
+  }
+  .ritmo-landing .aside p {
+    font-size: 12px;
+    margin-bottom: 20px;
+  }
+  .ritmo-landing .hero-foot {
+    left: 7%;
+    right: 7%;
+    bottom: 25px;
+    font-size: 10px;
+    gap: 10px;
+  }
+  .ritmo-landing .hero-foot span {
+    font-size: 8px;
+    letter-spacing: 0.3px;
+  }
+  .ritmo-landing .strip {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    font-size: 9px;
+    padding: 25px 5%;
+    gap: 16px;
+  }
+  .ritmo-landing .intro {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 55px 0 35px;
+  }
+  .ritmo-landing .title {
+    font-size: 41px;
+  }
+  .ritmo-landing .intro-right p {
+    font-size: 16px;
+  }
+  .ritmo-landing .stage {
+    aspect-ratio: 4/3;
+  }
+  .ritmo-landing .word {
+    letter-spacing: -5px;
+  }
+  .ritmo-landing .play {
+    width: 65px;
+    height: 65px;
+    font-size: 21px;
+  }
+  .ritmo-landing .caption {
+    font-size: 18px;
+    left: 20px;
+    bottom: 20px;
+  }
+  .ritmo-landing .label {
+    left: 20px;
+    font-size: 8px;
+  }
+  .ritmo-landing .video-bar {
+    padding: 16px;
+    font-size: 10px;
+  }
+  .ritmo-landing .tech-showcase {
+  margin: 60px 0 30px;
+  padding: 35px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+}
+
+.ritmo-landing .tech-badge-header {
+  margin-bottom: 20px;
+}
+
+.ritmo-landing .tech-badge-header h3 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  margin: 6px 0 0;
+  letter-spacing: 0.8px;
+}
+
+.ritmo-landing .tech-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ritmo-landing .tech-pill {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 30px;
+  font-size: 13px;
+  color: var(--w);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: border-color 180ms, transform 180ms, background 180ms;
+}
+
+.ritmo-landing .tech-pill-icon {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  color: var(--g);
+  transition: transform 180ms, color 180ms;
+}
+
+.ritmo-landing .tech-pill b {
+  color: var(--g);
+}
+
+@media (hover: hover) {
+  .ritmo-landing .tech-pill:hover {
+    border-color: var(--g);
+    background: rgba(180, 255, 57, 0.06);
+    transform: translateY(-2px);
+  }
+
+  .ritmo-landing .tech-pill:hover .tech-pill-icon {
+    transform: scale(1.12);
+  }
+}
+
+.ritmo-landing .steps {
+    grid-template-columns: 1fr;
+    gap: 25px;
+    padding: 40px 0 50px;
+  }
+  .ritmo-landing .step h3 {
+    margin-top: 15px;
+  }
+  .ritmo-landing .cta {
+    align-items: start;
+    flex-direction: column;
+    padding: 35px 0 45px;
+  }
+  .ritmo-landing .cta h2 {
+    font-size: 33px;
+  }
+  .ritmo-landing footer {
+    flex-direction: column;
+    align-items: start;
+    gap: 15px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ritmo-landing {
+    scroll-behavior: auto;
+  }
+  .ritmo-landing .art,
+  .ritmo-landing h1 .line {
+    animation: none;
+  }
+  .ritmo-landing .ready {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .ritmo-landing .btn,
+  .ritmo-landing .arrow,
+  .ritmo-landing .play {
+    transition: none;
+  }
+  .ritmo-landing .btn:hover,
+  .ritmo-landing .btn:focus-visible,
+  .ritmo-landing .btn:hover .arrow,
+  .ritmo-landing .btn:focus-visible .arrow,
+  .ritmo-landing .btn:active,
+  .ritmo-landing .play:hover {
+    transform: none;
+  }
+}
+
+/* ========================================================
+   FEATURE SCROLL SHOWCASE & VIDEO SELECTOR
+   ======================================================== */
+
+.ritmo-landing .video-selector-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 12px 20px;
+  background: rgba(10, 14, 20, 0.95);
+  border-bottom: 1px solid var(--line);
+  scrollbar-width: none;
+}
+.ritmo-landing .video-selector-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.ritmo-landing .video-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  color: var(--m);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.ritmo-landing .video-tab-btn:hover {
+  background: rgba(180, 255, 57, 0.08);
+  border-color: rgba(180, 255, 57, 0.3);
+  color: var(--w);
+}
+
+.ritmo-landing .video-tab-btn.active {
+  background: rgba(180, 255, 57, 0.15);
+  border-color: var(--g);
+  color: var(--g);
+  box-shadow: 0 0 14px rgba(180, 255, 57, 0.2);
+}
+
+.ritmo-landing .features-scroll-section {
+  margin: 60px 0 30px;
+  position: relative;
+}
+
+.ritmo-landing .features-scroll-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 24px;
+  gap: 20px;
+}
+
+.ritmo-landing .features-scroll-header h3 {
+  font-size: clamp(24px, 4vw, 36px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 6px 0 0 0;
+  color: var(--w);
+}
+
+.ritmo-landing .features-scroll-header p {
+  color: var(--m);
+  font-size: 14px;
+  margin: 6px 0 0 0;
+  max-width: 580px;
+}
+
+.ritmo-landing .features-scroll-nav {
+  display: flex;
+  gap: 10px;
+}
+
+.ritmo-landing .scroll-nav-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--w);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ritmo-landing .scroll-nav-btn:hover {
+  background: rgba(180, 255, 57, 0.1);
+  border-color: var(--g);
+  color: var(--g);
+  box-shadow: 0 0 16px rgba(180, 255, 57, 0.2);
+  transform: translateY(-2px);
+}
+
+.ritmo-landing .feature-scroll-track {
+  display: flex;
+  gap: 24px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  padding: 10px 4px 24px 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--g) rgba(255, 255, 255, 0.05);
+}
+
+.ritmo-landing .feature-scroll-track::-webkit-scrollbar {
+  height: 6px;
+}
+.ritmo-landing .feature-scroll-track::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 4px;
+}
+.ritmo-landing .feature-scroll-track::-webkit-scrollbar-thumb {
+  background: var(--g);
+  border-radius: 4px;
+}
+
+.ritmo-landing .feature-card {
+  flex: 0 0 380px;
+  scroll-snap-align: start;
+  background: rgba(10, 14, 20, 0.95);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.ritmo-landing .feature-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(180, 255, 57, 0.4);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(180, 255, 57, 0.15);
+}
+
+.ritmo-landing .feature-card-video-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #000;
+  overflow: hidden;
+}
+
+.ritmo-landing .feature-card-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ritmo-landing .feature-card-badge-overlay {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(10, 14, 20, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(180, 255, 57, 0.4);
+  color: var(--g);
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ritmo-landing .feature-card-duration {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.ritmo-landing .feature-card-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.ritmo-landing .feature-card-content h4 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--w);
+  letter-spacing: -0.02em;
+}
+
+.ritmo-landing .feature-card-content p {
+  margin: 8px 0 16px 0;
+  font-size: 13px;
+  color: var(--m);
+  line-height: 1.5;
+  flex: 1;
+}
+
+.ritmo-landing .feature-card-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: var(--w);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ritmo-landing .feature-card-action:hover {
+  background: rgba(180, 255, 57, 0.12);
+  border-color: var(--g);
+  color: var(--g);
+}
+
+@media (max-width: 768px) {
+  .ritmo-landing .feature-card {
+    flex: 0 0 310px;
+  }
+  .ritmo-landing .features-scroll-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

@@ -1,31 +1,23 @@
 services:
   - type: web
     name: ritmo-api
-    runtime: node
+    runtime: docker
     plan: free
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
-    preDeployCommand: pnpm prisma migrate deploy
-    startCommand: pnpm start:prod
+    dockerfilePath: ./Dockerfile
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
       - key: DEMO_MODE
         value: true
-      - key: NODE_VERSION
-        value: 24
-      - key: DATABASE_URL
-        sync: false
-      - key: DIRECT_URL
-        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRATION_TIME
-        value: 86400
+        value: "86400"
       - key: RATE_LIMIT_TTL
-        value: 10000
+        value: "10000"
       - key: RATE_LIMIT_GLOBAL_LIMIT
-        value: 60
+        value: "60"
       - key: FRONTEND_URL
         sync: false
       - key: STRIPE_SECRET_KEY
@@ -42,7 +34,7 @@ services:
       - key: VITE_API_URL
         sync: false
       - key: VITE_DEMO_MODE
-        value: true
+        value: "true"
     routes:
       - type: rewrite
         source: /*

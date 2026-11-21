@@ -49,40 +49,35 @@ export function CreateExerciseModal({ onClose }: { onClose: () => void }) {
         <span className="eyebrow">BIBLIOTECA PERSONAL</span>
         <h2>Crear ejercicio</h2>
         <label>
-          Nombre
-          <input value={name} onChange={(event) => setName(event.target.value)} required />
-        </label>
-        <label>
-          Descripción
-          <textarea
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
+          <span className="label-head">
+            Nombre {!name.trim() && <span className="req">*</span>}
+          </span>
+          <input
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Ej. Press Banca Inclinado con Mancuernas"
             required
           />
         </label>
         <label>
-          URL de imagen opcional
-          <input
-            type="url"
-            value={image}
-            onChange={(event) => setImage(event.target.value)}
-            placeholder="https://..."
+          <span className="label-head">
+            Descripción {!description.trim() && <span className="req">*</span>}
+          </span>
+          <textarea
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            rows={3}
+            placeholder="Describe el movimiento y recomendaciones técnicas..."
+            required
           />
         </label>
         <label>
-          Link informativo opcional
-          <input
-            type="url"
-            value={informationLink}
-            onChange={(event) => setInformationLink(event.target.value)}
-            placeholder="https://..."
-          />
-        </label>
-        <label>
-          Músculos
+          <span className="label-head">
+            Músculos {muscles.length === 0 && <span className="req">*</span>}
+          </span>
           <SelectMenu
             value=""
-            placeholder="Añadir músculo"
+            placeholder="Añadir músculo (ej. hombro)..."
             options={(catalogs.data?.musculos || [])
               .filter((item) => !muscles.includes(item.id))
               .map((item) => ({ value: item.id, label: item.nombre }))}
@@ -102,10 +97,12 @@ export function CreateExerciseModal({ onClose }: { onClose: () => void }) {
           ))}
         </div>
         <label>
-          Equipo opcional
+          <span className="label-head">
+            Equipo <span className="opt">(opcional)</span>
+          </span>
           <SelectMenu
             value=""
-            placeholder="Añadir equipo"
+            placeholder="Añadir equipo (ej. mancuerna)..."
             options={(catalogs.data?.equipos || [])
               .filter((item) => !equipment.includes(item.id))
               .map((item) => ({ value: item.id, label: item.nombre }))}
@@ -124,6 +121,28 @@ export function CreateExerciseModal({ onClose }: { onClose: () => void }) {
             </button>
           ))}
         </div>
+        <label>
+          <span className="label-head">
+            URL de imagen <span className="opt">(opcional)</span>
+          </span>
+          <input
+            type="url"
+            value={image}
+            onChange={(event) => setImage(event.target.value)}
+            placeholder="https://..."
+          />
+        </label>
+        <label>
+          <span className="label-head">
+            Link informativo o video <span className="opt">(opcional)</span>
+          </span>
+          <input
+            type="url"
+            value={informationLink}
+            onChange={(event) => setInformationLink(event.target.value)}
+            placeholder="https://youtube.com/..."
+          />
+        </label>
         {create.error && <div className="error">{create.error.message}</div>}
         <button className="button primary full" disabled={!muscles.length || create.isPending}>
           {create.isPending ? 'Creando…' : 'Crear ejercicio'}

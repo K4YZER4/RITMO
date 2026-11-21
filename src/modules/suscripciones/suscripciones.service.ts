@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
   OnApplicationBootstrap,
   OnApplicationShutdown,
@@ -37,6 +38,8 @@ const ESTADOS_SUSCRIPCION_ACTUAL: EstadoSuscripcionEnum[] = [
 
 @Injectable()
 export class SuscripcionesService implements OnApplicationBootstrap, OnApplicationShutdown {
+  private readonly logger = new Logger(SuscripcionesService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly stripeService: StripeService,
@@ -156,7 +159,9 @@ export class SuscripcionesService implements OnApplicationBootstrap, OnApplicati
 
     const suscripcion = await this.buscarSuscripcionActual(usuarioId, role);
 
-    if (suscripcion.estado === EstadoSuscripcionEnum.morosa) {
+    const demoMode = process.env.DEMO_MODE !== 'false';
+
+    if (!demoMode && suscripcion.estado === EstadoSuscripcionEnum.morosa) {
       throw new ForbiddenException(
         'Tu pago está pendiente o falló. Completa o actualiza el pago para continuar.',
       );
@@ -165,6 +170,7 @@ export class SuscripcionesService implements OnApplicationBootstrap, OnApplicati
     this.validarVigencia(suscripcion);
 
     if (
+      !demoMode &&
       suscripcion.estado !== EstadoSuscripcionEnum.prueba &&
       suscripcion.estado !== EstadoSuscripcionEnum.activa
     ) {
@@ -199,16 +205,23 @@ export class SuscripcionesService implements OnApplicationBootstrap, OnApplicati
       );
     }
 
-    if (
-      suscripcion.proveedor !== ProveedorPagoEnum.stripe ||
-      !suscripcion.proveedorSubscriptionId
-    ) {
-      throw new BadRequestException(
-        'La suscripción aún no tiene una suscripción Stripe activa para cancelar',
-      );
-    }
+    const esDemo =
+      !suscripcion.proveedorSubscriptionId ||
+      suscripcion.proveedorSubscriptionId.startsWith('sub_demo_');
 
-    await this.stripeService.cancelarAlFinalDelPeriodo(suscripcion.proveedorSubscriptionId);
+    if (
+      !esDemo &&
+      suscripcion.proveedor === ProveedorPagoEnum.stripe &&
+      suscripcion.proveedorSubscriptionId
+    ) {
+      try {
+        await this.stripeService.cancelarAlFinalDelPeriodo(suscripcion.proveedorSubscriptionId);
+      } catch (stripeError) {
+        this.logger.warn(
+          `No se pudo sincronizar cancelación con Stripe API (${suscripcion.proveedorSubscriptionId}): ${stripeError}`,
+        );
+      }
+    }
 
     return this.prisma.suscripcion.update({
       where: {
@@ -222,6 +235,164 @@ export class SuscripcionesService implements OnApplicationBootstrap, OnApplicati
     });
   }
 
+  async cancelarSuscripcionInmediatamente(usuarioId: string) {
+    const role = await this.obtenerRol(usuarioId);
+    const suscripcion = await this.buscarSuscripcionActual(usuarioId, role);
+
+    if (suscripcion.vitalicia) {
+      throw new BadRequestException(
+        'Una suscripción vitalicia no tiene cobros recurrentes que cancelar',
+      );
+    }
+
+    if (role === UserRole.entrenador) {
+      const planBasico = await this.prisma.planEntrenador.findUnique({
+        where: { id: 1 },
+      });
+      if (planBasico) {
+        const cantidadRutinas = await this.prisma.rutina.count({
+          where: { createdByUsuario: usuarioId, activa: true },
+        });
+        if (cantidadRutinas > planBasico.limiteRutinas) {
+          const exceso = cantidadRutinas - planBasico.limiteRutinas;
+          throw new BadRequestException(
+            `Aún no puedes cancelar al plan Básico: tienes ${cantidadRutinas} rutinas activas y el plan Básico permite un máximo de ${planBasico.limiteRutinas}. Primero debes eliminar o archivar al menos ${exceso} rutina(s).`,
+          );
+        }
+
+        const cantidadAlumnos = await this.prisma.alumno.count({
+          where: { idEntrenadorActual: usuarioId },
+        });
+        if (cantidadAlumnos > planBasico.limiteAlumnos) {
+          const exceso = cantidadAlumnos - planBasico.limiteAlumnos;
+          throw new BadRequestException(
+            `Aún no puedes cancelar al plan Básico: tienes ${cantidadAlumnos} alumnos activos y el plan Básico permite un máximo de ${planBasico.limiteAlumnos}. Primero debes desvincular al menos ${exceso} alumno(s).`,
+          );
+        }
+      }
+    } else if (role === UserRole.alumno || role === UserRole.alumnoConEntrenador) {
+      const planBasico = await this.prisma.planAlumno.findUnique({
+        where: { id: 1 },
+      });
+      if (planBasico) {
+        const cantidadRutinas = await this.prisma.rutina.count({
+          where: { createdByUsuario: usuarioId, activa: true },
+        });
+        if (cantidadRutinas > planBasico.limiteRutinas) {
+          const exceso = cantidadRutinas - planBasico.limiteRutinas;
+          throw new BadRequestException(
+            `Aún no puedes cancelar al plan Básico: tienes ${cantidadRutinas} rutinas activas y el plan Básico permite un máximo de ${planBasico.limiteRutinas}. Primero debes eliminar al menos ${exceso} rutina(s).`,
+          );
+        }
+      }
+    }
+
+    const esDemo =
+      !suscripcion.proveedorSubscriptionId ||
+      suscripcion.proveedorSubscriptionId.startsWith('sub_demo_');
+
+    if (
+      !esDemo &&
+      suscripcion.proveedor === ProveedorPagoEnum.stripe &&
+      suscripcion.proveedorSubscriptionId
+    ) {
+      try {
+        await this.stripeService.cancelarInmediatamente(suscripcion.proveedorSubscriptionId);
+      } catch (stripeError) {
+        this.logger.warn(
+          `No se pudo cancelar inmediatamente en Stripe API (${suscripcion.proveedorSubscriptionId}): ${stripeError}`,
+        );
+      }
+    }
+
+    return this.prisma.$transaction(
+      async (tx) => {
+        const ahora = new Date();
+
+        await tx.suscripcion.update({
+          where: {
+            id: suscripcion.id,
+          },
+          data: {
+            estado: EstadoSuscripcionEnum.cancelada,
+            canceladaEn: ahora,
+            siguienteCobroEn: null,
+            cancelarAlFinalDelPeriodo: false,
+          },
+        });
+
+        if (role === UserRole.entrenador) {
+          await tx.entrenador.update({
+            where: {
+              idUsuario: usuarioId,
+            },
+            data: {
+              idPlan: 1,
+            },
+          });
+
+          const planBasico = await tx.planEntrenador.findUnique({
+            where: { id: 1 },
+          });
+
+          return tx.suscripcion.create({
+            data: {
+              entrenadorId: usuarioId,
+              planEntrenadorId: 1,
+              estado: EstadoSuscripcionEnum.activa,
+              periodoActualInicio: ahora,
+              periodoActualFin: null,
+              siguienteCobroEn: null,
+              cancelarAlFinalDelPeriodo: false,
+              vitalicia: true,
+              planNombreSnapshot: planBasico?.nombre || 'Basico',
+              precioSnapshot: planBasico?.precio || 0,
+              monedaSnapshot: (planBasico?.moneda || 'MXN').toUpperCase(),
+              proveedorPrecioIdSnapshot: null,
+              duracionUnidadSnapshot: planBasico?.duracionUnidad || null,
+              duracionCantidadSnapshot: planBasico?.duracionCantidad || null,
+            },
+          });
+        }
+
+        await tx.alumno.update({
+          where: {
+            idUsuario: usuarioId,
+          },
+          data: {
+            idPlan: 1,
+          },
+        });
+
+        const planBasicoAlumno = await tx.planAlumno.findUnique({
+          where: { id: 1 },
+        });
+
+        return tx.suscripcion.create({
+          data: {
+            alumnoId: usuarioId,
+            planAlumnoId: 1,
+            estado: EstadoSuscripcionEnum.activa,
+            periodoActualInicio: ahora,
+            periodoActualFin: null,
+            siguienteCobroEn: null,
+            cancelarAlFinalDelPeriodo: false,
+            vitalicia: true,
+            planNombreSnapshot: planBasicoAlumno?.nombre || 'Basico',
+            precioSnapshot: planBasicoAlumno?.precio || 0,
+            monedaSnapshot: (planBasicoAlumno?.moneda || 'MXN').toUpperCase(),
+            proveedorPrecioIdSnapshot: null,
+            duracionUnidadSnapshot: planBasicoAlumno?.duracionUnidad || null,
+            duracionCantidadSnapshot: planBasicoAlumno?.duracionCantidad || null,
+          },
+        });
+      },
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      },
+    );
+  }
+
   async reanudarSuscripcion(usuarioId: string) {
     const role = await this.obtenerRol(usuarioId);
 
@@ -231,16 +402,23 @@ export class SuscripcionesService implements OnApplicationBootstrap, OnApplicati
       throw new BadRequestException('La suscripción no está programada para cancelarse');
     }
 
-    if (
-      suscripcion.proveedor !== ProveedorPagoEnum.stripe ||
-      !suscripcion.proveedorSubscriptionId
-    ) {
-      throw new BadRequestException(
-        'La suscripción no tiene una suscripción Stripe activa para reanudar',
-      );
-    }
+    const esDemo =
+      !suscripcion.proveedorSubscriptionId ||
+      suscripcion.proveedorSubscriptionId.startsWith('sub_demo_');
 
-    await this.stripeService.reanudarSuscripcion(suscripcion.proveedorSubscriptionId);
+    if (
+      !esDemo &&
+      suscripcion.proveedor === ProveedorPagoEnum.stripe &&
+      suscripcion.proveedorSubscriptionId
+    ) {
+      try {
+        await this.stripeService.reanudarSuscripcion(suscripcion.proveedorSubscriptionId);
+      } catch (stripeError) {
+        this.logger.warn(
+          `No se pudo sincronizar reanudación con Stripe API (${suscripcion.proveedorSubscriptionId}): ${stripeError}`,
+        );
+      }
+    }
 
     return this.prisma.suscripcion.update({
       where: {
@@ -250,6 +428,8 @@ export class SuscripcionesService implements OnApplicationBootstrap, OnApplicati
         cancelarAlFinalDelPeriodo: false,
         canceladaEn: null,
         siguienteCobroEn: suscripcion.periodoActualFin,
+        planAlumnoPendienteId: null,
+        planEntrenadorPendienteId: null,
       },
     });
   }
@@ -335,7 +515,8 @@ export class SuscripcionesService implements OnApplicationBootstrap, OnApplicati
     vitalicia: boolean;
     periodoActualFin: Date | null;
   }): void {
-    if (suscripcion.vitalicia) {
+    const demoMode = process.env.DEMO_MODE !== 'false';
+    if (demoMode || suscripcion.vitalicia) {
       return;
     }
 

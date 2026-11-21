@@ -17,6 +17,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsBigInt } from '../../pagos/dto/is-big-int.decorator';
 import { ToBigInt } from '../../../common/decorators/to-big-int.decorator';
 import { RUTINAS_VALIDATION_ERRORS } from '../errors/rutinas-validation-errors';
+import { IsSafeUrl } from '../../../common/validators/is-safe-url.validator';
 import { RutinaEjercicioConReferenciaConstraint } from '../validators/rutina-ejercicio-con-referencia.constraint';
 
 export class RutinaEjercicioAsignacionDto {
@@ -82,6 +83,7 @@ export class RutinaEjercicioAsignacionDto {
   @IsString({ message: RUTINAS_VALIDATION_ERRORS.INVALID_LINK_APOYO_TYPE })
   @IsNotEmpty({ message: RUTINAS_VALIDATION_ERRORS.EMPTY_LINK_APOYO })
   @IsUrl({ require_protocol: true }, { message: RUTINAS_VALIDATION_ERRORS.INVALID_LINK_APOYO })
+  @IsSafeUrl({ message: 'El link de apoyo debe ser una URL pública y segura (anti-SSRF).' })
   @MaxLength(500, { message: RUTINAS_VALIDATION_ERRORS.LINK_APOYO_TOO_LONG })
   link_apoyo?: string;
 }

@@ -6,6 +6,13 @@ export type Profile = {
   correo: string;
   alumno?: {
     objetivo?: { nombre: string };
+    nivelActividad?: { nombre: string };
+    observacionesMedicas?: string;
+    lesionesActuales?: string;
+    lesionesPasadas?: string;
+    contactoEmergenciaNombre?: string;
+    contactoEmergenciaTelefono?: string;
+    numeroCelular?: string;
     entrenadorActual?: {
       nombrePublico: string;
       usuario?: { nombre: string; apellidoPaterno: string };
@@ -18,6 +25,7 @@ export type Routine = {
   nombre: string;
   descripcion?: string;
   activa: boolean;
+  alumnosCount?: number;
   _count?: { rutinaEjercicio: number; usuarioRutina: number };
   categoriaRutina?: { id: number; nombre: string };
   usuarioRutina?: Array<{
@@ -97,6 +105,13 @@ export type Student = {
     usuarioMedicion: Array<{ pesoKg: string }>;
   };
   objetivo?: { nombre: string };
+  nivelActividad?: { nombre: string };
+  observacionesMedicas?: string;
+  lesionesActuales?: string;
+  lesionesPasadas?: string;
+  numeroCelular?: string;
+  contactoEmergenciaNombre?: string;
+  contactoEmergenciaTelefono?: string;
 };
 export type Assignment = {
   id: string;
@@ -112,6 +127,7 @@ export type Session = {
   rutina: { nombre: string };
   sesionEjercicio: Array<{
     id: string;
+    nota?: string | null;
     ejercicioEstandar?: { nombre: string };
     ejercicioPersonalizado?: { nombre: string };
     sesionEjercicioSet: Array<{

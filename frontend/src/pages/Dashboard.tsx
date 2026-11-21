@@ -1,5 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, CalendarDays, Dumbbell, Flame, Trophy, Users } from 'lucide-react';
+import {
+  ArrowRight,
+  CalendarDays,
+  Dumbbell,
+  Flame,
+  GripVertical,
+  Trophy,
+  Users,
+} from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { get, post } from '../lib/api';
 import { useState } from 'react';
@@ -14,7 +22,6 @@ export function Dashboard() {
   const nav = useNavigate();
   const qc = useQueryClient();
   const [starting, setStarting] = useState(false);
-  const [rescheduling, setRescheduling] = useState<WeeklyAssignment | null>(null);
   const [reorderOpen, setReorderOpen] = useState(false);
   const localActiveSessionId = activeWorkoutSessionId();
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -77,20 +84,6 @@ export function Dashboard() {
       setStarting(false);
     }
   };
-  const reschedule = useMutation({
-    mutationFn: (day: number) =>
-      post(`/entrenamientos/reprogramar?zona_horaria=${encodeURIComponent(timezone)}`, {
-        id_usuario_rutina: rescheduling?.id,
-        numero_dia: day,
-      }),
-    onSuccess: async () => {
-      await Promise.all([
-        qc.invalidateQueries({ queryKey: ['today'] }),
-        qc.invalidateQueries({ queryKey: ['week'] }),
-      ]);
-      setRescheduling(null);
-    },
-  });
   const reorder = useMutation({
     mutationFn: (dias: Array<{ id_usuario_rutina: string; numero_dia: number }>) =>
       post(`/entrenamientos/reordenar-semana?zona_horaria=${encodeURIComponent(timezone)}`, {
@@ -190,9 +183,7 @@ export function Dashboard() {
       <div className="week-strip">
         {dayNames.map((name, index) => {
           const day = index + 1;
-          const assignment =
-            week?.find((item) => item.idDiaSemana === day) ??
-            (day === currentDay ? todayAssignment : undefined);
+          const assignment = week?.find((item) => item.idDiaSemana === day);
           return (
             <div
               className={`week-day ${day === currentDay ? 'today' : ''}`}
@@ -204,25 +195,21 @@ export function Dashboard() {
                 {assignment?.rutina.nombre || 'Descanso'}
               </b>
               {assignment?.estadoSemana === 'pendiente' && (
-                <>
-                  <span className="week-day-status pending">Pendiente</span>
-                  <button
-                    type="button"
-                    className="week-day-reschedule"
-                    onClick={() => setRescheduling(assignment)}
-                  >
-                    Reprogramar
-                  </button>
-                </>
+                <span className="week-day-status pending">Pendiente</span>
               )}
               {day === currentDay && <span className="week-day-today">HOY</span>}
             </div>
           );
         })}
       </div>
+      <div className="weekly-planner-actions">
+        <button className="button ghost compact" onClick={() => setReorderOpen(true)}>
+          Reordenar semana
+        </button>
+      </div>
       <Card className="today-card student-today">
         <div className="today-icon">
-          <CalendarDays />
+          <CalendarDays size={32} />
         </div>
         <div>
           <span className="eyebrow">ENTRENAMIENTO DE HOY</span>
@@ -252,31 +239,32 @@ export function Dashboard() {
               <span className="eyebrow">SEGUIMIENTO</span>
               <h2>Rutinas pendientes</h2>
             </div>
-            <div className="pending-heading-actions">
-              <button className="button ghost compact" onClick={() => setReorderOpen(true)}>
-                Reordenar semana
-              </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span className="pending-count">{pendingRoutines.length}</span>
+              <button
+                type="button"
+                className="button ghost compact"
+                onClick={() => setReorderOpen(true)}
+              >
+                <CalendarDays size={16} /> Reordenar semana
+              </button>
             </div>
           </div>
           <p>
             No registraste estas sesiones. Se conservarán pendientes hasta que las completes o
-            reprogrames.
+            reprogrames desde <strong>Reordenar semana</strong>.
           </p>
           {pendingRoutines.map((assignment) => (
             <div className="list-row pending-routine-row" key={assignment.id}>
-              <div className="pending-routine-main">
-                <b>{assignment.rutina.nombre}</b>
-                <small>Programada para {assignment.fechaProgramada}</small>
-              </div>
-              <div className="pending-routine-actions">
-                <span className="status pending-status">Pendiente</span>
-                <button
-                  className="button primary reschedule-button"
-                  onClick={() => setRescheduling(assignment)}
-                >
-                  Reprogramar rutina
-                </button>
+              <div className="pending-routine-main" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div className="pending-routine-heading" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <b>{assignment.rutina.nombre}</b>
+                  <span className="status pending-status">Pendiente</span>
+                </div>
+                <small style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <CalendarDays size={14} />
+                  Programada para {formatScheduledDate(assignment.fechaProgramada)}
+                </small>
               </div>
             </div>
           ))}
@@ -308,17 +296,6 @@ export function Dashboard() {
           Ver progreso <ArrowRight />
         </Link>
       </Card>
-      {rescheduling && (
-        <RescheduleModal
-          assignment={rescheduling}
-          currentDay={currentDay}
-          assignments={week || []}
-          busy={reschedule.isPending}
-          error={reschedule.error instanceof Error ? reschedule.error.message : undefined}
-          onClose={() => setRescheduling(null)}
-          onSave={(day) => reschedule.mutate(day)}
-        />
-      )}
       {reorderOpen && (
         <WeeklyReorderModal
           assignments={week || []}
@@ -336,62 +313,6 @@ function ActivityIcon() {
   return <Flame />;
 }
 
-function RescheduleModal({
-  assignment,
-  currentDay,
-  assignments,
-  busy,
-  error,
-  onClose,
-  onSave,
-}: {
-  assignment: WeeklyAssignment;
-  currentDay: number;
-  assignments: WeeklyAssignment[];
-  busy: boolean;
-  error?: string;
-  onClose: () => void;
-  onSave: (day: number) => void;
-}) {
-  const [day, setDay] = useState('');
-  const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-  const occupied = new Set(assignments.map((item) => item.idDiaSemana));
-  const options = dayNames
-    .map((name, index) => ({ value: String(index + 1), label: name }))
-    .filter((option) => Number(option.value) > currentDay && !occupied.has(Number(option.value)));
-  return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <section className="modal" onClick={(event) => event.stopPropagation()}>
-        <span className="eyebrow">REPROGRAMAR ESTA SEMANA</span>
-        <h2>{assignment.rutina.nombre}</h2>
-        <p>Elige un día libre para recuperar esta rutina. La programación futura no cambiará.</p>
-        <label>
-          Día nuevo
-          <SelectMenu
-            value={day}
-            options={options}
-            placeholder="Selecciona un día"
-            onChange={setDay}
-          />
-        </label>
-        {error && <div className="error">{error}</div>}
-        <div className="modal-actions">
-          <button type="button" className="button ghost" onClick={onClose}>
-            Cancelar
-          </button>
-          <button
-            className="button primary"
-            disabled={!day || busy}
-            onClick={() => onSave(Number(day))}
-          >
-            {busy ? 'Guardando…' : 'Reprogramar rutina'}
-          </button>
-        </div>
-      </section>
-    </div>
-  );
-}
-
 function WeeklyReorderModal({
   assignments,
   busy,
@@ -406,48 +327,123 @@ function WeeklyReorderModal({
   onSave: (dias: Array<{ id_usuario_rutina: string; numero_dia: number }>) => void;
 }) {
   const names = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+  const weekDates = getCurrentWeekDates();
   const [slots, setSlots] = useState<Array<WeeklyAssignment | null>>(() =>
     names.map((_, index) => assignments.find((item) => item.idDiaSemana === index + 1) || null),
   );
   const [dragged, setDragged] = useState<number | null>(null);
-  const move = (target: number) => {
-    if (dragged === null || dragged === target) return;
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [selected, setSelected] = useState<number | null>(null);
+
+  const swap = (from: number, to: number) => {
+    if (from === to) return;
     setSlots((current) => {
       const next = [...current];
-      [next[dragged], next[target]] = [next[target], next[dragged]];
+      [next[from], next[to]] = [next[to], next[from]];
       return next;
     });
-    setDragged(null);
   };
+
+  const move = (target: number) => {
+    if (dragged === null || dragged === target) {
+      setDragged(null);
+      setDragOverIndex(null);
+      return;
+    }
+    swap(dragged, target);
+    setDragged(null);
+    setDragOverIndex(null);
+    setSelected(null);
+  };
+
+  const handleSlotClick = (index: number) => {
+    if (selected === null) {
+      if (slots[index]) {
+        setSelected(index);
+      }
+    } else {
+      swap(selected, index);
+      setSelected(null);
+    }
+  };
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <section className="modal wide reorder-modal" onClick={(event) => event.stopPropagation()}>
         <span className="eyebrow">ESTA SEMANA</span>
         <h2>Reordenar rutinas</h2>
-        <p>Arrastra las rutinas entre los días. Este cambio solo aplica a la semana actual.</p>
-        <div className="weekly-reorder-grid">
-          {names.map((name, index) => (
-            <div
-              className="weekly-reorder-day"
-              key={name}
-              onDragOver={(event) => event.preventDefault()}
-              onDrop={() => move(index)}
-            >
-              <strong>{name}</strong>
-              {slots[index] ? (
+        <p style={{ margin: '4px 0 2px' }}>
+          Arrastra y desliza una rutina hacia otro día para moverla o intercambiarla, tal como en el planificador del entrenador.
+        </p>
+        <small style={{ color: 'var(--muted)', display: 'block', fontSize: '0.8rem', marginBottom: '4px' }}>
+          💡 Si tu pantalla es estrecha, puedes deslizar la barra horizontalmente para recorrer todos los días de la semana.
+        </small>
+        <div className="weekly-reorder-grid-wrapper">
+          <div className="weekly-reorder-grid">
+            {names.map((name, index) => {
+              const isSelected = selected === index;
+              const isOver = dragOverIndex === index;
+              return (
                 <div
-                  className="weekly-reorder-routine"
-                  draggable
-                  onDragStart={() => setDragged(index)}
+                  className={`weekly-reorder-day ${isSelected ? 'selected' : ''} ${isOver ? 'drag-over' : ''}`}
+                  key={name}
+                  style={{
+                    cursor: selected !== null || slots[index] ? 'pointer' : 'default',
+                  }}
+                  onClick={() => handleSlotClick(index)}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = 'move';
+                    if (dragOverIndex !== index) setDragOverIndex(index);
+                  }}
+                  onDragLeave={() => setDragOverIndex((curr) => (curr === index ? null : curr))}
+                  onDrop={() => move(index)}
                 >
-                  {slots[index]?.rutina.nombre}
+                  <div className="weekly-reorder-day-heading">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <strong>{name}</strong>
+                      {isOver && (
+                        <span style={{ color: 'var(--lime)', fontWeight: 600, fontSize: '0.72rem' }}>
+                          {slots[index] ? '⇄ Intercambiar' : '↓ Mover aquí'}
+                        </span>
+                      )}
+                    </div>
+                    <span>{formatScheduledDate(weekDates[index])}</span>
+                  </div>
+                  {slots[index] ? (
+                    <div
+                      className={`weekly-reorder-routine ${dragged === index ? 'is-dragging' : ''}`}
+                      draggable
+                      onDragStart={(e) => {
+                        setDragged(index);
+                        e.dataTransfer.effectAllowed = 'move';
+                      }}
+                      onDragEnd={() => {
+                        setDragged(null);
+                        setDragOverIndex(null);
+                      }}
+                      title="Arrastra para mover a otro día o intercambiar"
+                    >
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', width: '100%' }}>
+                        <GripVertical className="weekly-reorder-grip" />
+                        <span style={{ fontWeight: 600, fontSize: '0.84rem' }}>{slots[index]?.rutina.nombre}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="weekly-reorder-empty">
+                      {isOver ? <span style={{ color: 'var(--lime)', fontWeight: 600 }}>↓ Soltar aquí</span> : 'Descanso'}
+                    </span>
+                  )}
                 </div>
-              ) : (
-                <span className="weekly-reorder-empty">Descanso</span>
-              )}
-            </div>
-          ))}
+              );
+            })}
+          </div>
         </div>
+        {selected !== null && (
+          <div style={{ color: 'var(--lime)', fontSize: '0.85rem', marginBottom: '8px' }}>
+            ✓ Seleccionado: <strong>{names[selected]}</strong>. Haz clic en otro día para moverlo.
+          </div>
+        )}
         {error && <div className="error">{error}</div>}
         <div className="modal-actions">
           <button type="button" className="button ghost" onClick={onClose}>
@@ -471,4 +467,32 @@ function WeeklyReorderModal({
       </section>
     </div>
   );
+}
+
+function getCurrentWeekDates() {
+  const today = new Date();
+  const monday = new Date(today);
+  const daysFromMonday = (today.getDay() + 6) % 7;
+  monday.setDate(today.getDate() - daysFromMonday);
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + index);
+    return date;
+  });
+}
+
+function formatScheduledDate(value?: string | Date) {
+  if (!value) return 'Fecha pendiente';
+  if (value instanceof Date) {
+    return new Intl.DateTimeFormat('es-MX', {
+      day: 'numeric',
+      month: 'short',
+    }).format(value);
+  }
+  const [year, month, day] = value.slice(0, 10).split('-').map(Number);
+  if (!year || !month || !day) return value;
+  return new Intl.DateTimeFormat('es-MX', {
+    day: 'numeric',
+    month: 'short',
+  }).format(new Date(year, month - 1, day));
 }

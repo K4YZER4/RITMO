@@ -97,7 +97,7 @@ export class SuscripcionesController {
   @Post('cancelar')
   @SinSuscripcion()
   @ApiOperation({
-    summary: 'Cancelar suscripción',
+    summary: 'Cancelar suscripción al final del periodo',
     description: 'Cancela la suscripción Stripe al final del periodo actual.',
   })
   @ApiCreatedResponse({ description: 'Suscripción cancelada al final del periodo.' })
@@ -112,6 +112,23 @@ export class SuscripcionesController {
   })
   cancelar(@CurrentUser('id') usuarioId: string) {
     return this.suscripcionesService.cancelarSuscripcion(usuarioId);
+  }
+
+  @Post('cancelar-inmediata')
+  @SinSuscripcion()
+  @ApiOperation({
+    summary: 'Cancelar suscripción de inmediato',
+    description:
+      'Cancela la suscripción en Stripe y en el sistema de inmediato, retornando la cuenta al Plan Básico gratuito.',
+  })
+  @ApiCreatedResponse({ description: 'Suscripción cancelada de inmediato.' })
+  @ApiResponse({
+    status: 400,
+    description: 'Suscripción vitalicia o ya cancelada.',
+  })
+  @ApiResponse({ status: 404, description: 'Suscripción actual no encontrada.' })
+  cancelarInmediata(@CurrentUser('id') usuarioId: string) {
+    return this.suscripcionesService.cancelarSuscripcionInmediatamente(usuarioId);
   }
 
   @Post('reanudar')

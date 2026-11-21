@@ -20,8 +20,12 @@ export function IsTodayOrFutureDate(validationOptions?: ValidationOptions) {
             return false;
           }
 
-          const today = new Date().toLocaleDateString('en-CA');
-          return value >= today;
+          // Se tolera un margen de hasta 36 horas hacia atrás para considerar
+          // las zonas horarias de América (UTC-3 a UTC-8 o más al oeste) respecto
+          // a la hora UTC del servidor, asegurando que la fecha local del usuario
+          // nunca sea rechazada por desfase horario.
+          const bufferDate = new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString().slice(0, 10);
+          return value >= bufferDate;
         },
 
         defaultMessage(args: ValidationArguments): string {

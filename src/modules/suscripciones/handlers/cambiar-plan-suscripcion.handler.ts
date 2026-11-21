@@ -48,12 +48,66 @@ export class CambiarPlanSuscripcionHandler {
 
     const suscripcionActual = await this.buscarSuscripcionActual(usuarioId, usuario.role);
 
+    if (suscripcionActual.cancelarAlFinalDelPeriodo) {
+      throw new BadRequestException(
+        'Tu suscripción tiene una cancelación programada para el final del periodo. Para cambiar de plan antes de que finalice, selecciona primero "Cancelar ya".',
+      );
+    }
+
+    if (usuario.role === UserRole.entrenador) {
+      const nuevoPlan = await this.prisma.planEntrenador.findUnique({
+        where: { id: idPlanNuevo },
+      });
+      if (nuevoPlan) {
+        const cantidadRutinas = await this.prisma.rutina.count({
+          where: { createdByUsuario: usuarioId, activa: true },
+        });
+        if (cantidadRutinas > nuevoPlan.limiteRutinas) {
+          const exceso = cantidadRutinas - nuevoPlan.limiteRutinas;
+          throw new BadRequestException(
+            `Aún no puedes cambiar al plan ${nuevoPlan.nombre}: tienes ${cantidadRutinas} rutinas activas y el plan ${nuevoPlan.nombre} permite un máximo de ${nuevoPlan.limiteRutinas}. Primero debes eliminar o archivar al menos ${exceso} rutina(s).`,
+          );
+        }
+
+        const cantidadAlumnos = await this.prisma.alumno.count({
+          where: { idEntrenadorActual: usuarioId },
+        });
+        if (cantidadAlumnos > nuevoPlan.limiteAlumnos) {
+          const exceso = cantidadAlumnos - nuevoPlan.limiteAlumnos;
+          throw new BadRequestException(
+            `Aún no puedes cambiar al plan ${nuevoPlan.nombre}: tienes ${cantidadAlumnos} alumnos activos y el plan ${nuevoPlan.nombre} permite un máximo de ${nuevoPlan.limiteAlumnos}. Primero debes desvincular al menos ${exceso} alumno(s).`,
+          );
+        }
+      }
+    } else if (usuario.role === UserRole.alumno || usuario.role === UserRole.alumnoConEntrenador) {
+      const nuevoPlan = await this.prisma.planAlumno.findUnique({
+        where: { id: idPlanNuevo },
+      });
+      if (nuevoPlan) {
+        const cantidadRutinas = await this.prisma.rutina.count({
+          where: { createdByUsuario: usuarioId, activa: true },
+        });
+        if (cantidadRutinas > nuevoPlan.limiteRutinas) {
+          const exceso = cantidadRutinas - nuevoPlan.limiteRutinas;
+          throw new BadRequestException(
+            `Aún no puedes cambiar al plan ${nuevoPlan.nombre}: tienes ${cantidadRutinas} rutinas activas y el plan ${nuevoPlan.nombre} permite un máximo de ${nuevoPlan.limiteRutinas}. Primero debes eliminar al menos ${exceso} rutina(s).`,
+          );
+        }
+      }
+    }
+
     if (!suscripcionActual.proveedorSubscriptionId) {
       return this.aplicarCambioPlanLocal(usuarioId, idPlanNuevo, usuario.role);
     }
 
     if (modoCambio === MODOS_CAMBIO_PLAN.INSTANTANEO) {
-      await this.stripeService.cancelarInmediatamente(suscripcionActual.proveedorSubscriptionId);
+      if (!suscripcionActual.proveedorSubscriptionId.startsWith('sub_demo_')) {
+        try {
+          await this.stripeService.cancelarInmediatamente(suscripcionActual.proveedorSubscriptionId);
+        } catch {
+          // Continuar con el cambio local si Stripe no tiene el recurso o falla conexión
+        }
+      }
       return this.aplicarCambioPlanLocal(usuarioId, idPlanNuevo, usuario.role);
     }
 
@@ -227,13 +281,16 @@ export class CambiarPlanSuscripcionHandler {
       throw new ForbiddenException('Rol no válido para cambiar plan');
     }
 
-    if (!suscripcionActual.proveedorSubscriptionId) {
-      throw new BadRequestException(
-        'La suscripción no tiene una suscripción Stripe activa para programar el cambio',
-      );
+    if (
+      suscripcionActual.proveedorSubscriptionId &&
+      !suscripcionActual.proveedorSubscriptionId.startsWith('sub_demo_')
+    ) {
+      try {
+        await this.stripeService.cancelarAlFinalDelPeriodo(suscripcionActual.proveedorSubscriptionId);
+      } catch {
+        // Continuar con la programación local
+      }
     }
-
-    await this.stripeService.cancelarAlFinalDelPeriodo(suscripcionActual.proveedorSubscriptionId);
 
     const dataPendiente =
       role === UserRole.alumno

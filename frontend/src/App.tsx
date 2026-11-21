@@ -34,7 +34,7 @@ export function App() {
         <Route path="/app/perfil" element={<ProfilePage />} />
         <Route path="/app/plan" element={<PlanPage />} />
         <Route path="/pago/exito" element={<PaymentResult success />} />
-        <Route path="/pago/cancelado" element={<PaymentResult success={false} />} />
+        <Route path="/pago/cancelado" element={<Navigate to="/app/plan" replace />} />
       </Route>
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>

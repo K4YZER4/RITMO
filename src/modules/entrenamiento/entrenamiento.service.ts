@@ -19,18 +19,17 @@ const ESTADO_COMPLETADO_ID = 2;
 export class EntrenamientoService {
   constructor(private readonly prisma: PrismaService) {}
 
-  obtenerEntrenamientoHoy(usuarioId: string, zonaHoraria = 'UTC') {
-    const hoy = this.inicioDelDiaEnZona(new Date(), zonaHoraria);
+  async obtenerEntrenamientoHoy(usuarioId: string, zonaHoraria = 'UTC') {
+    const { hoy, diaActual, semanaClave } = this.obtenerRangoSemana(zonaHoraria);
     const manana = new Date(hoy);
     manana.setUTCDate(manana.getUTCDate() + 1);
-    const diaSemana = this.obtenerDiaSemana(hoy);
 
-    return this.prisma.usuarioRutina.findMany({
+    const asignaciones = await this.prisma.usuarioRutina.findMany({
       where: {
         idUsuario: usuarioId,
         activa: true,
-        idDiaSemana: diaSemana,
-        fechaInicio: { lt: manana },
+        idDiaSemana: diaActual,
+        fechaInicio: { lte: manana },
         OR: [{ fechaFin: null }, { fechaFin: { gte: hoy } }],
       },
       orderBy: { createdAt: 'asc' },
@@ -52,23 +51,24 @@ export class EntrenamientoService {
         },
       },
     });
+
+    return asignaciones.filter(
+      (a) =>
+        a.motivoCambio !== `Reprogramada origen semana ${semanaClave}` &&
+        a.motivoCambio !== `Reprogramada origen semana 2026-11-15`,
+    );
   }
 
-  obtenerSemana(usuarioId: string, zonaHoraria = 'UTC') {
-    const hoy = this.inicioDelDiaEnZona(new Date(), zonaHoraria);
-    const diaActual = this.obtenerDiaSemana(hoy);
-    const lunes = new Date(hoy);
-    lunes.setUTCDate(lunes.getUTCDate() - diaActual + 1);
-    const siguienteLunes = new Date(lunes);
-    siguienteLunes.setUTCDate(siguienteLunes.getUTCDate() + 7);
+  async obtenerSemana(usuarioId: string, zonaHoraria = 'UTC') {
+    const { hoy, lunes, siguienteLunes, semanaClave } = this.obtenerRangoSemana(zonaHoraria);
 
-    return Promise.all([
+    const [asignaciones, sesiones] = await Promise.all([
       this.prisma.usuarioRutina.findMany({
         where: {
           idUsuario: usuarioId,
           activa: true,
-          fechaInicio: { lte: hoy },
-          OR: [{ fechaFin: null }, { fechaFin: { gte: hoy } }],
+          fechaInicio: { lt: siguienteLunes },
+          OR: [{ fechaFin: null }, { fechaFin: { gte: lunes } }],
         },
         orderBy: { idDiaSemana: 'asc' },
         include: {
@@ -85,40 +85,42 @@ export class EntrenamientoService {
         },
         select: { idUsuarioRutina: true, idEstado: true, fechaSesion: true },
       }),
-    ]).then(([asignaciones, sesiones]) => {
-      const semanaActual = this.fechaClaveEnZona(lunes, zonaHoraria);
-      return asignaciones
-        .filter(
-          (asignacion) => asignacion.motivoCambio !== `Reprogramada origen semana ${semanaActual}`,
-        )
-        .map((asignacion) => {
-          const fechaProgramada = new Date(lunes);
-          fechaProgramada.setUTCDate(fechaProgramada.getUTCDate() + asignacion.idDiaSemana - 1);
-          const fechaClave = this.fechaClaveEnZona(fechaProgramada, zonaHoraria);
-          const sesionesDelDia = sesiones.filter(
-            (sesion) =>
-              sesion.idUsuarioRutina === asignacion.id &&
-              this.fechaClaveEnZona(sesion.fechaSesion, zonaHoraria) === fechaClave,
-          );
-          const completada = sesionesDelDia.some(
-            (sesion) => sesion.idEstado === ESTADO_COMPLETADO_ID,
-          );
-          const enCurso = sesionesDelDia.some((sesion) => sesion.idEstado === ESTADO_ACTIVO_ID);
-          const reprogramada =
-            fechaProgramada < hoy &&
-            asignacion.motivoCambio === `Reprogramada semana ${semanaActual}`;
-          let estadoSemana = 'disponible';
-          if (reprogramada) estadoSemana = 'reprogramada';
-          else if (completada) estadoSemana = 'completada';
-          else if (enCurso) estadoSemana = 'en_curso';
-          else if (fechaProgramada < hoy) estadoSemana = 'pendiente';
-          return {
-            ...asignacion,
-            fechaProgramada: fechaClave,
-            estadoSemana,
-          };
-        });
-    });
+    ]);
+
+    return asignaciones
+      .filter(
+        (asignacion) =>
+          asignacion.motivoCambio !== `Reprogramada origen semana ${semanaClave}` &&
+          asignacion.motivoCambio !== `Reprogramada origen semana 2026-11-15`,
+      )
+      .map((asignacion) => {
+        const fechaProgramada = new Date(lunes);
+        fechaProgramada.setUTCDate(fechaProgramada.getUTCDate() + asignacion.idDiaSemana - 1);
+        const fechaClave = fechaProgramada.toISOString().slice(0, 10);
+        const sesionesDelDia = sesiones.filter(
+          (sesion) =>
+            sesion.idUsuarioRutina === asignacion.id &&
+            this.fechaClaveEnZona(sesion.fechaSesion, zonaHoraria) === fechaClave,
+        );
+        const completada = sesionesDelDia.some(
+          (sesion) => sesion.idEstado === ESTADO_COMPLETADO_ID,
+        );
+        const enCurso = sesionesDelDia.some((sesion) => sesion.idEstado === ESTADO_ACTIVO_ID);
+        const reprogramada =
+          fechaProgramada < hoy &&
+          (asignacion.motivoCambio === `Reprogramada semana ${semanaClave}` ||
+            asignacion.motivoCambio === `Reprogramada semana 2026-11-15`);
+        let estadoSemana = 'disponible';
+        if (reprogramada) estadoSemana = 'reprogramada';
+        else if (completada) estadoSemana = 'completada';
+        else if (enCurso) estadoSemana = 'en_curso';
+        else if (fechaProgramada < hoy) estadoSemana = 'pendiente';
+        return {
+          ...asignacion,
+          fechaProgramada: fechaClave,
+          estadoSemana,
+        };
+      });
   }
 
   async reprogramarRutinaPendiente(
@@ -126,12 +128,7 @@ export class EntrenamientoService {
     dto: ReprogramarRutinaDto,
     zonaHoraria = 'UTC',
   ) {
-    const hoy = this.inicioDelDiaEnZona(new Date(), zonaHoraria);
-    const diaActual = this.obtenerDiaSemana(hoy);
-    const lunes = new Date(hoy);
-    lunes.setUTCDate(lunes.getUTCDate() - diaActual + 1);
-    const domingo = new Date(lunes);
-    domingo.setUTCDate(domingo.getUTCDate() + 6);
+    const { hoy, diaActual, lunes, domingo, semanaClave } = this.obtenerRangoSemana(zonaHoraria);
     const asignacionId = BigInt(dto.id_usuario_rutina);
     const asignacion = await this.prisma.usuarioRutina.findFirst({
       where: { id: asignacionId, idUsuario: usuarioId, activa: true },
@@ -149,26 +146,33 @@ export class EntrenamientoService {
         id: { not: asignacionId },
         fechaInicio: { lte: domingo },
         OR: [{ fechaFin: null }, { fechaFin: { gte: hoy } }],
+        NOT: {
+          motivoCambio: {
+            in: [
+              `Reprogramada origen semana ${semanaClave}`,
+              'Reprogramada origen semana 2026-11-15',
+            ],
+          },
+        },
       },
     });
     if (conflicto) throw new BadRequestException('Ese día ya tiene una rutina asignada');
-    const semana = this.fechaClaveEnZona(lunes, zonaHoraria);
     return this.prisma.$transaction(async (tx) => {
       await tx.usuarioRutina.update({
         where: { id: asignacionId },
-        data: { motivoCambio: `Reprogramada origen semana ${semana}` },
+        data: { motivoCambio: `Reprogramada origen semana ${semanaClave}` },
       });
       await tx.usuarioRutina.create({
         data: {
           idUsuario: usuarioId,
           idRutina: asignacion.idRutina,
           idDiaSemana: dto.numero_dia,
-          fechaInicio: hoy,
+          fechaInicio: lunes,
           fechaFin: domingo,
           asignadaPorUsuario: usuarioId,
           createdBy: usuarioId,
           updatedBy: usuarioId,
-          motivoCambio: `Reprogramada semana ${semana}`,
+          motivoCambio: `Reprogramada semana ${semanaClave}`,
         },
       });
       return { success: true, message: 'Rutina reprogramada para esta semana' };
@@ -176,61 +180,110 @@ export class EntrenamientoService {
   }
 
   async reordenarSemana(usuarioId: string, dto: ReordenarSemanaDto, zonaHoraria = 'UTC') {
-    const hoy = this.inicioDelDiaEnZona(new Date(), zonaHoraria);
-    const diaActual = this.obtenerDiaSemana(hoy);
-    const lunes = new Date(hoy);
-    lunes.setUTCDate(lunes.getUTCDate() - diaActual + 1);
-    const domingo = new Date(lunes);
-    domingo.setUTCDate(domingo.getUTCDate() + 6);
-    const semana = this.fechaClaveEnZona(lunes, zonaHoraria);
-    const asignaciones = await this.prisma.usuarioRutina.findMany({
-      where: {
-        idUsuario: usuarioId,
-        activa: true,
-        fechaInicio: { lte: domingo },
-        OR: [{ fechaFin: null }, { fechaFin: { gte: hoy } }],
-      },
-    });
-    const ids = new Set(asignaciones.map((item) => item.id.toString()));
+    const { lunes, domingo, semanaClave } = this.obtenerRangoSemana(zonaHoraria);
+
     const destinos = new Set<number>();
     for (const dia of dto.dias) {
-      if (!ids.has(dia.id_usuario_rutina)) {
-        throw new BadRequestException('Rutina no disponible');
+      if (dia.numero_dia < 1 || dia.numero_dia > 7) {
+        throw new BadRequestException('El número de día debe estar entre 1 y 7');
       }
       if (destinos.has(dia.numero_dia)) {
         throw new BadRequestException('No puedes ocupar dos veces el mismo día');
       }
       destinos.add(dia.numero_dia);
     }
-    const cambios = dto.dias.filter((dia) => {
-      const actual = asignaciones.find((item) => item.id.toString() === dia.id_usuario_rutina);
-      return actual && actual.idDiaSemana !== dia.numero_dia;
-    });
-    await this.prisma.$transaction(async (tx) => {
-      for (const cambio of cambios) {
-        const actual = asignaciones.find(
-          (item) => item.id.toString() === cambio.id_usuario_rutina,
-        )!;
-        await tx.usuarioRutina.update({
-          where: { id: actual.id },
-          data: { motivoCambio: `Reprogramada origen semana ${semana}` },
-        });
-        await tx.usuarioRutina.create({
-          data: {
-            idUsuario: usuarioId,
-            idRutina: actual.idRutina,
-            idDiaSemana: cambio.numero_dia,
-            fechaInicio: hoy,
-            fechaFin: domingo,
-            asignadaPorUsuario: usuarioId,
-            createdBy: usuarioId,
-            updatedBy: usuarioId,
-            motivoCambio: `Reprogramada semana ${semana}`,
-          },
+
+    return this.prisma.$transaction(async (tx) => {
+      const asignaciones = await tx.usuarioRutina.findMany({
+        where: {
+          idUsuario: usuarioId,
+          activa: true,
+          fechaInicio: { lte: domingo },
+          OR: [{ fechaFin: null }, { fechaFin: { gte: lunes } }],
+        },
+      });
+
+      const mapaPorId = new Map(asignaciones.map((a) => [a.id.toString(), a]));
+      for (const dia of dto.dias) {
+        if (!mapaPorId.has(dia.id_usuario_rutina)) {
+          throw new BadRequestException('Rutina no disponible');
+        }
+      }
+
+      // Identificar temporales previas de esta semana y asignaciones base
+      const temporalesEstaSemana = asignaciones.filter(
+        (a) =>
+          a.motivoCambio === `Reprogramada semana ${semanaClave}` ||
+          a.motivoCambio === `Reprogramada semana 2026-11-15`,
+      );
+
+      const baseAsignaciones = asignaciones.filter(
+        (a) => a.fechaFin === null || a.fechaFin > domingo,
+      );
+
+      // Eliminar las temporales anteriores de esta semana
+      if (temporalesEstaSemana.length > 0) {
+        await tx.usuarioRutina.deleteMany({
+          where: { id: { in: temporalesEstaSemana.map((t) => t.id) } },
         });
       }
+
+      // Resetear motivoCambio en las base
+      for (const base of baseAsignaciones) {
+        if (
+          base.motivoCambio === `Reprogramada origen semana ${semanaClave}` ||
+          base.motivoCambio === `Reprogramada origen semana 2026-11-15`
+        ) {
+          await tx.usuarioRutina.update({
+            where: { id: base.id },
+            data: { motivoCambio: null },
+          });
+          base.motivoCambio = null;
+        }
+      }
+
+      const baseDisponibles = [...baseAsignaciones];
+
+      for (const item of dto.dias) {
+        let baseAsoc = baseDisponibles.find((b) => b.id.toString() === item.id_usuario_rutina);
+        if (!baseAsoc) {
+          const origen = mapaPorId.get(item.id_usuario_rutina);
+          if (origen) {
+            baseAsoc = baseDisponibles.find((b) => b.idRutina === origen.idRutina);
+          }
+        }
+
+        if (baseAsoc) {
+          const idx = baseDisponibles.indexOf(baseAsoc);
+          if (idx >= 0) baseDisponibles.splice(idx, 1);
+
+          if (baseAsoc.idDiaSemana === item.numero_dia) {
+            continue;
+          }
+
+          await tx.usuarioRutina.update({
+            where: { id: baseAsoc.id },
+            data: { motivoCambio: `Reprogramada origen semana ${semanaClave}` },
+          });
+
+          await tx.usuarioRutina.create({
+            data: {
+              idUsuario: usuarioId,
+              idRutina: baseAsoc.idRutina,
+              idDiaSemana: item.numero_dia,
+              fechaInicio: lunes,
+              fechaFin: domingo,
+              asignadaPorUsuario: usuarioId,
+              createdBy: usuarioId,
+              updatedBy: usuarioId,
+              motivoCambio: `Reprogramada semana ${semanaClave}`,
+            },
+          });
+        }
+      }
+
+      return { success: true, message: 'Semana reordenada correctamente' };
     });
-    return { success: true, message: 'Semana reordenada correctamente' };
   }
 
   async iniciarSesion(usuarioId: string, usuarioRutinaId: bigint) {
@@ -275,6 +328,87 @@ export class EntrenamientoService {
       asignacion.override.map((item) => [item.idRutinaEjercicio.toString(), item]),
     );
 
+    // Sobrecarga progresiva: buscar el mejor desempeño de la última sesión completada para cada ejercicio
+    const idsEstandar = asignacion.rutina.rutinaEjercicio
+      .map((e) => e.idEjercicioEstandar)
+      .filter((id): id is bigint => id !== null);
+    const idsPersonalizados = asignacion.rutina.rutinaEjercicio
+      .map((e) => e.idEjercicioPersonalizado)
+      .filter((id): id is bigint => id !== null);
+
+    const claveEj = (idEst?: bigint | null, idPers?: bigint | null) =>
+      idEst ? `est_${idEst}` : `pers_${idPers}`;
+
+    const ultimosSetsCompletados = await this.prisma.sesionEjercicioSet.findMany({
+      where: {
+        completado: true,
+        sesionEjercicio: {
+          sesionEntrenamiento: {
+            idUsuario: usuarioId,
+            idEstado: ESTADO_COMPLETADO_ID,
+          },
+          OR: [
+            ...(idsEstandar.length ? [{ idEjercicioEstandar: { in: idsEstandar } }] : []),
+            ...(idsPersonalizados.length
+              ? [{ idEjercicioPersonalizado: { in: idsPersonalizados } }]
+              : []),
+          ],
+        },
+      },
+      orderBy: {
+        sesionEjercicio: {
+          sesionEntrenamiento: {
+            fechaSesion: 'desc',
+          },
+        },
+      },
+      select: {
+        pesoReal: true,
+        repeticionesRealizadas: true,
+        sesionEjercicio: {
+          select: {
+            idEjercicioEstandar: true,
+            idEjercicioPersonalizado: true,
+            sesionEntrenamiento: {
+              select: {
+                fechaSesion: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const maximosPrevios = new Map<string, { peso: number; reps: number }>();
+    for (const s of ultimosSetsCompletados) {
+      const key = claveEj(
+        s.sesionEjercicio.idEjercicioEstandar,
+        s.sesionEjercicio.idEjercicioPersonalizado,
+      );
+      if (!maximosPrevios.has(key)) {
+        const fechaUltimaSesion = s.sesionEjercicio.sesionEntrenamiento.fechaSesion.getTime();
+        const setsMismaSesion = ultimosSetsCompletados.filter(
+          (other) =>
+            claveEj(
+              other.sesionEjercicio.idEjercicioEstandar,
+              other.sesionEjercicio.idEjercicioPersonalizado,
+            ) === key &&
+            other.sesionEjercicio.sesionEntrenamiento.fechaSesion.getTime() === fechaUltimaSesion,
+        );
+        let maxPeso = Number(s.pesoReal ?? 0);
+        let maxReps = Number(s.repeticionesRealizadas ?? 0);
+        for (const setSesion of setsMismaSesion) {
+          const p = Number(setSesion.pesoReal ?? 0);
+          const r = Number(setSesion.repeticionesRealizadas ?? 0);
+          if (p > maxPeso || (p === maxPeso && r > maxReps)) {
+            maxPeso = p;
+            maxReps = r;
+          }
+        }
+        maximosPrevios.set(key, { peso: maxPeso, reps: maxReps });
+      }
+    }
+
     const sesion = await this.prisma.sesionEntrenamiento.create({
       data: {
         idUsuario: usuarioId,
@@ -287,8 +421,10 @@ export class EntrenamientoService {
           create: asignacion.rutina.rutinaEjercicio.map((ejercicio) => {
             const override = overrides.get(ejercicio.id.toString());
             const series = override?.series ?? ejercicio.series;
-            const repeticiones = override?.repeticiones ?? ejercicio.repeticiones;
-            const peso = override?.pesoObjetivo ?? ejercicio.pesoObjetivo;
+            const key = claveEj(ejercicio.idEjercicioEstandar, ejercicio.idEjercicioPersonalizado);
+            const previo = maximosPrevios.get(key);
+            const repeticiones = previo?.reps ?? override?.repeticiones ?? ejercicio.repeticiones;
+            const peso = previo?.peso ?? override?.pesoObjetivo ?? ejercicio.pesoObjetivo;
 
             return {
               idRutinaEjercicio: ejercicio.id,
@@ -456,6 +592,49 @@ export class EntrenamientoService {
     return { sesion: actualizada, totalSets, setsCompletados };
   }
 
+  async cancelarSesion(usuarioId: string, sesionId: bigint) {
+    const sesion = await this.prisma.sesionEntrenamiento.findFirst({
+      where: { id: sesionId, idUsuario: usuarioId, idEstado: ESTADO_ACTIVO_ID },
+    });
+    if (!sesion) {
+      throw new NotFoundException('Sesión activa no encontrada');
+    }
+    await this.prisma.$transaction(async (tx) => {
+      await tx.sesionEjercicioSet.deleteMany({
+        where: { sesionEjercicio: { idSesionEntrenamiento: sesionId } },
+      });
+      await tx.sesionEjercicio.deleteMany({
+        where: { idSesionEntrenamiento: sesionId },
+      });
+      await tx.sesionEntrenamiento.delete({
+        where: { id: sesionId },
+      });
+    });
+    return { success: true, message: 'Sesión cancelada exitosamente' };
+  }
+
+  async actualizarNotaEjercicio(
+    usuarioId: string,
+    sesionId: bigint,
+    sesionEjercicioId: bigint,
+    nota?: string,
+  ) {
+    const sesionEjercicio = await this.prisma.sesionEjercicio.findFirst({
+      where: {
+        id: sesionEjercicioId,
+        idSesionEntrenamiento: sesionId,
+        sesionEntrenamiento: { idUsuario: usuarioId, idEstado: ESTADO_ACTIVO_ID },
+      },
+    });
+    if (!sesionEjercicio) {
+      throw new NotFoundException('Ejercicio de la sesión no encontrado');
+    }
+    return this.prisma.sesionEjercicio.update({
+      where: { id: sesionEjercicioId },
+      data: { nota: nota?.trim() || null },
+    });
+  }
+
   listarMediciones(usuarioId: string) {
     return this.prisma.usuarioMedicion.findMany({
       where: { idUsuario: usuarioId },
@@ -566,9 +745,38 @@ export class EntrenamientoService {
     return new Date(Date.UTC(valor('year'), valor('month') - 1, valor('day')));
   }
 
+  private obtenerRangoSemana(zonaHoraria = 'UTC') {
+    const hoy = this.inicioDelDiaEnZona(new Date(), zonaHoraria);
+    const diaActual = this.obtenerDiaSemana(hoy);
+    const lunes = new Date(hoy);
+    lunes.setUTCDate(lunes.getUTCDate() - diaActual + 1);
+    const domingo = new Date(lunes);
+    domingo.setUTCDate(domingo.getUTCDate() + 6);
+    const siguienteLunes = new Date(lunes);
+    siguienteLunes.setUTCDate(siguienteLunes.getUTCDate() + 7);
+    const semanaClave = lunes.toISOString().slice(0, 10);
+    return { hoy, diaActual, lunes, domingo, siguienteLunes, semanaClave };
+  }
+
   private fechaClaveEnZona(fecha: Date, zonaHoraria: string): string {
-    const dia = this.inicioDelDiaEnZona(fecha, zonaHoraria);
-    return dia.toISOString().slice(0, 10);
+    let partes: Intl.DateTimeFormatPart[];
+    try {
+      partes = new Intl.DateTimeFormat('en-US', {
+        timeZone: zonaHoraria,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).formatToParts(fecha);
+    } catch {
+      partes = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'UTC',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).formatToParts(fecha);
+    }
+    const valor = (tipo: string) => partes.find((parte) => parte.type === tipo)?.value || '00';
+    return `${valor('year')}-${valor('month')}-${valor('day')}`;
   }
 
   private obtenerDiaSemana(fecha: Date): number {

@@ -13,7 +13,7 @@ ALTER TABLE app_user.suscripcion
         AND siguiente_cobro_en IS NULL
       )
       OR
-      estado = 'morosa'
+      estado IN ('morosa', 'cancelada')
       OR
       (
         vitalicia = false

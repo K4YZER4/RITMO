@@ -14,6 +14,7 @@ import {
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { EJERCICIOS_VALIDATION_ERRORS } from '../errors/ejercicios-validation-errors';
+import { IsSafeUrl } from '../../../common/validators/is-safe-url.validator';
 
 export class CreateEjercicioPersonalizadoDto {
   /** Nombre del ejercicio personalizado (máximo 150 caracteres). */
@@ -79,6 +80,9 @@ export class CreateEjercicioPersonalizadoDto {
       message: EJERCICIOS_VALIDATION_ERRORS.INVALID_URL_IMAGEN,
     },
   )
+  @IsSafeUrl({
+    message: 'La URL de la imagen debe ser pública y segura (anti-SSRF).',
+  })
   url_imagen?: string;
 
   /** URL con información adicional del ejercicio. */
@@ -100,6 +104,9 @@ export class CreateEjercicioPersonalizadoDto {
       message: EJERCICIOS_VALIDATION_ERRORS.INVALID_LINK_INFORMACION,
     },
   )
+  @IsSafeUrl({
+    message: 'El link de información debe ser una URL pública y segura (anti-SSRF).',
+  })
   link_informacion?: string;
 
   /** IDs de los músculos que trabaja el ejercicio (mínimo 1, sin repetidos). */

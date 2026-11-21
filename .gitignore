@@ -61,3 +61,11 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Promo video builds and raw captures
+/promo-video/node_modules
+/promo-video/out
+/promo-video/raw-captures
+/promo-video/public/*.webm
+
+

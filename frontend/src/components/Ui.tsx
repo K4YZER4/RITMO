@@ -23,8 +23,20 @@ export function Page({
     </>
   );
 }
-export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <section className={`card ${className}`}>{children}</section>;
+export function Card({
+  children,
+  className = '',
+  style,
+}: {
+  children: ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <section className={`card ${className}`} style={style}>
+      {children}
+    </section>
+  );
 }
 export function Empty({ children }: { children: ReactNode }) {
   return (

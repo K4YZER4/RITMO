@@ -5,6 +5,7 @@ import { Card, Empty, Loading, Page } from '../components/Ui';
 import { get, post } from '../lib/api';
 import { FormEvent, useState } from 'react';
 import { SelectMenu } from '../components/SelectMenu';
+import { SessionDetailModal } from '../components/SessionDetailModal';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { Catalogs } from '../lib/types';
 type ProgressData = {
@@ -21,6 +22,7 @@ type ProgressData = {
 };
 export function Progress() {
   const qc = useQueryClient();
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [weight, setWeight] = useState('');
   const [bodyFat, setBodyFat] = useState('');
   const [exerciseOpen, setExerciseOpen] = useState(false);
@@ -202,10 +204,23 @@ export function Progress() {
           <h2>Historial de entrenamientos</h2>
         </div>
         {sessions.data?.map((session) => (
-          <div className="list-row" key={session.id}>
-            <b>{session.rutina.nombre}</b>
+          <div
+            className="list-row"
+            key={session.id}
+            onClick={() => setSelectedSessionId(session.id)}
+            style={{ cursor: 'pointer', transition: 'background 0.15s ease' }}
+            title="Ver detalle del entrenamiento"
+          >
+            <div>
+              <b style={{ color: 'var(--w)' }}>{session.rutina.nombre}</b>
+              <div style={{ fontSize: '0.78rem', color: 'var(--g, #b4ff39)', marginTop: '2px' }}>
+                Ver resumen y series →
+              </div>
+            </div>
             <small>{new Date(session.fechaSesion).toLocaleDateString('es-MX')}</small>
-            <span>{session.idEstado === 2 ? 'Completado' : 'En curso'}</span>
+            <span className={`pill small ${session.idEstado === 2 ? 'success' : ''}`}>
+              {session.idEstado === 2 ? 'Completado' : 'En curso'}
+            </span>
           </div>
         ))}
         {!sessions.data?.length && <Empty>Aún no hay sesiones registradas.</Empty>}
@@ -226,26 +241,35 @@ export function Progress() {
             <span className="eyebrow">BIBLIOTECA PERSONAL</span>
             <h2>Nuevo ejercicio</h2>
             <label>
-              Nombre
+              <span className="label-head">
+                Nombre {!exerciseName.trim() && <span className="req">*</span>}
+              </span>
               <input
                 value={exerciseName}
                 onChange={(event) => setExerciseName(event.target.value)}
+                placeholder="Ej. Prensa Inclinada 45°"
                 required
               />
             </label>
             <label>
-              Descripción
+              <span className="label-head">
+                Descripción {!exerciseDescription.trim() && <span className="req">*</span>}
+              </span>
               <textarea
                 value={exerciseDescription}
                 onChange={(event) => setExerciseDescription(event.target.value)}
+                rows={3}
+                placeholder="Describe el ejercicio y consejos técnicos..."
                 required
               />
             </label>
             <label>
-              Músculos
+              <span className="label-head">
+                Músculos {muscles.length === 0 && <span className="req">*</span>}
+              </span>
               <SelectMenu
                 value=""
-                placeholder="Añadir músculo"
+                placeholder="Añadir músculo (ej. cuadriceps)..."
                 options={(catalogs.data?.musculos || [])
                   .filter((item) => !muscles.includes(item.id))
                   .map((item) => ({ value: item.id, label: item.nombre }))}
@@ -265,10 +289,12 @@ export function Progress() {
               ))}
             </div>
             <label>
-              Equipo opcional
+              <span className="label-head">
+                Equipo <span className="opt">(opcional)</span>
+              </span>
               <SelectMenu
                 value=""
-                placeholder="Añadir equipo"
+                placeholder="Añadir equipo (ej. prensa)..."
                 options={(catalogs.data?.equipos || [])
                   .filter((item) => !equipment.includes(item.id))
                   .map((item) => ({ value: item.id, label: item.nombre }))}
@@ -296,6 +322,12 @@ export function Progress() {
             </button>
           </form>
         </div>
+      )}
+      {selectedSessionId && (
+        <SessionDetailModal
+          sesionId={selectedSessionId}
+          onClose={() => setSelectedSessionId(null)}
+        />
       )}
     </Page>
   );

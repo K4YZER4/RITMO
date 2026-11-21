@@ -1,7 +1,13 @@
 import { isRetryableApiError, patch } from './api';
 
 export type WorkoutValue = { peso: string; reps: string };
-export type PendingSet = { setId: string; peso: number; reps: number; updatedAt: number };
+export type PendingSet = {
+  setId: string;
+  peso: number;
+  reps: number;
+  completado?: boolean;
+  updatedAt: number;
+};
 export type WorkoutDraft = {
   sessionId: string;
   updatedAt: number;
@@ -109,7 +115,7 @@ export async function syncWorkoutDraft(sessionId: string) {
       await patch(`/sesiones/${sessionId}/sets/${item.setId}`, {
         peso: item.peso,
         repeticiones: item.reps,
-        completado: true,
+        completado: item.completado ?? true,
       });
       removePendingWorkoutSet(sessionId, item.setId);
     } catch (error) {

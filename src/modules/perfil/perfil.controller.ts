@@ -2,11 +2,13 @@ import { Body, Controller, Get, Patch } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { SinSuscripcion } from '../../common/decorators/sin-suscripcion.decorator';
 import { PerfilService } from './perfil.service';
 import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
 
 @ApiTags('Perfil')
 @ApiBearerAuth('access-token')
+@SinSuscripcion()
 @Controller('perfil')
 export class PerfilController {
   constructor(private readonly perfilService: PerfilService) {}
