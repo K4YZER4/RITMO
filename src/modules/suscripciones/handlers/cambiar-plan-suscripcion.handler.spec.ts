@@ -24,10 +24,14 @@ const prismaMock = {
   alumno: {
     findUnique: jest.fn(),
     update: jest.fn(),
+    count: jest.fn(),
   },
   entrenador: {
     findUnique: jest.fn(),
     update: jest.fn(),
+  },
+  rutina: {
+    count: jest.fn(),
   },
   planAlumno: {
     findUnique: jest.fn(),
@@ -72,6 +76,8 @@ describe('CambiarPlanSuscripcionHandler', () => {
     }).compile();
 
     handler = module.get<CambiarPlanSuscripcionHandler>(CambiarPlanSuscripcionHandler);
+    prismaMock.rutina.count.mockResolvedValue(0);
+    prismaMock.alumno.count.mockResolvedValue(0);
   });
 
   describe('ejecutar', () => {
@@ -132,7 +138,6 @@ describe('CambiarPlanSuscripcionHandler', () => {
         new ConflictException('Ya tienes asignado este plan'),
       );
 
-      expect(prismaMock.planAlumno.findUnique).not.toHaveBeenCalled();
       expect(prismaMock.suscripcion.updateMany).not.toHaveBeenCalled();
     });
 

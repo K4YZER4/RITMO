@@ -8,7 +8,9 @@ Especificación por endpoint: método y ruta, guards/decoradores, body (DTO) con
 
 ## Índice
 
-- [GET / — Health check](#get---health-check)
+- [Health & Sistema](#health--sistema)
+  - [GET /](#get-)
+  - [GET /health](#get-health)
 - [Auth](#auth)
   - [POST /auth/login](#post-authlogin)
   - [POST /auth/registrar/entrenador](#post-authregistrarentrenador)
@@ -19,15 +21,33 @@ Especificación por endpoint: método y ruta, guards/decoradores, body (DTO) con
   - [GET /suscripciones/estado-pago](#get-suscripcionesestado-pago)
   - [PATCH /suscripciones/plan](#patch-suscripcionesplan)
   - [POST /suscripciones/cancelar](#post-suscripcionescancelar)
+  - [POST /suscripciones/cancelar-inmediata](#post-suscripcionescancelar-inmediata)
   - [POST /suscripciones/reanudar](#post-suscripcionesreanudar)
 - [Pagos](#pagos)
   - [POST /pagos/checkout](#post-pagoscheckout)
+  - [POST /pagos/confirmar-sesion](#post-pagosconfirmar-sesion)
   - [POST /pagos/webhook/stripe](#post-pagoswebhookstripe)
+- [Entrenador](#entrenador)
+  - [GET /entrenador/resumen](#get-entrenadorresumen)
+  - [GET /entrenador/alumnos](#get-entrenadoralumnos)
+  - [GET /entrenador/alumnos/:id](#get-entrenadoralumnosid)
+  - [GET /entrenador/alumnos/:id/progreso](#get-entrenadoralumnosidprogreso)
 - [Rutinas](#rutinas)
+  - [GET /rutinas](#get-rutinas)
+  - [GET /rutinas/archivadas](#get-rutinasarchivadas)
+  - [GET /rutinas/:id](#get-rutinasid)
   - [POST /rutinas](#post-rutinas)
-  - [PATCH /rutinas/:id/ejercicios](#patch-rutinasejercicios)
+  - [PATCH /rutinas/:id/ejercicios](#patch-rutinasidejercicios)
+  - [PATCH /rutinas/:id/archivar](#patch-rutinasidarchivar)
+  - [PATCH /rutinas/:id/restaurar](#patch-rutinasidrestaurar)
+  - [DELETE /rutinas/:id](#delete-rutinasid)
   - [POST /rutinas/:id/asignaciones](#post-rutinasidasignaciones)
-- [Ejercicios personalizados](#ejercicios-personalizados)
+  - [PATCH /rutinas/asignaciones/reordenar](#patch-rutinasasignacionesreordenar)
+  - [PATCH /rutinas/asignaciones/:id](#patch-rutinasasignacionesid)
+  - [DELETE /rutinas/asignaciones/:id](#delete-rutinasasignacionesid)
+- [Ejercicios](#ejercicios)
+  - [GET /ejercicios](#get-ejercicios)
+  - [GET /ejercicios/archivados](#get-ejerciciosarchivados)
   - [POST /ejerciciosPersonalizados](#post-ejerciciospersonalizados)
   - [PATCH /ejerciciosPersonalizados/:id](#patch-ejerciciospersonalizadosid)
   - [DELETE /ejerciciosPersonalizados/:id](#delete-ejerciciospersonalizadosid)
@@ -36,6 +56,27 @@ Especificación por endpoint: método y ruta, guards/decoradores, body (DTO) con
   - [PUT /alumno-entrenador/cancelar/alumno/:id](#put-alumno-entrenadorcancelaralumnoid)
   - [POST /alumno-entrenador/token/consumir](#post-alumno-entrenadortokenconsumir)
   - [POST /alumno-entrenador/token](#post-alumno-entrenadortoken)
+- [Entrenamientos](#entrenamientos)
+  - [GET /entrenamientos/hoy](#get-entrenamientoshoy)
+  - [GET /entrenamientos/semana](#get-entrenamientossemana)
+  - [POST /entrenamientos/reprogramar](#post-entrenamientosreprogramar)
+  - [POST /entrenamientos/reordenar-semana](#post-entrenamientosreordenar-semana)
+- [Sesiones](#sesiones)
+  - [POST /sesiones](#post-sesiones)
+  - [GET /sesiones](#get-sesiones)
+  - [GET /sesiones/:id](#get-sesionesid)
+  - [PATCH /sesiones/:sesionId/sets/:setId](#patch-sesionessesionidsetssetid)
+  - [PATCH /sesiones/:sesionId/ejercicios/:ejercicioId/nota](#patch-sesionessesionidejerciciosejercicioidnota)
+  - [DELETE /sesiones/:id](#delete-sesionesid)
+  - [POST /sesiones/:id/finalizar](#post-sesionesidfinalizar)
+- [Mediciones & Progreso](#mediciones--progreso)
+  - [GET /mediciones](#get-mediciones)
+  - [POST /mediciones](#post-mediciones)
+  - [GET /progreso/resumen](#get-progresoresumen)
+- [Perfil & Catálogos](#perfil--catálogos)
+  - [GET /perfil](#get-perfil)
+  - [PATCH /perfil](#patch-perfil)
+  - [GET /catalogos](#get-catalogos)
 
 ---
 
@@ -548,6 +589,250 @@ Cada `RutinaEjercicioAsignacionDto`:
   ```
 
 - **Errores**: `400` de validación, `401`/`403` según el contexto (`⚠️ Pendiente de confirmar` mensajes de autorización exactos).
+
+---
+
+## Health & Sistema
+
+### GET /health
+
+- **Guards**: `@Public()` + `@SinSuscripcion()`
+- **Descripción**: Chequeo de salud del servicio y conectividad con la base de datos PostgreSQL.
+- **Respuesta 200**:
+  ```json
+  {
+    "status": "ok",
+    "database": "connected",
+    "timestamp": "2026-11-21T22:00:00.000Z"
+  }
+  ```
+
+---
+
+## Suscripciones (Adicionales)
+
+### POST /suscripciones/cancelar-inmediata
+
+- **Guards**: `@SinSuscripcion()` + JWT (`@CurrentUser('id')`)
+- **Descripción**: Cancela de inmediato la suscripción activa tanto en Stripe como en la base de datos local, restableciendo la cuenta al Plan Básico gratuito sin esperar al fin de periodo.
+- **Respuesta 201**: Mensaje de confirmación del cambio a plan gratuito.
+- **Errores**: `400` (suscripción vitalicia o ya cancelada), `404` (suscripción no encontrada).
+
+---
+
+## Pagos (Adicionales)
+
+### POST /pagos/confirmar-sesion
+
+- **Guards**: `@SinSuscripcion()` + JWT (`@CurrentUser('id')`)
+- **Body**: `ConfirmarSesionDto` (`sessionId`: string).
+- **Descripción**: Confirma manualmente una sesión de checkout completada consultando la API de Stripe cuando el webhook tarde en llegar.
+- **Respuesta 200**: Estado del pago y suscripción actualizada.
+
+---
+
+## Entrenador
+
+### GET /entrenador/resumen
+
+- **Guards**: JWT + Suscripción activa (Rol: Entrenador).
+- **Descripción**: Estadísticas del dashboard del coach: cantidad de alumnos activos, rutinas creadas y cupos según su plan.
+
+### GET /entrenador/alumnos
+
+- **Guards**: JWT + Suscripción activa (Rol: Entrenador).
+- **Descripción**: Listado de todos los alumnos vinculados actualmente al entrenador con sus datos personales y últimas actividades.
+
+### GET /entrenador/alumnos/:id
+
+- **Guards**: JWT + Suscripción activa (Rol: Entrenador).
+- **Parámetros**: `:id` (UUID del alumno).
+- **Descripción**: Detalle completo del alumno: ficha médica, lesiones actuales y pasadas, observaciones técnicas y planificaciones asignadas.
+
+### GET /entrenador/alumnos/:id/progreso
+
+- **Guards**: JWT + Suscripción activa (Rol: Entrenador).
+- **Parámetros**: `:id` (UUID del alumno).
+- **Descripción**: Historial de entrenamientos completados, sobrecarga progresiva y récords personales (PRs) del alumno supervisado.
+
+---
+
+## Rutinas (Adicionales)
+
+### GET /rutinas
+
+- **Guards**: JWT + Suscripción activa.
+- **Descripción**: Lista las rutinas activas creadas por el usuario autenticado con conteo de ejercicios y alumnos asignados.
+
+### GET /rutinas/archivadas
+
+- **Guards**: JWT + Suscripción activa.
+- **Descripción**: Lista las rutinas archivadas para consulta histórica o reactivación.
+
+### GET /rutinas/:id
+
+- **Guards**: JWT + Suscripción activa.
+- **Parámetros**: `:id` (BigInt como string).
+- **Descripción**: Detalle completo de la rutina con sus ejercicios ordenados, series, descansos y notas.
+
+### PATCH /rutinas/:id/archivar
+
+- **Guards**: JWT + Suscripción activa.
+- **Descripción**: Desactiva la rutina y deshabilita asignaciones activas sin perder registros previos.
+
+### PATCH /rutinas/:id/restaurar
+
+- **Guards**: JWT + Suscripción activa.
+- **Descripción**: Reactiva una rutina previamente archivada.
+
+### DELETE /rutinas/:id
+
+- **Guards**: JWT + Suscripción activa.
+- **Descripción**: Eliminación definitiva de una rutina archivada que no cuente con historial de sesiones dependientes.
+
+### PATCH /rutinas/asignaciones/reordenar
+
+- **Guards**: JWT + Suscripción activa (Rol: Entrenador).
+- **Body**: `ReordenarAsignacionesDto` (`alumnoId`: UUID, `asignaciones`: array de `{ id: string, diaSemana: number }`).
+- **Descripción**: Intercambia o reasigna días de la semana de las rutinas asignadas al alumno en bloque de manera atómica.
+
+### PATCH /rutinas/asignaciones/:id
+
+- **Guards**: JWT + Suscripción activa (Rol: Entrenador).
+- **Body**: `ActualizarAsignacionDto` (`id_dia_semana`, `fecha_inicio`, `fecha_fin`).
+- **Descripción**: Modifica la programación de una asignación específica.
+
+### DELETE /rutinas/asignaciones/:id
+
+- **Guards**: JWT + Suscripción activa (Rol: Entrenador).
+- **Descripción**: Quita la rutina asignada de la semana del alumno.
+
+---
+
+## Ejercicios (Adicionales)
+
+### GET /ejercicios
+
+- **Guards**: JWT + Suscripción activa.
+- **Query**: `buscar` (opcional, string).
+- **Descripción**: Retorna la biblioteca combinada de ejercicios predeterminados de la plataforma y ejercicios personalizados creados por el usuario.
+
+### GET /ejercicios/archivados
+
+- **Guards**: JWT + Suscripción activa.
+- **Descripción**: Lista los ejercicios personalizados archivados por el creador.
+
+---
+
+## Entrenamientos (Planificación Semanal)
+
+### GET /entrenamientos/hoy
+
+- **Guards**: JWT + Suscripción activa (Rol: Alumno).
+- **Query**: `zona_horaria` (opcional, string IANA ej. `America/Mexico_City`).
+- **Descripción**: Retorna la rutina programada para el día actual y su estado de ejecución.
+
+### GET /entrenamientos/semana
+
+- **Guards**: JWT + Suscripción activa (Rol: Alumno).
+- **Query**: `zona_horaria` (opcional).
+- **Descripción**: Retorna la grilla semanal completa (Lunes a Domingo) con rutinas asignadas, completadas o pendientes.
+
+### POST /entrenamientos/reprogramar
+
+- **Guards**: JWT + Suscripción activa (Rol: Alumno).
+- **Body**: `ReprogramarRutinaDto` (`usuarioRutinaId`, `nuevoDiaSemana`).
+- **Descripción**: Mueve temporalmente una rutina pendiente a otro día dentro de la misma semana activa.
+
+### POST /entrenamientos/reordenar-semana
+
+- **Guards**: JWT + Suscripción activa (Rol: Alumno).
+- **Body**: `ReordenarSemanaDto` (`cambios`: array de `{ usuarioRutinaId, nuevoDiaSemana }`).
+- **Descripción**: Permite al alumno reorganizar su split semanal activo mediante arrastrar y soltar.
+
+---
+
+## Sesiones de Entrenamiento
+
+### POST /sesiones
+
+- **Guards**: JWT + Suscripción activa (Rol: Alumno).
+- **Body**: `IniciarSesionDto` (`usuario_rutina_id`: string).
+- **Descripción**: Abre una sesión de entrenamiento activa y copia la estructura de ejercicios y series planificadas.
+
+### GET /sesiones
+
+- **Guards**: JWT + Suscripción activa (Rol: Alumno).
+- **Descripción**: Retorna el historial cronológico de todas las sesiones realizadas por el alumno.
+
+### GET /sesiones/:id
+
+- **Guards**: JWT + Suscripción activa.
+- **Parámetros**: `:id` (BigInt como string).
+- **Descripción**: Detalle de la sesión con series ejecutadas, repeticiones, cargas registradas, RPE y notas técnicas.
+
+### PATCH /sesiones/:sesionId/sets/:setId
+
+- **Guards**: JWT + Suscripción activa (Rol: Alumno).
+- **Body**: `ActualizarSetDto` (`completado`: boolean, `pesoKg`: number, `reps`: number, `rpe`: number).
+- **Descripción**: Guarda en tiempo real el resultado de una serie durante el entrenamiento en vivo.
+
+### PATCH /sesiones/:sesionId/ejercicios/:ejercicioId/nota
+
+- **Guards**: JWT + Suscripción activa (Rol: Alumno).
+- **Body**: `ActualizarNotaEjercicioDto` (`nota`: string opcional, máx 500 caracteres).
+- **Descripción**: Registra o actualiza observaciones técnicas, sensaciones o molestias articulares en un ejercicio concreto de la sesión.
+
+### DELETE /sesiones/:id
+
+- **Guards**: JWT + Suscripción activa (Rol: Alumno).
+- **Descripción**: Descarta y cancela una sesión iniciada por error sin afectar las métricas históricas.
+
+### POST /sesiones/:id/finalizar
+
+- **Guards**: JWT + Suscripción activa (Rol: Alumno).
+- **Body**: `FinalizarSesionDto` (`duracionSegundos`: number, `rpeGlobal`: number, `notas`: string).
+- **Descripción**: Concluye el entrenamiento, totaliza el tonelaje levantado, calcula marcas personales y marca la rutina del día como completada.
+
+---
+
+## Mediciones Corporales & Progreso
+
+### GET /mediciones
+
+- **Guards**: JWT + Suscripción activa (Rol: Alumno).
+- **Descripción**: Obtiene la serie temporal de mediciones de peso corporal y porcentaje graso del alumno.
+
+### POST /mediciones
+
+- **Guards**: JWT + Suscripción activa (Rol: Alumno).
+- **Body**: `RegistrarMedicionDto` (`pesoKg`: number, `porcentajeGrasa`: number opcional, `fecha`: string ISO).
+- **Descripción**: Registra o actualiza la medición corporal para una fecha determinada.
+
+### GET /progreso/resumen
+
+- **Guards**: JWT + Suscripción activa (Rol: Alumno).
+- **Descripción**: Resumen analítico de récords personales (1RM estimado por ejercicio), volumen acumulado y regularidad.
+
+---
+
+## Perfil & Catálogos
+
+### GET /perfil
+
+- **Guards**: `@SinSuscripcion()` + JWT (`@CurrentUser('id')`).
+- **Descripción**: Devuelve los datos de la cuenta, perfil específico según rol (alumno/entrenador) y preferencias.
+
+### PATCH /perfil
+
+- **Guards**: `@SinSuscripcion()` + JWT (`@CurrentUser('id')`).
+- **Body**: `ActualizarPerfilDto`.
+- **Descripción**: Modifica nombre, apellidos, teléfono, objetivo o datos de contacto.
+
+### GET /catalogos
+
+- **Guards**: `@Public()` + `@SinSuscripcion()`.
+- **Descripción**: Catálogos públicos de la plataforma: grupos musculares, categorías de rutinas y equipamiento disponible.
 
 ---
 

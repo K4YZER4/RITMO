@@ -114,8 +114,9 @@ describe('PagosService', () => {
         usuarioId,
         proveedorPriceId: 'price_1',
         customerId: 'cus_1',
+        trialEnd: undefined,
         successUrl: 'https://app.com/pago/exito?session_id={CHECKOUT_SESSION_ID}',
-        cancelUrl: 'https://app.com/pago/cancelado',
+        cancelUrl: 'https://app.com/app/plan',
       });
       expect(prismaMock.pago.update).toHaveBeenCalledWith({
         where: { id: BigInt(10) },

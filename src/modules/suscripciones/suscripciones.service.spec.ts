@@ -110,6 +110,9 @@ describe('SuscripcionesService', () => {
     });
 
     it('debe lanzar ForbiddenException si la suscripción está morosa', async () => {
+      const prevDemoMode = process.env.DEMO_MODE;
+      process.env.DEMO_MODE = 'false';
+
       prismaMock.usuario.findUnique.mockResolvedValue({
         id: usuarioId,
         role: UserRole.alumno,
@@ -122,11 +125,15 @@ describe('SuscripcionesService', () => {
         periodoActualFin: new Date('2999-01-01'),
       });
 
-      await expect(service.validarAccesoSuscripcion(usuarioId)).rejects.toThrow(
-        new ForbiddenException(
-          'Tu pago está pendiente o falló. Completa o actualiza el pago para continuar.',
-        ),
-      );
+      try {
+        await expect(service.validarAccesoSuscripcion(usuarioId)).rejects.toThrow(
+          new ForbiddenException(
+            'Tu pago está pendiente o falló. Completa o actualiza el pago para continuar.',
+          ),
+        );
+      } finally {
+        process.env.DEMO_MODE = prevDemoMode;
+      }
     });
 
     it('debe lanzar NotFoundException si no hay suscripción vigente', async () => {
@@ -143,6 +150,9 @@ describe('SuscripcionesService', () => {
     });
 
     it('debe lanzar ForbiddenException si la suscripción ha expirado', async () => {
+      const prevDemoMode = process.env.DEMO_MODE;
+      process.env.DEMO_MODE = 'false';
+
       prismaMock.usuario.findUnique.mockResolvedValue({
         id: usuarioId,
         role: UserRole.alumno,
@@ -155,9 +165,13 @@ describe('SuscripcionesService', () => {
         periodoActualFin: new Date('2020-01-01'),
       });
 
-      await expect(service.validarAccesoSuscripcion(usuarioId)).rejects.toThrow(
-        new ForbiddenException('La suscripción ha expirado'),
-      );
+      try {
+        await expect(service.validarAccesoSuscripcion(usuarioId)).rejects.toThrow(
+          new ForbiddenException('La suscripción ha expirado'),
+        );
+      } finally {
+        process.env.DEMO_MODE = prevDemoMode;
+      }
     });
   });
 

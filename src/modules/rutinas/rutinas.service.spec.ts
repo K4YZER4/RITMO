@@ -39,6 +39,7 @@ const transactionMock = {
   },
   usuarioRutina: {
     findMany: jest.fn(),
+    findFirst: jest.fn(),
     update: jest.fn(),
     create: jest.fn(),
   },
@@ -225,6 +226,10 @@ describe('RutinasService', () => {
         include: {
           categoriaRutina: true,
           _count: { select: { rutinaEjercicio: true, usuarioRutina: true } },
+          usuarioRutina: {
+            select: { idUsuario: true },
+            where: { activa: true },
+          },
         },
       });
     });
@@ -313,6 +318,8 @@ describe('RutinasService', () => {
           fechaInicio: new Date(dto.fecha_inicio),
           fechaFin: null,
           asignadaPorUsuario: entrenadorId,
+          createdBy: entrenadorId,
+          updatedBy: entrenadorId,
         },
       });
       expect(result).toEqual({

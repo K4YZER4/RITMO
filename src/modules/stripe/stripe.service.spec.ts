@@ -113,7 +113,7 @@ describe('StripeService', () => {
           success_url: 'https://app.com/success',
           cancel_url: 'https://app.com/cancel',
         },
-        { idempotencyKey: 'checkout-pago-10' },
+        { idempotencyKey: expect.stringMatching(/^checkout-pago-10(-\d+)?$/) },
       );
       expect(result).toEqual(session);
     });

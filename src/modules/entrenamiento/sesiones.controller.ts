@@ -4,6 +4,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ParseBigIntPipe } from '../../common/pipes/parse-big-int.pipe';
 import { ActualizarSetDto } from './dto/actualizar-set.dto';
+import { ActualizarNotaEjercicioDto } from './dto/actualizar-nota-ejercicio.dto';
 import { FinalizarSesionDto } from './dto/finalizar-sesion.dto';
 import { IniciarSesionDto } from './dto/iniciar-sesion.dto';
 import { EntrenamientoService } from './entrenamiento.service';
@@ -49,7 +50,7 @@ export class SesionesController {
     @CurrentUser('id') usuarioId: string,
     @Param('sesionId', ParseBigIntPipe) sesionId: bigint,
     @Param('ejercicioId', ParseBigIntPipe) sesionEjercicioId: bigint,
-    @Body() dto: { nota?: string },
+    @Body() dto: ActualizarNotaEjercicioDto,
   ) {
     return this.service.actualizarNotaEjercicio(usuarioId, sesionId, sesionEjercicioId, dto.nota);
   }
