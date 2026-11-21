@@ -1162,7 +1162,13 @@ async function asegurarSuscripcion(
   idPlan: number = 1,
 ) {
   const where = tipo === 'alumno' ? { alumnoId: usuarioId } : { entrenadorId: usuarioId };
-  const suscripcion = await prisma.suscripcion.findFirst({ where });
+  // Find currently active subscription first to avoid violating unique active index
+  let suscripcion = await prisma.suscripcion.findFirst({
+    where: { ...where, estado: EstadoSuscripcionEnum.activa },
+  });
+  if (!suscripcion) {
+    suscripcion = await prisma.suscripcion.findFirst({ where });
+  }
   const planInfo =
     tipo === 'alumno'
       ? await prisma.planAlumno.findUnique({ where: { id: idPlan } })

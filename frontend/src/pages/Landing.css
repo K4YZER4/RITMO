@@ -15,6 +15,42 @@
   isolation: isolate;
 }
 
+/* Scrollbar estilizada estilo RITMO para la ventana principal */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(180, 255, 57, 0.4) #000;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 9999px;
+  transition: background 180ms ease, box-shadow 180ms ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--g, #b4ff39);
+  box-shadow: 0 0 12px rgba(180, 255, 57, 0.7);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 .ritmo-landing * {
   box-sizing: border-box;
 }
@@ -317,14 +353,39 @@
   aspect-ratio: 16/8.1;
   display: grid;
   place-items: center;
+  background-color: #0a0e14;
+  overflow: hidden;
+}
+
+.ritmo-landing .stage-poster-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.55;
+  filter: brightness(0.85) contrast(1.05);
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.ritmo-landing .stage-backdrop-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(10, 14, 20, 0.25) 0%, rgba(10, 14, 20, 0.88) 100%),
+              linear-gradient(to top, rgba(10, 14, 20, 0.95) 0%, transparent 45%);
+  pointer-events: none;
+  z-index: 2;
 }
 
 .ritmo-landing .word {
   font-size: clamp(70px, 16vw, 210px);
   font-weight: 900;
   letter-spacing: -8px;
-  color: #ffffff07;
+  color: #ffffff0a;
   position: absolute;
+  z-index: 3;
 }
 
 .ritmo-landing .play {
@@ -336,26 +397,39 @@
   color: #15200c;
   font-size: 25px;
   position: relative;
-  box-shadow: 0 0 0 14px #b4ff3908;
-  transition: transform 180ms;
+  box-shadow: 0 0 0 14px #b4ff3915, 0 0 40px rgba(180, 255, 57, 0.35);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+  cursor: pointer;
+  z-index: 6;
+}
+
+.ritmo-landing .play:hover {
+  transform: scale(1.08);
+  box-shadow: 0 0 0 18px #b4ff3925, 0 0 50px rgba(180, 255, 57, 0.5);
 }
 
 .ritmo-landing .label {
   position: absolute;
   top: 25px;
   left: 30px;
-  font-size: 10px;
+  font-size: 11px;
+  font-weight: 800;
   letter-spacing: 1.7px;
-  color: var(--m);
+  color: var(--g);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  z-index: 6;
 }
 
 .ritmo-landing .caption {
   position: absolute;
   bottom: 25px;
   left: 30px;
-  font-size: 23px;
-  font-weight: bold;
+  font-size: 24px;
+  font-weight: 800;
   letter-spacing: -0.7px;
+  color: var(--w);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
+  z-index: 6;
 }
 
 .ritmo-landing video {
@@ -363,8 +437,10 @@
   width: 100%;
   height: 100%;
   inset: 0;
-  background: #000;
+  background-color: #0a0e14 !important;
   object-fit: contain;
+  z-index: 5;
+  transition: opacity 0.25s ease;
 }
 
 .ritmo-landing [hidden] {
@@ -831,5 +907,247 @@
   .ritmo-landing .btn:active,
   .ritmo-landing .play:hover {
     transform: none;
+  }
+}
+
+/* ========================================================
+   FEATURE SCROLL SHOWCASE & VIDEO SELECTOR
+   ======================================================== */
+
+.ritmo-landing .video-selector-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 12px 20px;
+  background: rgba(10, 14, 20, 0.95);
+  border-bottom: 1px solid var(--line);
+  scrollbar-width: none;
+}
+.ritmo-landing .video-selector-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.ritmo-landing .video-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  color: var(--m);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.ritmo-landing .video-tab-btn:hover {
+  background: rgba(180, 255, 57, 0.08);
+  border-color: rgba(180, 255, 57, 0.3);
+  color: var(--w);
+}
+
+.ritmo-landing .video-tab-btn.active {
+  background: rgba(180, 255, 57, 0.15);
+  border-color: var(--g);
+  color: var(--g);
+  box-shadow: 0 0 14px rgba(180, 255, 57, 0.2);
+}
+
+.ritmo-landing .features-scroll-section {
+  margin: 60px 0 30px;
+  position: relative;
+}
+
+.ritmo-landing .features-scroll-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 24px;
+  gap: 20px;
+}
+
+.ritmo-landing .features-scroll-header h3 {
+  font-size: clamp(24px, 4vw, 36px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 6px 0 0 0;
+  color: var(--w);
+}
+
+.ritmo-landing .features-scroll-header p {
+  color: var(--m);
+  font-size: 14px;
+  margin: 6px 0 0 0;
+  max-width: 580px;
+}
+
+.ritmo-landing .features-scroll-nav {
+  display: flex;
+  gap: 10px;
+}
+
+.ritmo-landing .scroll-nav-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--w);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ritmo-landing .scroll-nav-btn:hover {
+  background: rgba(180, 255, 57, 0.1);
+  border-color: var(--g);
+  color: var(--g);
+  box-shadow: 0 0 16px rgba(180, 255, 57, 0.2);
+  transform: translateY(-2px);
+}
+
+.ritmo-landing .feature-scroll-track {
+  display: flex;
+  gap: 24px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  padding: 10px 4px 24px 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--g) rgba(255, 255, 255, 0.05);
+}
+
+.ritmo-landing .feature-scroll-track::-webkit-scrollbar {
+  height: 6px;
+}
+.ritmo-landing .feature-scroll-track::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 4px;
+}
+.ritmo-landing .feature-scroll-track::-webkit-scrollbar-thumb {
+  background: var(--g);
+  border-radius: 4px;
+}
+
+.ritmo-landing .feature-card {
+  flex: 0 0 380px;
+  scroll-snap-align: start;
+  background: rgba(10, 14, 20, 0.95);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.ritmo-landing .feature-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(180, 255, 57, 0.4);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(180, 255, 57, 0.15);
+}
+
+.ritmo-landing .feature-card-video-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #000;
+  overflow: hidden;
+}
+
+.ritmo-landing .feature-card-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ritmo-landing .feature-card-badge-overlay {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(10, 14, 20, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(180, 255, 57, 0.4);
+  color: var(--g);
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ritmo-landing .feature-card-duration {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.ritmo-landing .feature-card-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.ritmo-landing .feature-card-content h4 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--w);
+  letter-spacing: -0.02em;
+}
+
+.ritmo-landing .feature-card-content p {
+  margin: 8px 0 16px 0;
+  font-size: 13px;
+  color: var(--m);
+  line-height: 1.5;
+  flex: 1;
+}
+
+.ritmo-landing .feature-card-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: var(--w);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ritmo-landing .feature-card-action:hover {
+  background: rgba(180, 255, 57, 0.12);
+  border-color: var(--g);
+  color: var(--g);
+}
+
+@media (max-width: 768px) {
+  .ritmo-landing .feature-card {
+    flex: 0 0 310px;
+  }
+  .ritmo-landing .features-scroll-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

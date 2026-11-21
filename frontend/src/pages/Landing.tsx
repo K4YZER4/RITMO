@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, Play, ExternalLink } from 'lucide-react';
 import atletaImg from '../assets/atleta.png';
 import './Landing.css';
 
@@ -67,13 +68,77 @@ function ViteIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+const FEATURE_VIDEOS = [
+  {
+    id: 'full',
+    title: 'Flujo Principal: De Alumno a Progreso Mutuo',
+    badge: 'DEMO PRINCIPAL',
+    shortBadge: 'DEMO PRINCIPAL (1:40)',
+    src: '/videos/full_flow_demo.mp4',
+    poster: '/videos/posters/poster_full.jpg',
+    description: 'Demostración end-to-end conectada a backend real: vinculación por token, revisión médica de lesiones, asignación semanal de Torso y Pierna, y entreno en vivo.',
+    duration: '1:40',
+  },
+  {
+    id: 'weight',
+    title: 'Registro de Peso & Gráfica Dinámica',
+    badge: '01 / COMPOSICIÓN CORPORAL',
+    shortBadge: '01 PESO & GRÁFICA',
+    src: '/videos/feat_weight.mp4',
+    poster: '/videos/posters/poster_weight.jpg',
+    description: 'Actualización instantánea de curvas de peso, porcentaje graso e historial de mediciones del atleta.',
+    duration: '19s',
+  },
+  {
+    id: 'exercise',
+    title: 'Creación de Ejercicios Personalizados',
+    badge: '02 / BIBLIOTECA DEL COACH',
+    shortBadge: '02 EJERCICIOS',
+    src: '/videos/feat_exercise.mp4',
+    poster: '/videos/posters/poster_exercise.jpg',
+    description: 'Diseño de movimientos propios con especificación biomecánica, grupo muscular, equipo y recomendaciones técnicas.',
+    duration: '20s',
+  },
+  {
+    id: 'routine',
+    title: 'Constructor de Rutinas Inteligente',
+    badge: '03 / PROGRAMACIÓN & SPLITS',
+    shortBadge: '03 RUTINAS',
+    src: '/videos/feat_routine.mp4',
+    poster: '/videos/posters/poster_routine.jpg',
+    description: 'Estructuración modular de rutinas por objetivos, categorización y balance de series para el atleta.',
+    duration: '24s',
+  },
+  {
+    id: 'notes',
+    title: 'Notas en Vivo & Alertas de Lesiones',
+    badge: '04 / FEEDBACK DEL ALUMNO',
+    shortBadge: '04 NOTAS EN VIVO',
+    src: '/videos/feat_notes.mp4',
+    poster: '/videos/posters/poster_notes.jpg',
+    description: 'El alumno reporta sensaciones técnicas, RPE o molestias articulares directamente en la serie activa.',
+    duration: '11s',
+  },
+  {
+    id: 'limits',
+    title: 'Roster Completo & Límites Stripe',
+    badge: '05 / ROSTER & ESCALA',
+    shortBadge: '05 ROSTER & PLAN',
+    src: '/videos/feat_limits.mp4',
+    poster: '/videos/posters/poster_limits.jpg',
+    description: 'Supervisión de todos los atletas de la seed oficial, control de cuotas en base de datos y pasarela Stripe.',
+    duration: '18s',
+  },
+];
+
 export function Landing() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const scrollTrackRef = useRef<HTMLDivElement | null>(null);
 
-  const [videoStatus, setVideoStatus] = useState('Espacio reservado para tu video de presentación.');
+  const [activeVideo, setActiveVideo] = useState(FEATURE_VIDEOS[0]);
   const [isPlayingVideo, setIsPlayingVideo] = useState(false);
+  const [isVideoReady, setIsVideoReady] = useState(false);
 
   // 1. Efecto de Scroll Reveal
   useEffect(() => {
@@ -235,19 +300,47 @@ export function Landing() {
 
   // 3. Manejo de Video
   const handlePlayClick = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
+    if (videoRef.current) {
+      if (!videoRef.current.src.includes(activeVideo.src)) {
+        setIsVideoReady(false);
+        videoRef.current.src = activeVideo.src;
+        videoRef.current.load();
+      }
+      setIsPlayingVideo(true);
+      videoRef.current.play().catch(() => {});
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !videoRef.current) return;
-    const url = URL.createObjectURL(file);
-    videoRef.current.src = url;
-    setIsPlayingVideo(true);
-    videoRef.current.play().catch(() => {});
-    setVideoStatus(`Vista previa local · ${file.name}`);
+  const handleSelectVideo = (item: (typeof FEATURE_VIDEOS)[0], startPlaying = false) => {
+    setActiveVideo(item);
+    setIsVideoReady(false);
+    if (startPlaying) {
+      setIsPlayingVideo(true);
+      if (videoRef.current) {
+        videoRef.current.src = item.src;
+        videoRef.current.load();
+        videoRef.current.play().catch(() => {});
+      }
+      document.getElementById('video')?.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      // Just switching tabs to preview thumbnail & title
+      setIsPlayingVideo(false);
+      if (videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.src = item.src;
+        videoRef.current.load();
+      }
+    }
+  };
+
+  const handleScroll = (direction: 'left' | 'right') => {
+    if (scrollTrackRef.current) {
+      const scrollAmount = 400;
+      scrollTrackRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth',
+      });
+    }
   };
 
   return (
@@ -347,59 +440,147 @@ export function Landing() {
               </div>
             </section>
 
-            {/* SECCIÓN VIDEO */}
+            {/* SECCIÓN VIDEO PRINCIPAL (THEATER) */}
             <section id="video" aria-label="Video de presentación" data-reveal>
               <div className="video-wrap">
+                {/* Selector rápido de clips en el reproductor principal */}
+                <div className="video-selector-bar">
+                  {FEATURE_VIDEOS.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className={`video-tab-btn ${activeVideo.id === item.id ? 'active' : ''}`}
+                      onClick={() => handleSelectVideo(item)}
+                    >
+                      {activeVideo.id === item.id ? '●' : '○'} {item.shortBadge}
+                    </button>
+                  ))}
+                </div>
+
                 <div className="stage">
-                  <span className="word" aria-hidden="true">
-                    RITMO
-                  </span>
-                  <span className="label">CONOCE LA PLATAFORMA</span>
+                  {/* Poster thumbnail backdrop: always visible, showing the real app UI */}
+                  <img
+                    src={activeVideo.poster}
+                    alt={activeVideo.title}
+                    className="stage-poster-img"
+                  />
+                  <div className="stage-backdrop-vignette" />
 
                   {!isPlayingVideo && (
-                    <button
-                      type="button"
-                      className="play"
-                      id="play"
-                      aria-label="Seleccionar video de presentación"
-                      onClick={handlePlayClick}
-                    >
-                      ▶
-                    </button>
-                  )}
+                    <>
+                      <span className="word" aria-hidden="true">
+                        RITMO
+                      </span>
+                      <span className="label">{activeVideo.badge}</span>
 
-                  <span className="caption">Del plan a la acción.</span>
+                      <button
+                        type="button"
+                        className="play"
+                        id="play"
+                        aria-label="Reproducir video"
+                        onClick={handlePlayClick}
+                      >
+                        ▶
+                      </button>
+
+                      <span className="caption">{activeVideo.title}</span>
+                    </>
+                  )}
 
                   <video
                     ref={videoRef}
                     id="player"
+                    src={activeVideo.src}
+                    poster={activeVideo.poster}
                     controls
                     playsInline
                     preload="metadata"
-                    hidden={!isPlayingVideo}
+                    style={{
+                      opacity: isPlayingVideo && isVideoReady ? 1 : 0,
+                      pointerEvents: isPlayingVideo && isVideoReady ? 'auto' : 'none',
+                    }}
+                    onLoadedData={() => setIsVideoReady(true)}
+                    onCanPlay={() => setIsVideoReady(true)}
+                    onWaiting={() => setIsVideoReady(false)}
+                    onPlaying={() => setIsVideoReady(true)}
                   />
                 </div>
 
                 <div className="video-bar">
                   <span id="status" role="status">
-                    {videoStatus}
+                    <b>{activeVideo.title}</b> · {activeVideo.duration}
                   </span>
-                  <label className="load">
-                    Cargar video
-                    <input
-                      ref={fileInputRef}
-                      id="picker"
-                      type="file"
-                      accept="video/*"
-                      hidden
-                      onChange={handleFileChange}
-                    />
-                  </label>
+                  <span className="muted" style={{ fontSize: '11px' }}>
+                    Grabación real · Backend NestJS + Neon PostgreSQL
+                  </span>
                 </div>
               </div>
-              <p className="muted" id="localNote">
-                Vista previa local: tu video no se sube a ningún servidor.
-              </p>
+            </section>
+
+            {/* SECCIÓN SCROLL DE MICRO-DEMOS POR FUNCIONALIDAD */}
+            <section className="features-scroll-section" data-reveal>
+              <div className="features-scroll-header">
+                <div>
+                  <span className="eyebrow">MICRO-DEMOS EN ACCIÓN REAL</span>
+                  <h3>Explora las funciones clave</h3>
+                  <p>
+                    Desliza horizontalmente para ver cada módulo grabado directamente desde la aplicación conectada a la base de datos.
+                  </p>
+                </div>
+                <div className="features-scroll-nav">
+                  <button
+                    type="button"
+                    className="scroll-nav-btn"
+                    onClick={() => handleScroll('left')}
+                    aria-label="Deslizar hacia la izquierda"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <button
+                    type="button"
+                    className="scroll-nav-btn"
+                    onClick={() => handleScroll('right')}
+                    aria-label="Deslizar hacia la derecha"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Contenedor horizontal scrolleable */}
+              <div className="feature-scroll-track" ref={scrollTrackRef}>
+                {FEATURE_VIDEOS.filter((v) => v.id !== 'full').map((feat) => (
+                  <article className="feature-card" key={feat.id}>
+                    <div className="feature-card-video-wrap">
+                      <video
+                        src={feat.src}
+                        poster={feat.poster}
+                        className="feature-card-video"
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        preload="metadata"
+                      />
+                      <span className="feature-card-badge-overlay">{feat.badge}</span>
+                      <span className="feature-card-duration">{feat.duration}</span>
+                    </div>
+
+                    <div className="feature-card-content">
+                      <h4>{feat.title}</h4>
+                      <p>{feat.description}</p>
+                      <button
+                        type="button"
+                        className="feature-card-action"
+                        onClick={() => handleSelectVideo(feat, true)}
+                      >
+                        <span>Reproducir en grande</span>
+                        <ExternalLink size={14} />
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
             </section>
 
             {/* CINTA DE TECNOLOGÍAS USADAS (PORTFOLIO SHOWCASE) */}

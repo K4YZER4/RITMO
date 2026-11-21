@@ -1,0 +1,20 @@
+{
+  "name": "ritmo-promo-video",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "capture": "node --loader ts-node/esm capture.ts",
+    "render": "remotion render src/index.ts SampleDemo out/sample_demo.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.200",
+    "@remotion/renderer": "^4.0.200",
+    "playwright": "^1.49.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.200"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12"
+  }
+}
