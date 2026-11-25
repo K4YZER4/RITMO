@@ -8,7 +8,6 @@ import {
   Edit3,
   HeartPulse,
   Mail,
-  Phone,
   ShieldCheck,
   Sparkles,
   Target,

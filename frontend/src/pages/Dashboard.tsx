@@ -14,7 +14,6 @@ import { useState } from 'react';
 import { activeWorkoutSessionId } from '../lib/workoutDraft';
 import type { Assignment, Profile, Student } from '../lib/types';
 import { Card, Empty, Loading, Page, fullName } from '../components/Ui';
-import { SelectMenu } from '../components/SelectMenu';
 
 type WeeklyAssignment = Assignment & { idDiaSemana: number };
 
@@ -149,7 +148,6 @@ export function Dashboard() {
       </Page>
     );
   const dayNames = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
-  const todayAssignment = today?.[0] as WeeklyAssignment | undefined;
   const currentDay = new Date().getDay() || 7;
   const pendingRoutines = week?.filter((item) => item.estadoSemana === 'pendiente') || [];
   const completedDays = new Set(

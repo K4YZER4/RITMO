@@ -1,16 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  AlertTriangle,
-  ArrowLeft,
-  CalendarDays,
-  CheckCircle2,
-  Clock,
-  Dumbbell,
-  MessageSquare,
-  Trophy,
-  Weight,
-  X,
-} from 'lucide-react';
+import { ArrowLeft, CalendarDays, Dumbbell, Trophy, Weight } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Card, Empty, Loading, Page, fullName } from '../components/Ui';
