@@ -577,7 +577,9 @@ export class RutinasService {
         const idUsuario = asignaciones[0].idUsuario;
         for (const asig of asignaciones) {
           if (asig.idUsuario !== idUsuario) {
-            throw new BadRequestException('Todas las asignaciones deben pertenecer al mismo alumno');
+            throw new BadRequestException(
+              'Todas las asignaciones deben pertenecer al mismo alumno',
+            );
           }
           if (
             asig.rutina.createdByUsuario !== entrenadorId &&
@@ -588,10 +590,7 @@ export class RutinasService {
           }
         }
 
-        if (
-          asignaciones.length === 2 &&
-          asignaciones[0].idRutina === asignaciones[1].idRutina
-        ) {
+        if (asignaciones.length === 2 && asignaciones[0].idRutina === asignaciones[1].idRutina) {
           return { success: true, message: 'Asignaciones sin cambios (misma rutina)' };
         }
 
@@ -625,6 +624,6 @@ export class RutinasService {
 
         return { success: true, message: 'Asignaciones reordenadas correctamente' };
       }),
-    ).then((res) => res || ({ success: true, message: 'Asignaciones reordenadas correctamente' }));
+    ).then((res) => res || { success: true, message: 'Asignaciones reordenadas correctamente' });
   }
 }

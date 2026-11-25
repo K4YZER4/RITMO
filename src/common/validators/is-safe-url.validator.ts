@@ -1,8 +1,4 @@
-import {
-  registerDecorator,
-  ValidationOptions,
-  ValidationArguments,
-} from 'class-validator';
+import { registerDecorator, ValidationOptions } from 'class-validator';
 
 /**
  * Validador de seguridad contra SSRF (Server-Side Request Forgery).
@@ -88,11 +84,13 @@ export function IsSafeUrl(validationOptions?: ValidationOptions) {
       target: object.constructor,
       propertyName: propertyName,
       options: validationOptions || {
-        message: 'La URL proporcionada no es segura o apunta a un recurso privado/interno (SSRF Protection).',
+        message:
+          'La URL proporcionada no es segura o apunta a un recurso privado/interno (SSRF Protection).',
       },
       validator: {
-        validate(value: any, _args: ValidationArguments) {
+        validate(value: unknown) {
           if (value === undefined || value === null || value === '') return true; // Opcional si está vacío
+          if (typeof value !== 'string') return false;
           return isSafeUrlString(value);
         },
       },

@@ -103,7 +103,9 @@ export class CambiarPlanSuscripcionHandler {
     if (modoCambio === MODOS_CAMBIO_PLAN.INSTANTANEO) {
       if (!suscripcionActual.proveedorSubscriptionId.startsWith('sub_demo_')) {
         try {
-          await this.stripeService.cancelarInmediatamente(suscripcionActual.proveedorSubscriptionId);
+          await this.stripeService.cancelarInmediatamente(
+            suscripcionActual.proveedorSubscriptionId,
+          );
         } catch {
           // Continuar con el cambio local si Stripe no tiene el recurso o falla conexión
         }
@@ -286,7 +288,9 @@ export class CambiarPlanSuscripcionHandler {
       !suscripcionActual.proveedorSubscriptionId.startsWith('sub_demo_')
     ) {
       try {
-        await this.stripeService.cancelarAlFinalDelPeriodo(suscripcionActual.proveedorSubscriptionId);
+        await this.stripeService.cancelarAlFinalDelPeriodo(
+          suscripcionActual.proveedorSubscriptionId,
+        );
       } catch {
         // Continuar con la programación local
       }

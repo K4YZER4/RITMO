@@ -57,10 +57,7 @@ export class SesionesController {
 
   @Delete(':id')
   @ApiOperation({ summary: 'Cancelar o descartar una sesión activa' })
-  cancelar(
-    @CurrentUser('id') usuarioId: string,
-    @Param('id', ParseBigIntPipe) sesionId: bigint,
-  ) {
+  cancelar(@CurrentUser('id') usuarioId: string, @Param('id', ParseBigIntPipe) sesionId: bigint) {
     return this.service.cancelarSesion(usuarioId, sesionId);
   }
 

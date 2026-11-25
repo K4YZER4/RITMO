@@ -94,8 +94,14 @@ export const RUTINAS_VALIDATION_ERRORS = {
     'Debes seleccionar una categoría para la rutina.',
   ),
 
-  REQUIRED_EJERCICIOS: validationMessage('REQUIRED_EJERCICIOS', 'Debes incluir al menos un ejercicio en la rutina.'),
-  INVALID_EJERCICIOS: validationMessage('INVALID_EJERCICIOS', 'La lista de ejercicios debe ser un arreglo.'),
+  REQUIRED_EJERCICIOS: validationMessage(
+    'REQUIRED_EJERCICIOS',
+    'Debes incluir al menos un ejercicio en la rutina.',
+  ),
+  INVALID_EJERCICIOS: validationMessage(
+    'INVALID_EJERCICIOS',
+    'La lista de ejercicios debe ser un arreglo.',
+  ),
   EJERCICIOS_MIN_SIZE: validationMessage(
     'EJERCICIOS_MIN_SIZE',
     'La rutina debe contener al menos un ejercicio.',
@@ -131,7 +137,10 @@ export const RUTINAS_VALIDATION_ERRORS = {
   INVALID_SERIES: validationMessage('INVALID_SERIES', 'El número de series debe ser un entero.'),
   SERIES_TOO_LOW: validationMessage('SERIES_TOO_LOW', 'El número de series debe ser al menos 1.'),
 
-  REQUIRED_REPETICIONES: validationMessage('REQUIRED_REPETICIONES', 'El número de repeticiones es obligatorio.'),
+  REQUIRED_REPETICIONES: validationMessage(
+    'REQUIRED_REPETICIONES',
+    'El número de repeticiones es obligatorio.',
+  ),
   INVALID_REPETICIONES: validationMessage(
     'INVALID_REPETICIONES',
     'El número de repeticiones debe ser un entero.',

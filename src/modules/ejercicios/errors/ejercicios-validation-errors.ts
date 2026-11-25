@@ -51,12 +51,15 @@ export const EJERCICIOS_VALIDATION_ERRORS = {
     'El link de información debe tener un formato válido.',
   ),
 
-  REQUIRED_MUSCULOS: validationMessage('REQUIRED_MUSCULOS', 'Debes seleccionar al menos un músculo.'),
-  INVALID_MUSCULOS: validationMessage('INVALID_MUSCULOS', 'Los músculos seleccionados deben ser válidos.'),
-  EMPTY_MUSCULOS: validationMessage(
-    'EMPTY_MUSCULOS',
+  REQUIRED_MUSCULOS: validationMessage(
+    'REQUIRED_MUSCULOS',
     'Debes seleccionar al menos un músculo.',
   ),
+  INVALID_MUSCULOS: validationMessage(
+    'INVALID_MUSCULOS',
+    'Los músculos seleccionados deben ser válidos.',
+  ),
+  EMPTY_MUSCULOS: validationMessage('EMPTY_MUSCULOS', 'Debes seleccionar al menos un músculo.'),
   MUSCULOS_MIN_LENGTH: validationMessage(
     'MUSCULOS_MIN_LENGTH',
     'Debes seleccionar al menos un músculo.',

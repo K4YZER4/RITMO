@@ -3,8 +3,10 @@ import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class ActualizarNotaEjercicioDto {
   @ApiPropertyOptional({
-    description: 'Nota técnica, molestia física o retroalimentación sobre el ejercicio en la sesión activa',
-    example: 'Ligera molestia en el tendón rotuliano al romper paralelo. Bajar 5kg la próxima sesión.',
+    description:
+      'Nota técnica, molestia física o retroalimentación sobre el ejercicio en la sesión activa',
+    example:
+      'Ligera molestia en el tendón rotuliano al romper paralelo. Bajar 5kg la próxima sesión.',
     maxLength: 500,
   })
   @IsOptional()
