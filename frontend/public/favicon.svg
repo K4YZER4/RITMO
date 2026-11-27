@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#080b0a"/>
+  <!-- Barra central (Grip) -->
+  <line x1="208" y1="304" x2="304" y2="208" stroke="#b4ff39" stroke-width="42" stroke-linecap="round"/>
+  <!-- Placas internas -->
+  <line x1="134" y1="258" x2="254" y2="378" stroke="#b4ff39" stroke-width="32" stroke-linecap="round"/>
+  <line x1="258" y1="134" x2="378" y2="254" stroke="#b4ff39" stroke-width="32" stroke-linecap="round"/>
+  <!-- Placas externas -->
+  <line x1="80" y1="270" x2="242" y2="432" stroke="#b4ff39" stroke-width="38" stroke-linecap="round"/>
+  <line x1="270" y1="80" x2="432" y2="242" stroke="#b4ff39" stroke-width="38" stroke-linecap="round"/>
+  <!-- Topes extremos -->
+  <circle cx="137" cy="375" r="18" fill="#b4ff39"/>
+  <circle cx="375" cy="137" r="18" fill="#b4ff39"/>
+</svg>
